@@ -12,7 +12,7 @@ import logging
 from dotenv import load_dotenv
 
 from livekit import agents, rtc
-from livekit.agents import AgentServer, AgentSession, Agent, RoomInputOptions
+from livekit.agents import AgentServer, AgentSession, Agent, room_io
 from livekit.plugins import noise_cancellation, silero, openai, deepgram
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
@@ -79,21 +79,18 @@ async def agent_session(ctx: agents.JobContext) -> None:
         turn_detection=MultilingualModel(),
     )
 
-    # Helper function to select noise cancellation based on participant type
-    def select_noise_cancellation(
-        params: RoomInputOptions.AudioInputParams,
-    ) -> noise_cancellation.BVC | noise_cancellation.BVCTelephony:
-        """Select appropriate noise cancellation for the participant type."""
-        if params.participant.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP:
-            return noise_cancellation.BVCTelephony()
-        return noise_cancellation.BVC()
-
     # Start the session with room configuration
     await session.start(
         room=ctx.room,
         agent=Assistant(),
-        room_input_options=RoomInputOptions(
-            noise_cancellation=select_noise_cancellation,
+        room_options=room_io.RoomOptions(
+            audio_input=room_io.AudioInputOptions(
+                noise_cancellation=lambda params: (
+                    noise_cancellation.BVCTelephony()
+                    if params.participant.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
+                    else noise_cancellation.BVC()
+                ),
+            ),
         ),
     )
 
