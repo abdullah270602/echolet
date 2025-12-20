@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useAuth } from "@clerk/clerk-react";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -19,6 +20,7 @@ interface TokenResponse {
 }
 
 export function VoiceRoom() {
+  const { getToken } = useAuth();
   const [connectionDetails, setConnectionDetails] =
     useState<TokenResponse | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -29,13 +31,25 @@ export function VoiceRoom() {
     setError(null);
 
     try {
+      const authToken = await getToken();
+
+      if (!authToken) {
+        throw new Error("Not authenticated");
+      }
+
       const response = await fetch(`${API_BASE_URL}/livekit/token`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
         body: JSON.stringify({}),
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Authentication failed");
+        }
         throw new Error("Failed to get connection token");
       }
 
@@ -46,7 +60,7 @@ export function VoiceRoom() {
     } finally {
       setIsConnecting(false);
     }
-  }, []);
+  }, [getToken]);
 
   const disconnect = useCallback(() => {
     setConnectionDetails(null);
