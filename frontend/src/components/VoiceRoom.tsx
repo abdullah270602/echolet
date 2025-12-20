@@ -162,16 +162,6 @@ export function VoiceRoom() {
         audio={true}
         video={false}
         onDisconnected={disconnect}
-        options={{
-          publishDefaults: {
-            audioPreset: { maxBitrate: 32000 },
-          },
-        }}
-        connectOptions={{
-          participantMetadata: JSON.stringify({
-            remaining_seconds: connectionDetails.remaining_seconds,
-          }),
-        }}
       >
         <RoomContent remainingSeconds={connectionDetails.remaining_seconds} />
         <RoomAudioRenderer />

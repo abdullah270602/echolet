@@ -37,22 +37,31 @@ class VoiceAssistant(agents.Agent):
         super().__init__(instructions=ASSISTANT_INSTRUCTIONS)
 
 
-async def handle_limit_reached(session: AgentSession) -> None:
+async def handle_limit_reached(session: AgentSession, ctx: JobContext) -> None:
     """Handle graceful disconnection when usage limit is reached."""
     logger.info("Usage limit reached, saying farewell...")
     try:
-        farewell = session.say(FAREWELL_MESSAGE)
-        await asyncio.wait_for(farewell.wait_for_playout(), timeout=15.0)
+        # Use generate_reply to speak the farewell message
+        farewell = session.generate_reply(
+            instructions=f"Say exactly this to the user: '{FAREWELL_MESSAGE}'"
+        )
+        await asyncio.wait_for(farewell, timeout=15.0)
     except asyncio.TimeoutError:
         logger.warning("Farewell message timed out")
     except Exception as e:
         logger.error(f"Error during farewell: {e}")
-    finally:
-        session.shutdown(drain=True)
+
+    # Disconnect by leaving the room
+    logger.info("Disconnecting from room...")
+    try:
+        await ctx.room.disconnect()
+    except Exception as e:
+        logger.error(f"Error disconnecting: {e}")
 
 
 async def monitor_usage(
     session: AgentSession,
+    ctx: JobContext,
     max_seconds: int,
     start_time: float,
 ) -> None:
@@ -61,6 +70,7 @@ async def monitor_usage(
 
     Args:
         session: The active agent session
+        ctx: The job context for room access
         max_seconds: Maximum allowed seconds for this session
         start_time: Session start timestamp
     """
@@ -72,9 +82,11 @@ async def monitor_usage(
         elapsed = time.time() - start_time
         remaining = max_seconds - elapsed
 
+        logger.debug(f"Usage check: elapsed={elapsed:.0f}s, remaining={remaining:.0f}s")
+
         if remaining <= 0:
             logger.info(f"Time limit reached after {elapsed:.0f}s")
-            await handle_limit_reached(session)
+            await handle_limit_reached(session, ctx)
             break
 
         if remaining <= 30:
@@ -115,11 +127,16 @@ async def entry_point(ctx: JobContext) -> None:
     remaining_seconds: int | None = None
 
     # Try to get remaining_seconds from existing participants
-    for participant in ctx.room.remote_participants.values():
+    logger.info(f"Checking {len(ctx.room.remote_participants)} remote participants for metadata")
+    for identity, participant in ctx.room.remote_participants.items():
+        logger.info(f"Participant {identity}: metadata = {participant.metadata}")
         remaining_seconds = get_remaining_seconds_from_metadata(participant)
         if remaining_seconds is not None:
-            logger.info(f"Got remaining_seconds from participant: {remaining_seconds}s")
+            logger.info(f"Got remaining_seconds from participant {identity}: {remaining_seconds}s")
             break
+
+    if remaining_seconds is None:
+        logger.warning("No remaining_seconds found in any participant metadata")
 
     # Create the agent session with STT, LLM, TTS pipeline
     session = AgentSession(
@@ -159,14 +176,18 @@ async def entry_point(ctx: JobContext) -> None:
     def on_participant_connected(participant: rtc.RemoteParticipant):
         nonlocal remaining_seconds, usage_monitor_task
 
+        logger.info(f"New participant connected: {participant.identity}, metadata = {participant.metadata}")
+
         if remaining_seconds is None:
             remaining_seconds = get_remaining_seconds_from_metadata(participant)
             if remaining_seconds is not None:
                 logger.info(f"Got remaining_seconds from new participant: {remaining_seconds}s")
                 # Start usage monitoring
                 usage_monitor_task = asyncio.create_task(
-                    monitor_usage(session, remaining_seconds, session_start_time)
+                    monitor_usage(session, ctx, remaining_seconds, session_start_time)
                 )
+            else:
+                logger.warning(f"No remaining_seconds in metadata for {participant.identity}")
 
     # Configure audio input with noise cancellation
     def get_noise_cancellation(params: room_io.AudioInputParams):
@@ -190,9 +211,12 @@ async def entry_point(ctx: JobContext) -> None:
 
     # Start usage monitoring if we already have remaining_seconds
     if remaining_seconds is not None and usage_monitor_task is None:
+        logger.info(f"Starting usage monitor task with {remaining_seconds}s limit")
         usage_monitor_task = asyncio.create_task(
-            monitor_usage(session, remaining_seconds, session_start_time)
+            monitor_usage(session, ctx, remaining_seconds, session_start_time)
         )
+    else:
+        logger.info(f"Usage monitor not started yet (remaining_seconds={remaining_seconds})")
 
     # Generate initial greeting
     await session.generate_reply(instructions=GREETING_INSTRUCTIONS)

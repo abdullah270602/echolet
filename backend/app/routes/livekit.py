@@ -46,6 +46,7 @@ def get_token(
         room_name=request.room_name,
         identity=identity,
         name=request.name,
+        remaining_seconds=usage["remaining_seconds"],
     )
 
     return TokenResponse(**result, remaining_seconds=usage["remaining_seconds"])

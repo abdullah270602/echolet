@@ -16,4 +16,4 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Usage Limits
 # Default: 3 minutes (180 seconds) per day
-DAILY_TALK_LIMIT_SECONDS = int(os.getenv("DAILY_TALK_LIMIT_SECONDS", 30))
+DAILY_TALK_LIMIT_SECONDS = int(os.getenv("DAILY_TALK_LIMIT_SECONDS", 60))
