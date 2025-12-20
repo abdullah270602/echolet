@@ -3,7 +3,11 @@ Entry point module for LiveKit Agent using WorkerOptions pattern.
 This module provides the entry_point function that gets called when a new session starts.
 """
 
+import asyncio
+import json
 import logging
+import time
+
 from livekit import agents, rtc
 from livekit.agents import JobContext, AgentSession, room_io
 from livekit.plugins import noise_cancellation, silero, openai, deepgram
@@ -20,12 +24,73 @@ from prompts import ASSISTANT_INSTRUCTIONS, GREETING_INSTRUCTIONS
 
 logger = logging.getLogger(__name__)
 
+FAREWELL_MESSAGE = (
+    "You've reached your daily talk limit. "
+    "Thanks for chatting today — see you tomorrow!"
+)
+
 
 class VoiceAssistant(agents.Agent):
     """Voice assistant agent with configurable behavior."""
 
     def __init__(self) -> None:
         super().__init__(instructions=ASSISTANT_INSTRUCTIONS)
+
+
+async def handle_limit_reached(session: AgentSession) -> None:
+    """Handle graceful disconnection when usage limit is reached."""
+    logger.info("Usage limit reached, saying farewell...")
+    try:
+        farewell = session.say(FAREWELL_MESSAGE)
+        await asyncio.wait_for(farewell.wait_for_playout(), timeout=15.0)
+    except asyncio.TimeoutError:
+        logger.warning("Farewell message timed out")
+    except Exception as e:
+        logger.error(f"Error during farewell: {e}")
+    finally:
+        session.shutdown(drain=True)
+
+
+async def monitor_usage(
+    session: AgentSession,
+    max_seconds: int,
+    start_time: float,
+) -> None:
+    """
+    Background task to monitor session duration and enforce limits.
+
+    Args:
+        session: The active agent session
+        max_seconds: Maximum allowed seconds for this session
+        start_time: Session start timestamp
+    """
+    logger.info(f"Starting usage monitor with {max_seconds}s limit")
+
+    while True:
+        await asyncio.sleep(5)
+
+        elapsed = time.time() - start_time
+        remaining = max_seconds - elapsed
+
+        if remaining <= 0:
+            logger.info(f"Time limit reached after {elapsed:.0f}s")
+            await handle_limit_reached(session)
+            break
+
+        if remaining <= 30:
+            logger.info(f"Warning: Only {remaining:.0f}s remaining")
+
+
+def get_remaining_seconds_from_metadata(participant: rtc.RemoteParticipant) -> int | None:
+    """Extract remaining_seconds from participant metadata."""
+    if not participant.metadata:
+        return None
+
+    try:
+        metadata = json.loads(participant.metadata)
+        return metadata.get("remaining_seconds")
+    except (json.JSONDecodeError, TypeError):
+        return None
 
 
 async def entry_point(ctx: JobContext) -> None:
@@ -45,6 +110,17 @@ async def entry_point(ctx: JobContext) -> None:
 
     logger.info(f"Connected to room: {ctx.room.name}")
 
+    # Track session start time
+    session_start_time = time.time()
+    remaining_seconds: int | None = None
+
+    # Try to get remaining_seconds from existing participants
+    for participant in ctx.room.remote_participants.values():
+        remaining_seconds = get_remaining_seconds_from_metadata(participant)
+        if remaining_seconds is not None:
+            logger.info(f"Got remaining_seconds from participant: {remaining_seconds}s")
+            break
+
     # Create the agent session with STT, LLM, TTS pipeline
     session = AgentSession(
         stt=deepgram.STT(model=STT_MODEL),
@@ -57,6 +133,9 @@ async def entry_point(ctx: JobContext) -> None:
         vad=silero.VAD.load(),
         turn_detection=MultilingualModel(),
     )
+
+    # Usage monitoring task
+    usage_monitor_task: asyncio.Task | None = None
 
     # Set up event handlers for session lifecycle
     @session.on("agent_started")
@@ -74,6 +153,20 @@ async def entry_point(ctx: JobContext) -> None:
     @session.on("user_stopped_speaking")
     def on_user_stopped_speaking():
         logger.debug("User stopped speaking")
+
+    # Listen for new participants to get remaining_seconds if not already set
+    @ctx.room.on("participant_connected")
+    def on_participant_connected(participant: rtc.RemoteParticipant):
+        nonlocal remaining_seconds, usage_monitor_task
+
+        if remaining_seconds is None:
+            remaining_seconds = get_remaining_seconds_from_metadata(participant)
+            if remaining_seconds is not None:
+                logger.info(f"Got remaining_seconds from new participant: {remaining_seconds}s")
+                # Start usage monitoring
+                usage_monitor_task = asyncio.create_task(
+                    monitor_usage(session, remaining_seconds, session_start_time)
+                )
 
     # Configure audio input with noise cancellation
     def get_noise_cancellation(params: room_io.AudioInputParams):
@@ -94,6 +187,12 @@ async def entry_point(ctx: JobContext) -> None:
     )
 
     logger.info("Agent session started, generating greeting...")
+
+    # Start usage monitoring if we already have remaining_seconds
+    if remaining_seconds is not None and usage_monitor_task is None:
+        usage_monitor_task = asyncio.create_task(
+            monitor_usage(session, remaining_seconds, session_start_time)
+        )
 
     # Generate initial greeting
     await session.generate_reply(instructions=GREETING_INSTRUCTIONS)
