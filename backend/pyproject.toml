@@ -9,4 +9,5 @@ dependencies = [
     "uvicorn>=0.38.0",
     "livekit-api>=0.7.0",
     "python-dotenv>=1.0.0",
+    "fastapi-clerk-auth>=0.0.9",
 ]
