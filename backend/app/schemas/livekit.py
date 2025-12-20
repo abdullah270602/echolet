@@ -11,3 +11,4 @@ class TokenResponse(BaseModel):
     room_name: str
     identity: str
     livekit_url: str
+    remaining_seconds: int
