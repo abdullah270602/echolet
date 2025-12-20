@@ -6,3 +6,7 @@ load_dotenv()
 LIVEKIT_API_KEY = os.getenv("LIVEKIT_API_KEY")
 LIVEKIT_API_SECRET = os.getenv("LIVEKIT_API_SECRET")
 LIVEKIT_URL = os.getenv("LIVEKIT_URL")
+
+# Clerk Authentication
+# Format: https://<your-clerk-frontend-api>.clerk.accounts.dev/.well-known/jwks.json
+CLERK_JWKS_URL = os.getenv("CLERK_JWKS_URL")
