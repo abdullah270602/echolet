@@ -17,6 +17,7 @@ interface TokenResponse {
   room_name: string;
   identity: string;
   livekit_url: string;
+  remaining_seconds: number;
 }
 
 export function VoiceRoom() {
@@ -25,10 +26,34 @@ export function VoiceRoom() {
     useState<TokenResponse | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLimitReached, setIsLimitReached] = useState(false);
+  const sessionStartRef = useRef<number | null>(null);
+
+  const reportUsage = useCallback(
+    async (talkSeconds: number) => {
+      try {
+        const authToken = await getToken();
+        if (!authToken) return;
+
+        await fetch(`${API_BASE_URL}/livekit/usage`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ talk_seconds: talkSeconds }),
+        });
+      } catch (err) {
+        console.error("Failed to report usage:", err);
+      }
+    },
+    [getToken]
+  );
 
   const connect = useCallback(async () => {
     setIsConnecting(true);
     setError(null);
+    setIsLimitReached(false);
 
     try {
       const authToken = await getToken();
@@ -50,11 +75,16 @@ export function VoiceRoom() {
         if (response.status === 401) {
           throw new Error("Authentication failed");
         }
+        if (response.status === 403) {
+          setIsLimitReached(true);
+          throw new Error("Daily talk limit reached. Please try again tomorrow.");
+        }
         throw new Error("Failed to get connection token");
       }
 
       const data: TokenResponse = await response.json();
       setConnectionDetails(data);
+      sessionStartRef.current = Date.now();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connection failed");
     } finally {
@@ -63,8 +93,23 @@ export function VoiceRoom() {
   }, [getToken]);
 
   const disconnect = useCallback(() => {
+    // Report usage when disconnecting
+    if (sessionStartRef.current) {
+      const sessionDuration = Math.floor(
+        (Date.now() - sessionStartRef.current) / 1000
+      );
+      reportUsage(sessionDuration);
+      sessionStartRef.current = null;
+    }
     setConnectionDetails(null);
-  }, []);
+  }, [reportUsage]);
+
+  // Format remaining time for display
+  const formatRemainingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   if (!connectionDetails) {
     return (
@@ -92,13 +137,17 @@ export function VoiceRoom() {
             Speak naturally and the assistant will respond.
           </p>
         </div>
-        {error && <p className="voice-room__error">{error}</p>}
+        {error && (
+          <p className={`voice-room__error ${isLimitReached ? "voice-room__error--limit" : ""}`}>
+            {error}
+          </p>
+        )}
         <button
           className="voice-room__connect-btn"
           onClick={connect}
-          disabled={isConnecting}
+          disabled={isConnecting || isLimitReached}
         >
-          {isConnecting ? "Connecting..." : "Start Conversation"}
+          {isConnecting ? "Connecting..." : isLimitReached ? "Limit Reached" : "Start Conversation"}
         </button>
       </div>
     );
@@ -113,20 +162,52 @@ export function VoiceRoom() {
         audio={true}
         video={false}
         onDisconnected={disconnect}
+        options={{
+          publishDefaults: {
+            audioPreset: { maxBitrate: 32000 },
+          },
+        }}
+        connectOptions={{
+          participantMetadata: JSON.stringify({
+            remaining_seconds: connectionDetails.remaining_seconds,
+          }),
+        }}
       >
-        <RoomContent />
+        <RoomContent remainingSeconds={connectionDetails.remaining_seconds} />
         <RoomAudioRenderer />
       </LiveKitRoom>
     </div>
   );
 }
 
-function RoomContent() {
+function RoomContent({ remainingSeconds }: { remainingSeconds: number }) {
   const { state, audioTrack, agentTranscriptions } = useVoiceAssistant();
   const transcriptions = useTranscriptions();
+  const [timeLeft, setTimeLeft] = useState(remainingSeconds);
+
+  // Countdown timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="room-content">
+      <div className="time-remaining">
+        <span className={`time-remaining__value ${timeLeft <= 30 ? "time-remaining__value--warning" : ""}`}>
+          {formatTime(timeLeft)}
+        </span>
+        <span className="time-remaining__label">remaining</span>
+      </div>
+
       <div className="visualizer-section">
         <div className={`visualizer-container visualizer--${state}`}>
           <BarVisualizer
