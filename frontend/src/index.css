@@ -1,83 +1,154 @@
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.9);
-  background-color: #0f0f1a;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import "tailwindcss";
+
+/* ==========================================
+   ECHOLET CUSTOM THEME (Tailwind v4)
+   ========================================== */
+@theme {
+  /* Deep midnight blues */
+  --color-midnight-900: #0a0a12;
+  --color-midnight-800: #0f0f1a;
+  --color-midnight-700: #16161f;
+  --color-midnight-600: #1c1c28;
+  --color-midnight-500: #252533;
+
+  /* Electric teals */
+  --color-teal-400: #2dd4bf;
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0d9488;
+  --color-teal-glow: #5eead4;
+
+  /* Glowing purples */
+  --color-purple-400: #a78bfa;
+  --color-purple-500: #8b5cf6;
+  --color-purple-600: #7c3aed;
+  --color-purple-glow: #c4b5fd;
+
+  /* Accent colors */
+  --color-electric-blue: #646cff;
+  --color-electric-pink: #ec4899;
+  --color-electric-amber: #fbbf24;
+
+  /* Typography */
+  --font-family-sans: 'Inter', system-ui, sans-serif;
+
+  /* Custom shadows */
+  --shadow-glow-sm: 0 0 10px rgba(94, 234, 212, 0.3);
+  --shadow-glow-md: 0 0 20px rgba(94, 234, 212, 0.4);
+  --shadow-glow-lg: 0 0 40px rgba(94, 234, 212, 0.5);
+  --shadow-glow-purple: 0 0 30px rgba(139, 92, 246, 0.5);
+  --shadow-glow-blue: 0 0 30px rgba(100, 108, 255, 0.5);
+
+  /* Animations */
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+  --animate-slide-down: slide-down 0.5s ease-out;
+  --animate-fade-up: fade-up 0.6s ease-out;
+  --animate-float: float 6s ease-in-out infinite;
+
+  /* Backdrop blur */
+  --backdrop-blur-glass: 16px;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(94, 234, 212, 0.4); }
+  50% { box-shadow: 0 0 40px rgba(94, 234, 212, 0.8); }
 }
 
-body {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+@keyframes slide-down {
+  0% { transform: translateY(-100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
-#root {
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 1rem;
+@keyframes fade-up {
+  0% { transform: translateY(30px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
-h1 {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #fff;
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
 }
 
-h2 {
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: #fff;
+/* ==========================================
+   GLOBAL STYLES
+   ========================================== */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-family-sans);
+    background-color: var(--color-midnight-900);
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: rgba(255, 255, 255, 0.05);
-  color: white;
-  cursor: pointer;
-  transition: background-color 0.2s;
+/* ==========================================
+   UTILITY COMPONENTS
+   ========================================== */
+@layer components {
+  /* Glassmorphism */
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-strong {
+    background: rgba(22, 22, 31, 0.8);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Glowing button */
+  .btn-glow {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(to right, var(--color-teal-500), var(--color-purple-500));
+    color: white;
+    font-weight: 600;
+    padding: 1rem 2rem;
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-glow-md);
+    transition: all 0.3s;
+  }
+
+  .btn-glow:hover {
+    box-shadow: var(--shadow-glow-lg);
+    transform: translateY(-2px);
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    color: rgba(255, 255, 255, 0.8);
+    transition: all 0.3s;
+  }
+
+  .btn-secondary:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    background: linear-gradient(to right, var(--color-teal-400), var(--color-purple-400), var(--color-electric-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 }
 
-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  text-align: center;
-}
-
-.auth-buttons {
-  display: flex;
-  gap: 0.75rem;
-}
-
-/* Voice Room - Fixed Height Container */
+/* ==========================================
+   VOICE ROOM STYLES (Preserved from original)
+   ========================================== */
 .voice-room {
   width: 100%;
   height: 520px;
@@ -143,7 +214,7 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* Room Content - Fixed Layout */
+/* Room Content */
 .room-content {
   width: 100%;
   height: 100%;
@@ -185,7 +256,7 @@ button:disabled {
   50% { opacity: 0.6; }
 }
 
-/* Visualizer Section - Fixed Height */
+/* Visualizer */
 .visualizer-section {
   height: 140px;
   display: flex;
@@ -256,7 +327,7 @@ button:disabled {
   50% { opacity: 0.4; }
 }
 
-/* Transcript - Fixed Height with Scroll */
+/* Transcript */
 .transcript {
   flex: 1;
   height: 240px;
@@ -364,7 +435,7 @@ button:disabled {
   color: rgba(255, 255, 255, 0.85);
 }
 
-/* Control Section - Fixed Height */
+/* Control Section */
 .control-section {
   height: 56px;
   display: flex;
@@ -410,4 +481,24 @@ button:disabled {
 
 .visualizer--thinking .lk-bar-visualizer {
   --lk-bar-visualizer-bar-color: #fbbf24;
+}
+
+/* ==========================================
+   APP PAGE CONTAINER (for authenticated users)
+   ========================================== */
+.app-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-container .auth-buttons {
+  display: flex;
+  gap: 0.75rem;
 }
