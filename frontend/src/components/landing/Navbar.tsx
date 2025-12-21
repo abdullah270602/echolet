@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion, useScroll } from 'framer-motion';
+import { useNavigate, Link } from 'react-router-dom';
 import { AudioWaveform, Menu, X } from 'lucide-react';
 import { Button } from '../ui';
 
-interface NavbarProps {
-  onDemoClick: () => void;
-}
-
-export function Navbar({ onDemoClick }: NavbarProps) {
+export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { scrollY } = useScroll();
+  const navigate = useNavigate();
 
   useEffect(() => {
     return scrollY.on('change', (y) => setIsScrolled(y > 50));
@@ -22,6 +20,10 @@ export function Navbar({ onDemoClick }: NavbarProps) {
       element.scrollIntoView({ behavior: 'smooth' });
       setIsMobileMenuOpen(false);
     }
+  };
+
+  const handleSignInClick = () => {
+    navigate('/sign-in');
   };
 
   const navLinks = [
@@ -42,21 +44,25 @@ export function Navbar({ onDemoClick }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <motion.a
-            href="#"
+          <Link
+            to="/"
             className="flex items-center gap-2 text-white"
-            whileHover={{ scale: 1.02 }}
           >
-            <div className="relative">
-              <AudioWaveform className="w-8 h-8 text-teal-400" />
-              <motion.div
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 bg-teal-400/20 rounded-full blur-lg"
-              />
-            </div>
-            <span className="text-xl font-bold">Echolet</span>
-          </motion.a>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="flex items-center gap-2"
+            >
+              <div className="relative">
+                <AudioWaveform className="w-8 h-8 text-teal-400" />
+                <motion.div
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute inset-0 bg-teal-400/20 rounded-full blur-lg"
+                />
+              </div>
+              <span className="text-xl font-bold">Echolet</span>
+            </motion.div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
@@ -74,8 +80,8 @@ export function Navbar({ onDemoClick }: NavbarProps) {
 
           {/* Desktop CTA */}
           <div className="hidden md:block">
-            <Button variant="glow" size="sm" onClick={onDemoClick}>
-              Try Demo Free
+            <Button variant="glow" size="sm" onClick={handleSignInClick}>
+              Try for Free
             </Button>
           </div>
 
@@ -117,12 +123,12 @@ export function Navbar({ onDemoClick }: NavbarProps) {
             variant="glow"
             size="sm"
             onClick={() => {
-              onDemoClick();
+              handleSignInClick();
               setIsMobileMenuOpen(false);
             }}
             className="w-full mt-4"
           >
-            Try Demo Free
+            Try for Free
           </Button>
         </div>
       </motion.div>

@@ -18,7 +18,7 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-midnight-900">
-      <Navbar onDemoClick={handleDemoClick} />
+      <Navbar />
 
       <main>
         <HeroSection onDemoClick={handleDemoClick} />
