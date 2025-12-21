@@ -104,13 +104,6 @@ export function VoiceRoom() {
     setConnectionDetails(null);
   }, [reportUsage]);
 
-  // Format remaining time for display
-  const formatRemainingTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
   if (!connectionDetails) {
     return (
       <div className="voice-room">
