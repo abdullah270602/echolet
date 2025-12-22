@@ -67,11 +67,12 @@ async def increment_usage(
     )
 
     # On conflict, add to existing value
+    # Use naive UTC datetime to match TIMESTAMP WITHOUT TIME ZONE column
     stmt = stmt.on_conflict_do_update(
         constraint="uq_user_daily_usage_user_date",
         set_={
             "talk_seconds_used": UserDailyUsage.talk_seconds_used + seconds,
-            "updated_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc).replace(tzinfo=None),
         },
     ).returning(UserDailyUsage.talk_seconds_used)
 
