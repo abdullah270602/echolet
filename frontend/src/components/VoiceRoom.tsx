@@ -17,12 +17,17 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 interface TokenResponse {
   token: string;
   room_name: string;
+  session_id: number;
   identity: string;
   livekit_url: string;
   remaining_seconds: number;
 }
 
-export function VoiceRoom() {
+interface VoiceRoomProps {
+  agentId: number;
+}
+
+export function VoiceRoom({ agentId }: VoiceRoomProps) {
   const { getToken } = useAuth();
   const [connectionDetails, setConnectionDetails] =
     useState<TokenResponse | null>(null);
@@ -64,13 +69,13 @@ export function VoiceRoom() {
         throw new Error("Not authenticated");
       }
 
-      const response = await fetch(`${API_BASE_URL}/livekit/token`, {
+      const response = await fetch(`${API_BASE_URL}/api/session/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ agent_id: agentId }),
       });
 
       if (!response.ok) {
@@ -81,7 +86,10 @@ export function VoiceRoom() {
           setIsLimitReached(true);
           throw new Error("Daily talk limit reached. Please try again tomorrow.");
         }
-        throw new Error("Failed to get connection token");
+        if (response.status === 404) {
+          throw new Error("Agent not found");
+        }
+        throw new Error("Failed to start session");
       }
 
       const data: TokenResponse = await response.json();
@@ -92,7 +100,7 @@ export function VoiceRoom() {
     } finally {
       setIsConnecting(false);
     }
-  }, [getToken]);
+  }, [getToken, agentId]);
 
   const disconnect = useCallback(() => {
     // Report usage when disconnecting
