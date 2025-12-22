@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.livekit import router as livekit_router
+from app.routes.agents import router as agents_router
 from app.db.database import init_db, close_db
 
 logging.basicConfig(
@@ -44,6 +45,7 @@ app.add_middleware(
 
 
 app.include_router(livekit_router, prefix="/livekit", tags=["livekit"])
+app.include_router(agents_router, prefix="/api", tags=["agents"])
 
 
 @app.get("/")
