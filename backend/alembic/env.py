@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from app.db.base import Base
-from app.db.models import UserDailyUsage  # noqa: F401 - Import to register model
+from app.db.models import UserDailyUsage, AgentConfig  # noqa: F401 - Import to register models
 from app.config import DATABASE_URL
 
 # this is the Alembic Config object, which provides

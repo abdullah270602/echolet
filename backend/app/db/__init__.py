@@ -1,6 +1,6 @@
 from app.db.base import Base
 from app.db.database import engine, get_async_session, init_db, close_db
-from app.db.models import UserDailyUsage
+from app.db.models import UserDailyUsage, AgentConfig
 
 __all__ = [
     "Base",
@@ -9,4 +9,5 @@ __all__ = [
     "init_db",
     "close_db",
     "UserDailyUsage",
+    "AgentConfig",
 ]
