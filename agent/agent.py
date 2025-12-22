@@ -15,8 +15,8 @@ import time
 from dotenv import load_dotenv
 
 from livekit import agents, rtc
-from livekit.agents import AgentServer, AgentSession, Agent, room_io
-from livekit.plugins import noise_cancellation, silero, openai, deepgram
+from livekit.agents import AgentServer, AgentSession, Agent, room_io, inference
+from livekit.plugins import noise_cancellation, silero, openai, deepgram, inworld
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 from config import (
@@ -56,7 +56,9 @@ class Assistant(Agent):
         super().__init__(instructions=ASSISTANT_INSTRUCTIONS)
 
 
-def get_remaining_seconds_from_metadata(participant: rtc.RemoteParticipant) -> int | None:
+def get_remaining_seconds_from_metadata(
+    participant: rtc.RemoteParticipant,
+) -> int | None:
     """Extract remaining_seconds from participant metadata."""
     if not participant.metadata:
         return None
@@ -139,7 +141,9 @@ async def agent_session(ctx: agents.JobContext) -> None:
     # Wait for the participant to join and get their metadata
     logger.info("Waiting for participant...")
     participant = await ctx.wait_for_participant()
-    logger.info(f"Participant joined: {participant.identity}, metadata = {participant.metadata}")
+    logger.info(
+        f"Participant joined: {participant.identity}, metadata = {participant.metadata}"
+    )
 
     # Track session start time
     session_start_time = time.time()
@@ -159,7 +163,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
             base_url=LLM_BASE_URL,
             model=LLM_MODEL,
         ),
-        tts=deepgram.TTS(model=TTS_MODEL),
+        tts=inworld.TTS(model="inworld-tts-1-max", voice="Ashley"),
         vad=silero.VAD.load(),
         turn_detection=MultilingualModel(),
     )
@@ -172,7 +176,8 @@ async def agent_session(ctx: agents.JobContext) -> None:
             audio_input=room_io.AudioInputOptions(
                 noise_cancellation=lambda params: (
                     noise_cancellation.BVCTelephony()
-                    if params.participant.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
+                    if params.participant.kind
+                    == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
                     else noise_cancellation.BVC()
                 ),
             ),
