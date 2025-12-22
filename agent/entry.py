@@ -20,14 +20,9 @@ from config import (
     STT_MODEL,
     TTS_MODEL,
 )
-from prompts import ASSISTANT_INSTRUCTIONS, GREETING_INSTRUCTIONS
+from prompts import ASSISTANT_INSTRUCTIONS, FAREWELL_MESSAGE, GREETING_INSTRUCTIONS
 
 logger = logging.getLogger(__name__)
-
-FAREWELL_MESSAGE = (
-    "You've reached your daily talk limit. "
-    "Thanks for chatting today — see you tomorrow!"
-)
 
 
 class VoiceAssistant(agents.Agent):
@@ -93,7 +88,9 @@ async def monitor_usage(
             logger.info(f"Warning: Only {remaining:.0f}s remaining")
 
 
-def get_remaining_seconds_from_metadata(participant: rtc.RemoteParticipant) -> int | None:
+def get_remaining_seconds_from_metadata(
+    participant: rtc.RemoteParticipant,
+) -> int | None:
     """Extract remaining_seconds from participant metadata."""
     if not participant.metadata:
         return None
@@ -127,12 +124,16 @@ async def entry_point(ctx: JobContext) -> None:
     remaining_seconds: int | None = None
 
     # Try to get remaining_seconds from existing participants
-    logger.info(f"Checking {len(ctx.room.remote_participants)} remote participants for metadata")
+    logger.info(
+        f"Checking {len(ctx.room.remote_participants)} remote participants for metadata"
+    )
     for identity, participant in ctx.room.remote_participants.items():
         logger.info(f"Participant {identity}: metadata = {participant.metadata}")
         remaining_seconds = get_remaining_seconds_from_metadata(participant)
         if remaining_seconds is not None:
-            logger.info(f"Got remaining_seconds from participant {identity}: {remaining_seconds}s")
+            logger.info(
+                f"Got remaining_seconds from participant {identity}: {remaining_seconds}s"
+            )
             break
 
     if remaining_seconds is None:
@@ -176,18 +177,24 @@ async def entry_point(ctx: JobContext) -> None:
     def on_participant_connected(participant: rtc.RemoteParticipant):
         nonlocal remaining_seconds, usage_monitor_task
 
-        logger.info(f"New participant connected: {participant.identity}, metadata = {participant.metadata}")
+        logger.info(
+            f"New participant connected: {participant.identity}, metadata = {participant.metadata}"
+        )
 
         if remaining_seconds is None:
             remaining_seconds = get_remaining_seconds_from_metadata(participant)
             if remaining_seconds is not None:
-                logger.info(f"Got remaining_seconds from new participant: {remaining_seconds}s")
+                logger.info(
+                    f"Got remaining_seconds from new participant: {remaining_seconds}s"
+                )
                 # Start usage monitoring
                 usage_monitor_task = asyncio.create_task(
                     monitor_usage(session, ctx, remaining_seconds, session_start_time)
                 )
             else:
-                logger.warning(f"No remaining_seconds in metadata for {participant.identity}")
+                logger.warning(
+                    f"No remaining_seconds in metadata for {participant.identity}"
+                )
 
     # Configure audio input with noise cancellation
     def get_noise_cancellation(params: room_io.AudioInputParams):
@@ -216,7 +223,9 @@ async def entry_point(ctx: JobContext) -> None:
             monitor_usage(session, ctx, remaining_seconds, session_start_time)
         )
     else:
-        logger.info(f"Usage monitor not started yet (remaining_seconds={remaining_seconds})")
+        logger.info(
+            f"Usage monitor not started yet (remaining_seconds={remaining_seconds})"
+        )
 
     # Generate initial greeting
     await session.generate_reply(instructions=GREETING_INSTRUCTIONS)

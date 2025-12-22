@@ -25,8 +25,9 @@ from config import (
     LLM_MODEL,
     STT_MODEL,
     TTS_MODEL,
+    TTS_VOICE
 )
-from prompts import ASSISTANT_INSTRUCTIONS, GREETING_INSTRUCTIONS
+from prompts import ASSISTANT_INSTRUCTIONS, FAREWELL_MESSAGE, GREETING_INSTRUCTIONS
 
 # Load environment variables
 load_dotenv(override=True)
@@ -38,10 +39,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-FAREWELL_MESSAGE = (
-    "You've reached your daily talk limit. "
-    "Thanks for chatting today — see you tomorrow!"
-)
+
 
 
 class Assistant(Agent):
@@ -74,20 +72,23 @@ async def handle_limit_reached(session: AgentSession, ctx: agents.JobContext) ->
     """Handle graceful disconnection when usage limit is reached."""
     logger.info("Usage limit reached, saying farewell...")
     try:
-        farewell = session.generate_reply(
-            instructions=f"Say exactly this to the user: '{FAREWELL_MESSAGE}'"
-        )
-        await asyncio.wait_for(farewell, timeout=15.0)
+        # Interrupt any ongoing speech first
+        session.interrupt()
+        # Small delay to let interrupt complete
+        await asyncio.sleep(0.5)
+
+        # Use say() for direct TTS - skips LLM, faster and more reliable
+        speech_handle = session.say(FAREWELL_MESSAGE, allow_interruptions=False)
+        # Wait for audio to actually finish playing to the user
+        await asyncio.wait_for(speech_handle.wait_for_playout(), timeout=20.0)
+        logger.info("Farewell message completed")
     except asyncio.TimeoutError:
         logger.warning("Farewell message timed out")
     except Exception as e:
         logger.error(f"Error during farewell: {e}")
 
     logger.info("Disconnecting from room...")
-    try:
-        await ctx.room.disconnect()
-    except Exception as e:
-        logger.error(f"Error disconnecting: {e}")
+    await ctx.room.disconnect()
 
 
 async def monitor_usage(
@@ -163,7 +164,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
             base_url=LLM_BASE_URL,
             model=LLM_MODEL,
         ),
-        tts=inworld.TTS(model="inworld-tts-1-max", voice="Ashley"),
+        tts=inworld.TTS(model=TTS_MODEL, voice=TTS_VOICE),
         vad=silero.VAD.load(),
         turn_detection=MultilingualModel(),
     )
