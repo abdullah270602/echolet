@@ -1,14 +1,18 @@
-import { motion } from 'framer-motion';
-import { Phone, Settings, MoreVertical } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Phone, Settings, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import type { Agent } from '../../types/agent';
 
 interface AgentCardProps {
   agent: Agent;
   onEdit?: (agent: Agent) => void;
+  onDelete?: (agent: Agent) => void;
 }
 
-export function AgentCard({ agent, onEdit }: AgentCardProps) {
+export function AgentCard({ agent, onEdit, onDelete }: AgentCardProps) {
   const { name, status, phone, description } = agent;
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const statusColors = {
     active: 'bg-green-500',
@@ -20,6 +24,28 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
     active: 'Active',
     inactive: 'Inactive',
     paused: 'Paused',
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleEdit = () => {
+    setIsMenuOpen(false);
+    onEdit?.(agent);
+  };
+
+  const handleDelete = () => {
+    setIsMenuOpen(false);
+    onDelete?.(agent);
   };
 
   return (
@@ -34,21 +60,55 @@ export function AgentCard({ agent, onEdit }: AgentCardProps) {
             <Settings className="w-5 h-5 text-teal-400" />
           </div>
           <div>
-            <h3 className="font-semibold text-white">{name}</h3>
+            <h3 className="font-semibold text-white">{name || 'Unnamed Agent'}</h3>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className={`w-2 h-2 rounded-full ${statusColors[status]} animate-pulse`} />
               <span className="text-xs text-white/50">{statusLabels[status]}</span>
             </div>
           </div>
         </div>
-        <button className="p-1.5 text-white/40 hover:text-white/70 transition-colors">
-          <MoreVertical className="w-4 h-4" />
-        </button>
+
+        {/* Dropdown Menu */}
+        <div ref={menuRef} className="relative">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-1.5 text-white/40 hover:text-white/70 hover:bg-white/5 rounded-lg transition-colors"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+
+          <AnimatePresence>
+            {isMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 mt-1 w-36 py-1 rounded-lg glass-strong border border-white/10 shadow-xl z-10"
+              >
+                <button
+                  onClick={handleEdit}
+                  className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Edit
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="w-full px-3 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Description */}
       {description && (
-        <p className="text-sm text-white/60 mb-4">{description}</p>
+        <p className="text-sm text-white/60 mb-4 line-clamp-2">{description}</p>
       )}
 
       {/* Phone */}
