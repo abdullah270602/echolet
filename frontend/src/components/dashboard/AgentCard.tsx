@@ -1,14 +1,15 @@
 import { motion } from 'framer-motion';
 import { Phone, Settings, MoreVertical } from 'lucide-react';
+import type { Agent } from '../../types/agent';
 
 interface AgentCardProps {
-  name: string;
-  status: 'active' | 'inactive' | 'paused';
-  phone?: string;
-  description?: string;
+  agent: Agent;
+  onEdit?: (agent: Agent) => void;
 }
 
-export function AgentCard({ name, status, phone, description }: AgentCardProps) {
+export function AgentCard({ agent, onEdit }: AgentCardProps) {
+  const { name, status, phone, description } = agent;
+
   const statusColors = {
     active: 'bg-green-500',
     inactive: 'bg-gray-500',
@@ -59,13 +60,14 @@ export function AgentCard({ name, status, phone, description }: AgentCardProps) 
       )}
 
       {/* Action Button */}
-      <button
-        disabled
-        className="w-full py-2 px-4 rounded-lg bg-white/5 text-white/40 text-sm font-medium cursor-not-allowed border border-white/10"
-        title="Coming Soon"
+      <motion.button
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+        onClick={() => onEdit?.(agent)}
+        className="w-full py-2 px-4 rounded-lg bg-white/5 text-white/70 text-sm font-medium border border-white/10 hover:bg-white/10 hover:border-teal-500/30 transition-all"
       >
         Edit Configuration
-      </button>
+      </motion.button>
     </motion.div>
   );
 }
