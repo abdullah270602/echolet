@@ -7,6 +7,7 @@ import { IdentityForm } from './IdentityForm';
 import { BehaviorForm } from './BehaviorForm';
 import { KnowledgeForm } from './KnowledgeForm';
 import { useAgentForm } from '../../hooks/useAgentForm';
+import { useAgentConfig } from '../../hooks/useAgentConfig';
 import type { Agent } from '../../types/agent';
 import type { AgentFormData } from '../../schemas/agentSchema';
 
@@ -23,6 +24,8 @@ export function AgentFormModal({
   agent,
   onSave,
 }: AgentFormModalProps) {
+  const { config, voices, tones, isLoading: isConfigLoading } = useAgentConfig();
+
   const {
     form,
     files,
@@ -33,7 +36,7 @@ export function AgentFormModal({
     setIsSaving,
     resetForm,
     isEditing,
-  } = useAgentForm(agent);
+  } = useAgentForm(agent, config);
 
   const {
     control,
@@ -134,63 +137,72 @@ export function AgentFormModal({
               </div>
 
               {/* Content */}
-              <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
-                <div className="flex-1 overflow-y-auto px-6 py-6">
-                  <Tabs defaultValue="identity">
-                    <TabsList className="mb-6 w-full justify-center">
-                      <TabsTrigger value="identity">Identity</TabsTrigger>
-                      <TabsTrigger value="behavior">Behavior</TabsTrigger>
-                      <TabsTrigger value="knowledge">Knowledge</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="identity">
-                      <IdentityForm control={control} errors={errors} />
-                    </TabsContent>
-
-                    <TabsContent value="behavior">
-                      <BehaviorForm control={control} errors={errors} />
-                    </TabsContent>
-
-                    <TabsContent value="knowledge">
-                      <KnowledgeForm
-                        control={control}
-                        errors={errors}
-                        files={files}
-                        onFilesChange={setFiles}
-                        tokenCount={tokenCount}
-                        tokenLimit={tokenLimit}
-                      />
-                    </TabsContent>
-                  </Tabs>
+              {isConfigLoading ? (
+                <div className="flex-1 flex items-center justify-center py-12">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-6 h-6 text-teal-400 animate-spin" />
+                    <p className="text-white/50 text-sm">Loading configuration...</p>
+                  </div>
                 </div>
+              ) : (
+                <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+                  <div className="flex-1 overflow-y-auto px-6 py-6">
+                    <Tabs defaultValue="identity">
+                      <TabsList className="mb-6 w-full justify-center">
+                        <TabsTrigger value="identity">Identity</TabsTrigger>
+                        <TabsTrigger value="behavior">Behavior</TabsTrigger>
+                        <TabsTrigger value="knowledge">Knowledge</TabsTrigger>
+                      </TabsList>
 
-                {/* Footer */}
-                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/10">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={handleClose}
-                    disabled={isSaving}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="glow"
-                    disabled={isSaving}
-                    className="min-w-[140px]"
-                  >
-                    {isSaving ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Saving...
-                      </span>
-                    ) : (
-                      'Save Changes'
-                    )}
-                  </Button>
-                </div>
-              </form>
+                      <TabsContent value="identity">
+                        <IdentityForm control={control} errors={errors} voices={voices} />
+                      </TabsContent>
+
+                      <TabsContent value="behavior">
+                        <BehaviorForm control={control} errors={errors} tones={tones} />
+                      </TabsContent>
+
+                      <TabsContent value="knowledge">
+                        <KnowledgeForm
+                          control={control}
+                          errors={errors}
+                          files={files}
+                          onFilesChange={setFiles}
+                          tokenCount={tokenCount}
+                          tokenLimit={tokenLimit}
+                        />
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/10">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={handleClose}
+                      disabled={isSaving}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="glow"
+                      disabled={isSaving}
+                      className="min-w-[140px]"
+                    >
+                      {isSaving ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </span>
+                      ) : (
+                        'Save Changes'
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </div>
           </motion.div>
         </>

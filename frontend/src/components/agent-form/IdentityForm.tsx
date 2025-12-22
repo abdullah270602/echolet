@@ -1,15 +1,22 @@
 import { Controller, type Control, type FieldErrors } from 'react-hook-form';
 import { Input, Textarea, Select } from '../ui';
 import { VoicePreviewButton } from './VoicePreviewButton';
-import { VOICE_OPTIONS } from '../../types/agent';
 import type { AgentFormData } from '../../schemas/agentSchema';
+import type { VoiceOption } from '../../services/agentApi';
 
 interface IdentityFormProps {
   control: Control<AgentFormData>;
   errors: FieldErrors<AgentFormData>;
+  voices: VoiceOption[];
 }
 
-export function IdentityForm({ control, errors }: IdentityFormProps) {
+export function IdentityForm({ control, errors, voices }: IdentityFormProps) {
+  // Map API voices to Select options format
+  const voiceOptions = voices.map((v) => ({
+    value: v.id,
+    label: v.name,
+  }));
+
   return (
     <div className="space-y-6">
       {/* Agent Name */}
@@ -69,7 +76,7 @@ export function IdentityForm({ control, errors }: IdentityFormProps) {
               <div className="flex-1">
                 <Select
                   label="Voice"
-                  options={VOICE_OPTIONS}
+                  options={voiceOptions}
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Select a voice"

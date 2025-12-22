@@ -1,43 +1,43 @@
+import { useMemo } from 'react';
 import { Controller, type Control, type FieldErrors } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { Briefcase, Smile, AlertCircle, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Textarea, RadioTileGroup, Label } from '../ui';
 import type { AgentFormData } from '../../schemas/agentSchema';
+import type { ToneOption } from '../../services/agentApi';
 
 interface BehaviorFormProps {
   control: Control<AgentFormData>;
   errors: FieldErrors<AgentFormData>;
+  tones: ToneOption[];
 }
 
-const TONE_OPTIONS = [
-  {
-    value: 'professional',
-    label: 'Professional',
-    description: 'Formal and business-like',
-    icon: <Briefcase className="w-5 h-5" />,
-  },
-  {
-    value: 'friendly',
-    label: 'Friendly',
-    description: 'Warm and approachable',
-    icon: <Smile className="w-5 h-5" />,
-  },
-  {
-    value: 'urgent',
-    label: 'Urgent',
-    description: 'Direct and action-oriented',
-    icon: <AlertCircle className="w-5 h-5" />,
-  },
-];
+// Map tone IDs to icons
+const TONE_ICONS: Record<string, React.ReactNode> = {
+  professional: <Briefcase className="w-5 h-5" />,
+  friendly: <Smile className="w-5 h-5" />,
+  urgent: <AlertCircle className="w-5 h-5" />,
+};
 
-export function BehaviorForm({ control, errors }: BehaviorFormProps) {
+export function BehaviorForm({ control, errors, tones }: BehaviorFormProps) {
   const handleMagicEnhance = () => {
     toast('Magic Enhance coming soon!', {
       icon: '✨',
       duration: 2000,
     });
   };
+
+  // Map API tones to RadioTileGroup options format
+  const toneOptions = useMemo(() =>
+    tones.map((t) => ({
+      value: t.id,
+      label: t.name,
+      description: t.description,
+      icon: TONE_ICONS[t.id] || <Briefcase className="w-5 h-5" />,
+    })),
+    [tones]
+  );
 
   return (
     <div className="space-y-6">
@@ -49,7 +49,7 @@ export function BehaviorForm({ control, errors }: BehaviorFormProps) {
           <RadioTileGroup
             name="tone"
             label="Conversation Tone"
-            options={TONE_OPTIONS}
+            options={toneOptions}
             value={field.value}
             onChange={field.onChange}
             error={errors.tone?.message}

@@ -1,8 +1,9 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { agentSchema, AgentFormData, defaultFormValues } from '../schemas/agentSchema';
+import { agentSchema, AgentFormData, getDefaultFormValues } from '../schemas/agentSchema';
 import type { Agent } from '../types/agent';
+import type { AgentConfig } from '../services/agentApi';
 
 const TOKEN_LIMIT = 20000;
 
@@ -18,10 +19,12 @@ function mapAgentToFormData(agent: Agent): AgentFormData {
   };
 }
 
-export function useAgentForm(agent?: Agent) {
+export function useAgentForm(agent?: Agent, config?: AgentConfig | null) {
+  const defaultValues = getDefaultFormValues(config ?? null);
+
   const form = useForm<AgentFormData>({
     resolver: zodResolver(agentSchema),
-    defaultValues: agent ? mapAgentToFormData(agent) : defaultFormValues,
+    defaultValues: agent ? mapAgentToFormData(agent) : defaultValues,
     mode: 'onChange',
   });
 
@@ -50,9 +53,9 @@ export function useAgentForm(agent?: Agent) {
   }, []);
 
   const resetForm = useCallback(() => {
-    form.reset(agent ? mapAgentToFormData(agent) : defaultFormValues);
+    form.reset(agent ? mapAgentToFormData(agent) : defaultValues);
     setFiles([]);
-  }, [form, agent]);
+  }, [form, agent, defaultValues]);
 
   return {
     form,
