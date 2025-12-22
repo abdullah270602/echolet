@@ -70,15 +70,14 @@ export function HeroSection({ onDemoClick }: HeroSectionProps) {
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            <div className="flex flex-row gap-4 justify-center lg:justify-start flex-wrap">
               <Button
                 variant="glow"
                 size="lg"
                 onClick={onDemoClick}
                 className="group"
               >
-                <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                Hear an Example Call
+                <span className="inline-flex items-center"><Play className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" /> Hear a Demo Call</span>
               </Button>
               <Button
                 variant="secondary"

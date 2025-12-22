@@ -40,6 +40,7 @@ export function Button({
         ${variantClasses[variant]}
         ${sizeClasses[size]}
         font-medium cursor-pointer
+        flex items-center justify-center
         disabled:opacity-50 disabled:cursor-not-allowed
         ${className}
       `}
