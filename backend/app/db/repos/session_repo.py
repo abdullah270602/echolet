@@ -1,0 +1,120 @@
+from typing import Optional
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.models.call_session import CallSession
+from app.db.models.agent_config import AgentConfig
+
+
+async def get_by_id(
+    session: AsyncSession,
+    session_id: int,
+) -> Optional[CallSession]:
+    """
+    Get a call session by its ID.
+
+    Args:
+        session: Database session
+        session_id: The session's ID
+
+    Returns:
+        CallSession or None if not found
+    """
+    stmt = select(CallSession).where(CallSession.id == session_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_by_room_name(
+    session: AsyncSession,
+    room_name: str,
+) -> Optional[CallSession]:
+    """
+    Get a call session by its room name (UUID).
+
+    Args:
+        session: Database session
+        room_name: The UUID room name
+
+    Returns:
+        CallSession or None if not found
+    """
+    stmt = select(CallSession).where(CallSession.room_name == room_name)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_by_room_name_with_agent(
+    session: AsyncSession,
+    room_name: str,
+) -> Optional[tuple[CallSession, AgentConfig]]:
+    """
+    Get a call session with its associated agent config.
+
+    Args:
+        session: Database session
+        room_name: The UUID room name
+
+    Returns:
+        Tuple of (CallSession, AgentConfig) or None if not found
+    """
+    stmt = (
+        select(CallSession, AgentConfig)
+        .join(AgentConfig, CallSession.agent_id == AgentConfig.id)
+        .where(CallSession.room_name == room_name)
+    )
+    result = await session.execute(stmt)
+    row = result.first()
+    if row:
+        return (row[0], row[1])
+    return None
+
+
+async def create(
+    session: AsyncSession,
+    user_id: str,
+    agent_id: int,
+) -> CallSession:
+    """
+    Create a new call session with auto-generated room_name UUID.
+
+    Args:
+        session: Database session
+        user_id: The user's identifier
+        agent_id: The agent's ID
+
+    Returns:
+        The created CallSession
+    """
+    call_session = CallSession(
+        user_id=user_id,
+        agent_id=agent_id,
+        status="pending",
+    )
+    session.add(call_session)
+    await session.commit()
+    await session.refresh(call_session)
+    return call_session
+
+
+async def update_status(
+    session: AsyncSession,
+    call_session: CallSession,
+    status: str,
+) -> CallSession:
+    """
+    Update the status of a call session.
+
+    Args:
+        session: Database session
+        call_session: The session to update
+        status: New status value
+
+    Returns:
+        The updated CallSession
+    """
+    call_session.status = status
+    await session.commit()
+    await session.refresh(call_session)
+    return call_session
