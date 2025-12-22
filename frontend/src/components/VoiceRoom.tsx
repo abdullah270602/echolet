@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@clerk/clerk-react";
+import { motion } from "framer-motion";
+import { Mic, Loader2 } from "lucide-react";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -106,48 +108,94 @@ export function VoiceRoom() {
 
   if (!connectionDetails) {
     return (
-      <div className="voice-room">
-        <div className="voice-room__hero">
-          <div className="voice-room__icon">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-              <line x1="12" x2="12" y1="19" y2="22" />
-            </svg>
-          </div>
-          <h2>Voice Assistant</h2>
-          <p className="voice-room__description">
-            Speak naturally and the assistant will respond.
-          </p>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-lg glass rounded-2xl border border-white/10 p-8 relative overflow-hidden"
+      >
+        {/* Background glow */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl" />
         </div>
-        {error && (
-          <p className={`voice-room__error ${isLimitReached ? "voice-room__error--limit" : ""}`}>
-            {error}
+
+        <div className="relative z-10 flex flex-col items-center text-center">
+          {/* Icon */}
+          <motion.div
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-500/20 to-purple-500/20 flex items-center justify-center mb-6 border border-white/10"
+          >
+            <Mic className="w-10 h-10 text-teal-400" />
+          </motion.div>
+
+          {/* Title */}
+          <h2 className="text-2xl font-semibold text-white mb-2">
+            Voice Assistant Ready
+          </h2>
+          <p className="text-white/50 mb-8 max-w-sm">
+            Speak naturally to test your configuration. The assistant will respond in real-time.
           </p>
-        )}
-        <button
-          className="voice-room__connect-btn"
-          onClick={connect}
-          disabled={isConnecting || isLimitReached}
-        >
-          {isConnecting ? "Connecting..." : isLimitReached ? "Limit Reached" : "Start Conversation"}
-        </button>
-      </div>
+
+          {/* Error */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`mb-6 px-4 py-3 rounded-lg text-sm w-full ${
+                isLimitReached
+                  ? "bg-amber-500/10 border border-amber-500/20 text-amber-400"
+                  : "bg-red-500/10 border border-red-500/20 text-red-400"
+              }`}
+            >
+              {error}
+            </motion.div>
+          )}
+
+          {/* Connect Button */}
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            animate={
+              !isConnecting && !isLimitReached
+                ? { boxShadow: ["0 0 20px rgba(94, 234, 212, 0.3)", "0 0 30px rgba(94, 234, 212, 0.5)", "0 0 20px rgba(94, 234, 212, 0.3)"] }
+                : {}
+            }
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            onClick={connect}
+            disabled={isConnecting || isLimitReached}
+            className={`
+              w-full py-4 px-8 rounded-xl font-semibold text-white transition-all
+              ${isLimitReached
+                ? "bg-white/10 cursor-not-allowed text-white/40"
+                : "bg-gradient-to-r from-teal-500 to-purple-500"
+              }
+              disabled:opacity-50 disabled:cursor-not-allowed
+            `}
+          >
+            <span className="flex items-center justify-center gap-2">
+              {isConnecting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Connecting...
+                </>
+              ) : isLimitReached ? (
+                "Limit Reached"
+              ) : (
+                "Start Conversation"
+              )}
+            </span>
+          </motion.button>
+        </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="voice-room">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="w-full max-w-2xl glass rounded-2xl border border-white/10 overflow-hidden"
+    >
       <LiveKitRoom
         token={connectionDetails.token}
         serverUrl={connectionDetails.livekit_url}
@@ -159,11 +207,15 @@ export function VoiceRoom() {
         <RoomContent remainingSeconds={connectionDetails.remaining_seconds} />
         <RoomAudioRenderer />
       </LiveKitRoom>
-    </div>
+    </motion.div>
   );
 }
 
-function RoomContent({ remainingSeconds }: { remainingSeconds: number }) {
+function RoomContent({
+  remainingSeconds,
+}: {
+  remainingSeconds: number;
+}) {
   const { state, audioTrack, agentTranscriptions } = useVoiceAssistant();
   const transcriptions = useTranscriptions();
   const [timeLeft, setTimeLeft] = useState(remainingSeconds);
@@ -182,17 +234,38 @@ function RoomContent({ remainingSeconds }: { remainingSeconds: number }) {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const isWarning = timeLeft <= 30;
+
   return (
-    <div className="room-content">
-      <div className="time-remaining">
-        <span className={`time-remaining__value ${timeLeft <= 30 ? "time-remaining__value--warning" : ""}`}>
+    <div className="p-6 flex flex-col gap-4">
+      {/* Timer */}
+      <div className="flex items-center justify-center gap-3 py-2">
+        <motion.span
+          animate={isWarning ? { scale: [1, 1.05, 1] } : {}}
+          transition={{ duration: 0.5, repeat: isWarning ? Infinity : 0 }}
+          className={`text-3xl font-bold tabular-nums ${
+            isWarning ? "text-red-400" : "text-white"
+          }`}
+        >
           {formatTime(timeLeft)}
+        </motion.span>
+        <span className="text-sm text-white/40 uppercase tracking-wide">
+          Remaining
         </span>
-        <span className="time-remaining__label">remaining</span>
       </div>
 
-      <div className="visualizer-section">
-        <div className={`visualizer-container visualizer--${state}`}>
+      {/* Visualizer */}
+      <div className="flex flex-col items-center gap-3 py-4">
+        <div
+          className={`
+            w-48 h-24 rounded-xl flex items-center justify-center
+            bg-white/5 border transition-colors duration-300
+            ${state === "listening" ? "border-electric-blue/30" : ""}
+            ${state === "thinking" ? "border-amber-500/30" : ""}
+            ${state === "speaking" ? "border-green-500/30" : ""}
+            ${state === "idle" || state === "connecting" ? "border-white/10" : ""}
+          `}
+        >
           <BarVisualizer
             state={state}
             trackRef={audioTrack}
@@ -200,18 +273,36 @@ function RoomContent({ remainingSeconds }: { remainingSeconds: number }) {
             options={{ minHeight: 8 }}
           />
         </div>
-        <div className={`status-badge status-badge--${state}`}>
-          <span className="status-badge__dot" />
-          <span className="status-badge__text">{getStateLabel(state)}</span>
+
+        {/* Status Badge */}
+        <div
+          className={`
+            flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium
+            bg-white/5 border border-white/10
+          `}
+        >
+          <span
+            className={`
+              w-2 h-2 rounded-full
+              ${state === "listening" ? "bg-electric-blue" : ""}
+              ${state === "thinking" ? "bg-amber-500 animate-pulse" : ""}
+              ${state === "speaking" ? "bg-green-500" : ""}
+              ${state === "idle" ? "bg-white/30" : ""}
+              ${state === "connecting" ? "bg-white/30 animate-pulse" : ""}
+            `}
+          />
+          <span className="text-white/70">{getStateLabel(state)}</span>
         </div>
       </div>
 
+      {/* Transcript */}
       <TranscriptView
         transcriptions={transcriptions}
         agentTranscriptions={agentTranscriptions}
       />
 
-      <div className="control-section">
+      {/* Controls */}
+      <div className="flex items-center justify-center pt-2 border-t border-white/10">
         <VoiceAssistantControlBar />
       </div>
     </div>
@@ -297,28 +388,45 @@ function TranscriptView({
   }, [messages]);
 
   return (
-    <div className="transcript" ref={scrollRef}>
+    <div
+      ref={scrollRef}
+      className="h-48 overflow-y-auto rounded-xl bg-black/20 p-4 scrollbar-thin"
+    >
       {messages.length === 0 ? (
-        <div className="transcript__empty">
-          <p>Start speaking to begin the conversation</p>
+        <div className="h-full flex items-center justify-center">
+          <p className="text-white/30 text-sm">Start speaking to begin the conversation</p>
         </div>
       ) : (
-        <div className="transcript__messages">
+        <div className="space-y-3">
           {messages.map((message) => (
-            <div
+            <motion.div
               key={message.id}
-              className={`message ${message.isAgent ? "message--agent" : "message--user"}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`flex items-start gap-3 ${
+                message.isAgent ? "" : "flex-row-reverse"
+              }`}
             >
-              <div className="message__avatar">
+              <div
+                className={`
+                  w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold
+                  ${message.isAgent ? "bg-electric-blue text-white" : "bg-green-500 text-white"}
+                `}
+              >
                 {message.isAgent ? "A" : "U"}
               </div>
-              <div className="message__content">
-                <span className="message__sender">
+              <div
+                className={`
+                  flex-1 max-w-[80%] rounded-xl px-3 py-2
+                  ${message.isAgent ? "bg-electric-blue/10" : "bg-green-500/10"}
+                `}
+              >
+                <span className="text-xs text-white/50 block mb-1">
                   {message.isAgent ? "Assistant" : "You"}
                 </span>
-                <p className="message__text">{message.text}</p>
+                <p className="text-sm text-white/90">{message.text}</p>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
