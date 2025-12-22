@@ -5,6 +5,7 @@ interface ButtonProps {
   children: ReactNode;
   variant?: 'glow' | 'secondary' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
+  type?: 'button' | 'submit' | 'reset';
   onClick?: () => void;
   className?: string;
   disabled?: boolean;
@@ -14,6 +15,7 @@ export function Button({
   children,
   variant = 'glow',
   size = 'md',
+  type = 'button',
   onClick,
   className = '',
   disabled = false,
@@ -32,6 +34,7 @@ export function Button({
 
   return (
     <motion.button
+      type={type}
       whileHover={{ scale: disabled ? 1 : 1.02 }}
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       onClick={onClick}
