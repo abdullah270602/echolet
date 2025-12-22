@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.livekit import TokenRequest, TokenResponse
 from app.schemas.usage import UsageRecordRequest, UsageStatus
@@ -6,14 +7,16 @@ from app.services.livekit_service import create_access_token
 from app.services import usage_service
 from app.config import LIVEKIT_API_KEY, LIVEKIT_API_SECRET
 from app.auth import get_current_user
+from app.db.database import get_async_session
 
 router = APIRouter()
 
 
 @router.post("/token", response_model=TokenResponse)
-def get_token(
+async def get_token(
     request: TokenRequest,
     current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
 ) -> TokenResponse:
     """
     Generate a LiveKit access token for voice-only room access.
@@ -35,7 +38,7 @@ def get_token(
     identity = current_user["user_id"]
 
     # Check usage limit
-    usage = usage_service.check_user_limit(identity)
+    usage = await usage_service.check_user_limit(session, identity)
     if not usage["allowed"]:
         raise HTTPException(
             status_code=403,
@@ -53,14 +56,15 @@ def get_token(
 
 
 @router.post("/usage", response_model=UsageStatus)
-def record_usage(
+async def record_usage(
     request: UsageRecordRequest,
     current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
 ) -> UsageStatus:
     """
     Record talk time usage for the current user.
     Called by the agent when a session ends.
     """
     identity = current_user["user_id"]
-    result = usage_service.record_usage(identity, request.talk_seconds)
+    result = await usage_service.record_usage(session, identity, request.talk_seconds)
     return UsageStatus(**result)
