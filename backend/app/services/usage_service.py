@@ -1,10 +1,16 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.config import DAILY_TALK_LIMIT_SECONDS
 from app.db.repos import usage_repo
 
 
-def check_user_limit(user_id: str) -> dict:
+async def check_user_limit(session: AsyncSession, user_id: str) -> dict:
     """
     Check if user has remaining talk time for today.
+
+    Args:
+        session: Database session
+        user_id: The user's identifier
 
     Returns:
         dict with:
@@ -13,7 +19,7 @@ def check_user_limit(user_id: str) -> dict:
         - used_seconds: int - seconds already used today
         - limit_seconds: int - total daily limit
     """
-    used_seconds = usage_repo.get_daily_usage(user_id)
+    used_seconds = await usage_repo.get_daily_usage(session, user_id)
     remaining_seconds = max(0, DAILY_TALK_LIMIT_SECONDS - used_seconds)
 
     return {
@@ -24,14 +30,19 @@ def check_user_limit(user_id: str) -> dict:
     }
 
 
-def record_usage(user_id: str, seconds: int) -> dict:
+async def record_usage(session: AsyncSession, user_id: str, seconds: int) -> dict:
     """
     Record talk time usage for a user.
+
+    Args:
+        session: Database session
+        user_id: The user's identifier
+        seconds: Number of seconds to record
 
     Returns:
         dict with updated usage status
     """
-    new_total = usage_repo.increment_usage(user_id, seconds)
+    new_total = await usage_repo.increment_usage(session, user_id, seconds)
     remaining_seconds = max(0, DAILY_TALK_LIMIT_SECONDS - new_total)
 
     return {
