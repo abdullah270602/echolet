@@ -3,9 +3,32 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Sparkles, CheckCircle, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+// Validation
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const NAME_REGEX = /^[a-zA-Z\s\-'.]+$/;
+
+function validateName(name: string): string | null {
+  const trimmed = name.trim();
+  if (!trimmed) return 'Name is required';
+  if (trimmed.length < 2) return 'Name must be at least 2 characters';
+  if (trimmed.length > 100) return 'Name is too long';
+  if (!NAME_REGEX.test(trimmed)) return 'Please enter a valid name';
+  return null;
+}
+
+function validateEmail(email: string): string | null {
+  const trimmed = email.trim();
+  if (!trimmed) return 'Email is required';
+  if (trimmed.length > 254) return 'Email is too long';
+  if (!EMAIL_REGEX.test(trimmed)) return 'Please enter a valid email';
+  return null;
+}
+
 export function WaitlistSection() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [count, setCount] = useState<number | null>(null);
@@ -24,8 +47,15 @@ export function WaitlistSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim() || !email.trim()) {
-      toast.error('Please fill in all fields');
+    // Validate
+    const nameErr = validateName(name);
+    const emailErr = validateEmail(email);
+
+    setNameError(nameErr);
+    setEmailError(emailErr);
+
+    if (nameErr || emailErr) {
+      toast.error(nameErr || emailErr || 'Please fix the errors');
       return;
     }
 
@@ -160,24 +190,52 @@ export function WaitlistSection() {
             >
               <div className="space-y-4">
                 {/* Name Input */}
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your Name"
-                  disabled={isSubmitting}
-                  className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 transition-all disabled:opacity-50"
-                />
+                <div>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (nameError) setNameError(null);
+                    }}
+                    onBlur={() => setNameError(validateName(name))}
+                    placeholder="Your Name"
+                    disabled={isSubmitting}
+                    maxLength={100}
+                    className={`w-full px-4 py-3.5 rounded-xl bg-white/5 border text-white placeholder:text-white/40 focus:outline-none focus:ring-2 transition-all disabled:opacity-50 ${
+                      nameError
+                        ? 'border-red-500/50 focus:ring-red-500/30 focus:border-red-500/50'
+                        : 'border-white/10 focus:ring-teal-500/30 focus:border-teal-500/50'
+                    }`}
+                  />
+                  {nameError && (
+                    <p className="mt-1 text-xs text-red-400">{nameError}</p>
+                  )}
+                </div>
 
                 {/* Email Input */}
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="work@company.com"
-                  disabled={isSubmitting}
-                  className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 transition-all disabled:opacity-50"
-                />
+                <div>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError) setEmailError(null);
+                    }}
+                    onBlur={() => setEmailError(validateEmail(email))}
+                    placeholder="work@company.com"
+                    disabled={isSubmitting}
+                    maxLength={254}
+                    className={`w-full px-4 py-3.5 rounded-xl bg-white/5 border text-white placeholder:text-white/40 focus:outline-none focus:ring-2 transition-all disabled:opacity-50 ${
+                      emailError
+                        ? 'border-red-500/50 focus:ring-red-500/30 focus:border-red-500/50'
+                        : 'border-white/10 focus:ring-teal-500/30 focus:border-teal-500/50'
+                    }`}
+                  />
+                  {emailError && (
+                    <p className="mt-1 text-xs text-red-400">{emailError}</p>
+                  )}
+                </div>
 
                 {/* Submit Button */}
                 <motion.button
