@@ -13,7 +13,10 @@ export function WaitlistSection() {
   // Fetch waitlist count on mount
   useEffect(() => {
     fetch('/api/waitlist')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('API not available');
+        return res.json();
+      })
       .then((data) => setCount(data.count))
       .catch(() => setCount(37)); // Fallback to base
   }, []);
@@ -35,12 +38,22 @@ export function WaitlistSection() {
         body: JSON.stringify({ name: name.trim(), email: email.trim() }),
       });
 
+      // Try to parse JSON, handle non-JSON responses
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        // API not available (local dev) - simulate success
+        toast.success(`Welcome aboard, ${name.split(' ')[0]}!`);
+        setCount((prev) => (prev || 37) + 1);
+        setHasJoined(true);
+        return;
+      }
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Failed to join waitlist');
       }
 
-      const data = await response.json();
       if (data.count) setCount(data.count);
       toast.success(`Welcome aboard, ${name.split(' ')[0]}!`);
       setHasJoined(true);

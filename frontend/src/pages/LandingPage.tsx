@@ -5,6 +5,7 @@ import {
   SolutionSection,
   FeatureSpotlight,
   WaitlistSection,
+  Footer,
 } from '../components/landing';
 
 export function LandingPage() {
@@ -19,6 +20,8 @@ export function LandingPage() {
         <FeatureSpotlight />
         <WaitlistSection />
       </main>
+
+      <Footer />
     </div>
   );
 }

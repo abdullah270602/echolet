@@ -178,21 +178,6 @@ export function ComparisonSection() {
             </div>
           </motion.div>
         </div>
-
-        {/* Bottom CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.9, duration: 0.6 }}
-          className="mt-16 text-center"
-        >
-          <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl glass border border-teal-500/20">
-            <div className="w-3 h-3 bg-teal-400 rounded-full animate-pulse" />
-            <span className="text-white/80">
-              Join <span className="font-semibold text-teal-400">500+</span> businesses already on the waitlist
-            </span>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

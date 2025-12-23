@@ -5,3 +5,4 @@ export { ComparisonSection } from './ComparisonSection';
 export { SolutionSection } from './SolutionSection';
 export { FeatureSpotlight } from './FeatureSpotlight';
 export { WaitlistSection } from './WaitlistSection';
+export { Footer } from './Footer';
