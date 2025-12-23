@@ -1,12 +1,11 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { neon } from "@neondatabase/serverless";
 
 // Artificial base count to show social proof
 const BASE_COUNT = 37;
 
 export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
+  req: { method?: string; body?: { name?: string; email?: string } },
+  res: { status: (code: number) => { json: (data: unknown) => void } }
 ) {
   const sql = neon(process.env.DATABASE_URL!);
 
@@ -25,7 +24,7 @@ export default async function handler(
   // POST - Add to waitlist
   if (req.method === "POST") {
     try {
-      const { name, email } = req.body;
+      const { name, email } = req.body || {};
 
       // Validate input
       if (!name || typeof name !== "string" || name.trim().length === 0) {
