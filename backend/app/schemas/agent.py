@@ -31,7 +31,7 @@ class AgentConfigLimits(BaseModel):
 class AgentCreateRequest(BaseModel):
     name: str
     business_name: str
-    voice_id: str = "Ashely"
+    voice_id: str = "Ashley"
     greeting_message: str = "Hello! How can I help you today?"
     tone: Literal["professional", "friendly", "urgent"] = "professional"
     custom_instructions: Optional[str] = None
@@ -75,8 +75,8 @@ class AgentResponse(BaseModel):
 # List of available voices (static data)
 AVAILABLE_VOICES: list[VoiceOption] = [
     VoiceOption(
-        id="Ashely",
-        name="Ashely",
+        id="Ashley",
+        name="Ashley",
         gender="Female",
         description="American accent, professional tone",
     ),
@@ -116,7 +116,7 @@ AVAILABLE_TONES: list[ToneOption] = [
 # Default configuration
 DEFAULT_CONFIG = AgentConfigLimits(
     max_agents_per_user=3,
-    default_voice_id="Ashely",
+    default_voice_id="Ashley",
     default_tone="professional",
     default_greeting_message="Hello! How can I help you today?",
 )

@@ -18,7 +18,7 @@ class AgentConfig(Base):
     # Identity
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     business_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    voice_id: Mapped[str] = mapped_column(String(50), nullable=False, default="Ashely")
+    voice_id: Mapped[str] = mapped_column(String(50), nullable=False, default="Ashley")
     greeting_message: Mapped[str] = mapped_column(
         Text,
         nullable=False,
