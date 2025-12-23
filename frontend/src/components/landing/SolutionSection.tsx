@@ -64,8 +64,8 @@ export function SolutionSection() {
             >
               {/* Step number & icon */}
               <div className="relative inline-flex flex-col items-center mb-6">
-                <div className="w-20 h-20 rounded-2xl glass border-2 border-teal-500/30 flex items-center justify-center mb-3 relative">
-                  <step.icon className="w-10 h-10 text-teal-400" />
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl glass border-2 border-teal-500/30 flex items-center justify-center mb-3 relative">
+                  <step.icon className="w-8 h-8 sm:w-10 sm:h-10 text-teal-400" />
                   {/* Glow effect */}
                   <motion.div
                     initial={{ opacity: 0 }}

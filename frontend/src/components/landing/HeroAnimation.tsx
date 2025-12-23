@@ -34,7 +34,7 @@ export function HeroAnimation() {
   }, []);
 
   return (
-    <div className="relative w-full aspect-square max-w-md mx-auto flex items-center justify-center">
+    <div className="relative w-full aspect-square max-w-[280px] sm:max-w-sm md:max-w-md mx-auto flex items-center justify-center">
       {/* Background glow */}
       <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 via-transparent to-purple-500/10 rounded-full blur-3xl" />
 
@@ -69,8 +69,8 @@ export function HeroAnimation() {
                 transition={{ duration: 0.5, repeat: Infinity }}
                 className="absolute inset-0 bg-amber-400/30 rounded-full blur-2xl scale-150"
               />
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-amber-400 to-red-500 flex items-center justify-center shadow-lg">
-                <Phone className="w-12 h-12 text-white" />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-amber-400 to-red-500 flex items-center justify-center shadow-lg">
+                <Phone className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white" />
               </div>
             </div>
           </motion.div>

@@ -60,9 +60,9 @@ export function FeatureSpotlight() {
                 <span className="text-sm font-semibold text-red-400">The Old Way</span>
               </div>
 
-              <div className="p-6 lg:p-8">
+              <div className="p-4 sm:p-6 lg:p-8">
                 {/* Voicemail UI mock */}
-                <div className="bg-midnight-900/50 rounded-xl p-4 mb-4">
+                <div className="bg-midnight-900/50 rounded-xl p-3 sm:p-4 mb-4">
                   <div className="flex items-center gap-3 mb-3">
                     <VolumeX className="w-5 h-5 text-white/30" />
                     <div>
@@ -72,11 +72,11 @@ export function FeatureSpotlight() {
                   </div>
 
                   {/* Blurry waveform */}
-                  <div className="h-16 flex items-center justify-center gap-1 blur-[1px] opacity-60">
-                    {Array.from({ length: 40 }).map((_, i) => (
+                  <div className="h-16 flex items-center justify-center gap-0.5 sm:gap-1 blur-[1px] opacity-60 overflow-hidden">
+                    {Array.from({ length: 30 }).map((_, i) => (
                       <div
                         key={i}
-                        className="w-1 bg-gray-500 rounded-full"
+                        className="w-0.5 sm:w-1 bg-gray-500 rounded-full flex-shrink-0"
                         style={{ height: `${Math.random() * 50 + 10}px` }}
                       />
                     ))}
@@ -84,24 +84,24 @@ export function FeatureSpotlight() {
                 </div>
 
                 {/* Garbled transcript */}
-                <div className="space-y-3 text-sm text-white/40 italic">
-                  <p>"Hi, uh... this is... *static* ...call me back about the..."</p>
-                  <p>"...my number is five-five... *beep* ...before Thursday..."</p>
-                  <p>"...really urgent so please... *muffled* ...thanks, bye."</p>
+                <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-white/40 italic">
+                  <p>"Hi, uh... this is... *static* ...call me back..."</p>
+                  <p>"...my number is five-five... *beep* ...Thursday..."</p>
+                  <p>"...really urgent so... *muffled* ...thanks, bye."</p>
                 </div>
 
                 {/* Pain points */}
-                <div className="mt-6 pt-4 border-t border-white/10 space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-red-400/70">
-                    <XCircle className="w-4 h-4" />
+                <div className="mt-4 sm:mt-6 pt-4 border-t border-white/10 space-y-2">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-red-400/70">
+                    <XCircle className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     <span>No caller name or context</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-red-400/70">
-                    <XCircle className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-red-400/70">
+                    <XCircle className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     <span>Can't tell if it's urgent</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-red-400/70">
-                    <XCircle className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-red-400/70">
+                    <XCircle className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     <span>Have to listen to entire message</span>
                   </div>
                 </div>
@@ -131,7 +131,7 @@ export function FeatureSpotlight() {
                 <span className="text-sm font-semibold text-teal-400">The Echolet Way</span>
               </div>
 
-              <div className="p-6 lg:p-8">
+              <div className="p-4 sm:p-6 lg:p-8">
                 {/* Ticket Card */}
                 <TicketCard
                   caller="Sarah Johnson"
@@ -144,17 +144,17 @@ export function FeatureSpotlight() {
                 />
 
                 {/* Benefits */}
-                <div className="mt-6 pt-4 border-t border-white/10 space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-teal-400/80">
-                    <CheckCircle2 className="w-4 h-4" />
+                <div className="mt-4 sm:mt-6 pt-4 border-t border-white/10 space-y-2">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-teal-400/80">
+                    <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     <span>Instant caller identification</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-teal-400/80">
-                    <CheckCircle2 className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-teal-400/80">
+                    <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     <span>AI-analyzed priority level</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-teal-400/80">
-                    <CheckCircle2 className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-teal-400/80">
+                    <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     <span>Actionable summary in seconds</span>
                   </div>
                 </div>
