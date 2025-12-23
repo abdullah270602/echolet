@@ -46,7 +46,9 @@ export default async function handler(
       const result = await sql`SELECT COUNT(*) as count FROM waitlist`;
       const dbCount = parseInt(result[0].count as string, 10) || 0;
 
-      return res.status(200).json({ success: true, count: BASE_COUNT + dbCount });
+      return res
+        .status(200)
+        .json({ success: true, count: BASE_COUNT + dbCount });
     } catch (error) {
       console.error("Waitlist error:", error);
       return res.status(500).json({ error: "Failed to join waitlist" });
