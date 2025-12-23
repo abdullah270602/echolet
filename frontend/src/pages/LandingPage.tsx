@@ -1,37 +1,24 @@
-import { useState } from 'react';
 import {
   Navbar,
   HeroSection,
-  ProblemSection,
+  ComparisonSection,
   SolutionSection,
   FeatureSpotlight,
-  CTAFooter,
+  WaitlistSection,
 } from '../components/landing';
-import { AudioModal } from '../components/ui';
 
 export function LandingPage() {
-  const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
-
-  const handleDemoClick = () => {
-    setIsAudioModalOpen(true);
-  };
-
   return (
     <div className="min-h-screen bg-midnight-900">
       <Navbar />
 
       <main>
-        <HeroSection onDemoClick={handleDemoClick} />
-        <ProblemSection />
+        <HeroSection />
+        <ComparisonSection />
         <SolutionSection />
         <FeatureSpotlight />
-        <CTAFooter />
+        <WaitlistSection />
       </main>
-
-      <AudioModal
-        isOpen={isAudioModalOpen}
-        onClose={() => setIsAudioModalOpen(false)}
-      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, useScroll } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { AudioWaveform, Menu, X } from 'lucide-react';
 import { Button } from '../ui';
 
@@ -8,7 +8,6 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { scrollY } = useScroll();
-  const navigate = useNavigate();
 
   useEffect(() => {
     return scrollY.on('change', (y) => setIsScrolled(y > 50));
@@ -22,14 +21,16 @@ export function Navbar() {
     }
   };
 
-  const handleSignInClick = () => {
-    navigate('/sign-in');
+  const scrollToWaitlist = () => {
+    const element = document.getElementById('waitlist');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const navLinks = [
     { label: 'How it Works', id: 'solution' },
-    { label: 'The Ticket Engine', id: 'feature-spotlight' },
-    { label: 'Pricing', id: 'pricing' },
+    { label: 'Features', id: 'feature-spotlight' },
   ];
 
   return (
@@ -70,7 +71,7 @@ export function Navbar() {
               <button
                 key={link.id}
                 onClick={() => scrollToSection(link.id)}
-                className="text-white/70 hover:text-white transition-colors relative group"
+                className="text-white/70 hover:text-white transition-colors relative group cursor-pointer"
               >
                 {link.label}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-teal-400 to-purple-400 group-hover:w-full transition-all duration-300" />
@@ -80,8 +81,8 @@ export function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden md:block">
-            <Button variant="glow" size="sm" onClick={handleSignInClick}>
-              Try for Free
+            <Button variant="glow" size="sm" onClick={scrollToWaitlist}>
+              Join Waitlist
             </Button>
           </div>
 
@@ -114,7 +115,7 @@ export function Navbar() {
             <button
               key={link.id}
               onClick={() => scrollToSection(link.id)}
-              className="block w-full text-left text-white/70 hover:text-white py-2 transition-colors"
+              className="block w-full text-left text-white/70 hover:text-white py-2 transition-colors cursor-pointer"
             >
               {link.label}
             </button>
@@ -123,12 +124,12 @@ export function Navbar() {
             variant="glow"
             size="sm"
             onClick={() => {
-              handleSignInClick();
+              scrollToWaitlist();
               setIsMobileMenuOpen(false);
             }}
             className="w-full mt-4"
           >
-            Try for Free
+            Join Waitlist
           </Button>
         </div>
       </motion.div>

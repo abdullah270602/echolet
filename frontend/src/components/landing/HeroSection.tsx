@@ -1,15 +1,11 @@
 import { motion } from 'framer-motion';
-import { Play, ArrowRight } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { HeroAnimation } from './HeroAnimation';
 import { Button } from '../ui';
 
-interface HeroSectionProps {
-  onDemoClick: () => void;
-}
-
-export function HeroSection({ onDemoClick }: HeroSectionProps) {
-  const scrollToHowItWorks = () => {
-    const element = document.getElementById('solution');
+export function HeroSection() {
+  const scrollToWaitlist = () => {
+    const element = document.getElementById('waitlist');
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
@@ -70,47 +66,32 @@ export function HeroSection({ onDemoClick }: HeroSectionProps) {
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-row gap-4 justify-center lg:justify-start flex-wrap">
+            <div className="flex flex-col gap-4 justify-center lg:justify-start">
               <Button
                 variant="glow"
                 size="lg"
-                onClick={onDemoClick}
+                onClick={scrollToWaitlist}
                 className="group"
               >
-                <span className="inline-flex items-center"><Play className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" /> Hear a Demo Call</span>
+                <span className="inline-flex items-center">
+                  <Sparkles className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                  Join the Waitlist
+                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                </span>
               </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                onClick={scrollToHowItWorks}
-                className="group"
-              >
-                How it Works
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </div>
 
-            {/* Social proof */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-              className="mt-10 flex items-center gap-4 justify-center lg:justify-start"
-            >
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-midnight-600 to-midnight-700 border-2 border-midnight-900 flex items-center justify-center text-xs font-medium text-white/70"
-                  >
-                    {String.fromCharCode(64 + i)}
-                  </div>
-                ))}
-              </div>
-              <div className="text-sm text-white/60">
-                <span className="text-white font-semibold">500+</span> businesses trust Echolet
-              </div>
-            </motion.div>
+              {/* Early access banner */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 w-fit mx-auto lg:mx-0"
+              >
+                <span className="text-sm text-purple-300">
+                  First <span className="font-semibold text-purple-200">500</span> get early access + exclusive launch discount
+                </span>
+              </motion.div>
+            </div>
           </motion.div>
 
           {/* Right: Animation */}

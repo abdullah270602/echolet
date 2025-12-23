@@ -1,5 +1,4 @@
-import { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { FileText, Settings, Zap, CheckCircle2 } from 'lucide-react';
 import { useInView } from '../../hooks';
 
@@ -25,15 +24,7 @@ const steps = [
 ];
 
 export function SolutionSection() {
-  const containerRef = useRef<HTMLDivElement>(null);
   const [sectionRef, isInView] = useInView({ threshold: 0.1 });
-
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start end', 'end start'],
-  });
-
-  const lineWidth = useTransform(scrollYProgress, [0.2, 0.6], ['0%', '100%']);
 
   return (
     <section
@@ -41,7 +32,7 @@ export function SolutionSection() {
       id="solution"
       className="py-20 md:py-32 relative overflow-hidden"
     >
-      <div ref={containerRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -61,74 +52,55 @@ export function SolutionSection() {
           </p>
         </motion.div>
 
-        {/* Timeline */}
-        <div className="relative">
-          {/* Connecting line - Desktop */}
-          <div className="hidden lg:block absolute top-24 left-[16.5%] right-[16.5%] h-1">
-            <div className="absolute inset-0 bg-white/10 rounded-full" />
+        {/* Steps */}
+        <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
+          {steps.map((step, index) => (
             <motion.div
-              style={{ width: lineWidth }}
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-teal-400 to-purple-500 rounded-full shadow-glow-sm"
-            />
-          </div>
-
-          {/* Steps */}
-          <div className="grid lg:grid-cols-3 gap-8 lg:gap-12 relative z-10">
-            {steps.map((step, index) => (
-              <motion.div
-                key={step.title}
-                initial={{ opacity: 0, y: 30 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 0.3 + index * 0.2, duration: 0.6 }}
-                className="relative"
-              >
-                {/* Mobile connector line */}
-                {index < steps.length - 1 && (
-                  <div className="lg:hidden absolute left-10 top-24 bottom-0 w-0.5 bg-gradient-to-b from-teal-500/50 to-purple-500/50" />
-                )}
-
-                <div className="text-center lg:text-center">
-                  {/* Step number & icon */}
-                  <div className="relative inline-flex flex-col items-center mb-6">
-                    <div className="w-20 h-20 rounded-2xl glass border-2 border-teal-500/30 flex items-center justify-center mb-3 relative">
-                      <step.icon className="w-10 h-10 text-teal-400" />
-                      {/* Glow effect */}
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={isInView ? { opacity: [0, 0.5, 0] } : {}}
-                        transition={{ delay: 0.5 + index * 0.3, duration: 2, repeat: Infinity }}
-                        className="absolute inset-0 bg-teal-400/20 rounded-2xl blur-xl"
-                      />
-                    </div>
-                    <div className="text-sm font-semibold text-teal-400">
-                      Step {index + 1}
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <h3 className="text-xl lg:text-2xl font-semibold mb-3 text-white">
-                    {step.title}
-                  </h3>
-                  <p className="text-white/60 mb-6 max-w-sm mx-auto">
-                    {step.description}
-                  </p>
-
-                  {/* Details */}
-                  <ul className="space-y-2">
-                    {step.details.map((detail, i) => (
-                      <li
-                        key={i}
-                        className="flex items-center gap-2 text-sm text-white/50 justify-center lg:justify-center"
-                      >
-                        <CheckCircle2 className="w-4 h-4 text-teal-400/70 flex-shrink-0" />
-                        {detail}
-                      </li>
-                    ))}
-                  </ul>
+              key={step.title}
+              initial={{ opacity: 0, y: 30 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.3 + index * 0.2, duration: 0.6 }}
+              className="text-center"
+            >
+              {/* Step number & icon */}
+              <div className="relative inline-flex flex-col items-center mb-6">
+                <div className="w-20 h-20 rounded-2xl glass border-2 border-teal-500/30 flex items-center justify-center mb-3 relative">
+                  <step.icon className="w-10 h-10 text-teal-400" />
+                  {/* Glow effect */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={isInView ? { opacity: [0, 0.5, 0] } : {}}
+                    transition={{ delay: 0.5 + index * 0.3, duration: 2, repeat: Infinity }}
+                    className="absolute inset-0 bg-teal-400/20 rounded-2xl blur-xl"
+                  />
                 </div>
-              </motion.div>
-            ))}
-          </div>
+                <div className="text-sm font-semibold text-teal-400">
+                  Step {index + 1}
+                </div>
+              </div>
+
+              {/* Content */}
+              <h3 className="text-xl lg:text-2xl font-semibold mb-3 text-white">
+                {step.title}
+              </h3>
+              <p className="text-white/60 mb-6 max-w-sm mx-auto">
+                {step.description}
+              </p>
+
+              {/* Details */}
+              <ul className="space-y-2">
+                {step.details.map((detail, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center gap-2 text-sm text-white/50 justify-center"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-teal-400/70 flex-shrink-0" />
+                    {detail}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          ))}
         </div>
 
         {/* Bottom CTA hint */}
