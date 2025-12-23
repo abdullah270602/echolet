@@ -4,5 +4,4 @@ export { HeroAnimation } from './HeroAnimation';
 export { ComparisonSection } from './ComparisonSection';
 export { SolutionSection } from './SolutionSection';
 export { FeatureSpotlight } from './FeatureSpotlight';
-export { CTAFooter } from './CTAFooter';
 export { WaitlistSection } from './WaitlistSection';

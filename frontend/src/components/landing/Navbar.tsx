@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion, useScroll } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { AudioWaveform, Menu, X } from 'lucide-react';
 import { Button } from '../ui';
 
@@ -45,9 +44,10 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-white"
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            className="flex items-center gap-2 text-white cursor-pointer"
           >
             <motion.div
               whileHover={{ scale: 1.02 }}
@@ -63,7 +63,7 @@ export function Navbar() {
               </div>
               <span className="text-xl font-bold">Echolet</span>
             </motion.div>
-          </Link>
+          </a>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
