@@ -55,6 +55,24 @@ async def get_token(
     return TokenResponse(**result, remaining_seconds=usage["remaining_seconds"])
 
 
+@router.get("/usage", response_model=UsageStatus)
+async def get_usage(
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+) -> UsageStatus:
+    """
+    Get current usage status for the authenticated user.
+    Returns used_seconds, remaining_seconds, and limit_seconds.
+    """
+    identity = current_user["user_id"]
+    result = await usage_service.check_user_limit(session, identity)
+    return UsageStatus(
+        remaining_seconds=result["remaining_seconds"],
+        used_seconds=result["used_seconds"],
+        limit_seconds=result["limit_seconds"],
+    )
+
+
 @router.post("/usage", response_model=UsageStatus)
 async def record_usage(
     request: UsageRecordRequest,

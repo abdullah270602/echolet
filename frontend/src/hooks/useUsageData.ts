@@ -31,28 +31,12 @@ export function useUsageData(): UseUsageDataReturn {
       }
 
       // Fetch usage data from the backend
-      // We'll use the token endpoint which returns remaining_seconds
-      const response = await fetch('/api/livekit/token', {
-        method: 'POST',
+      const response = await fetch('/api/livekit/usage', {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          room_name: 'usage-check',
-          name: 'Usage Check',
-        }),
       });
-
-      if (response.status === 403) {
-        // Daily limit reached
-        setUsageData({
-          usedSeconds: 60, // Default limit
-          limitSeconds: 60,
-          remainingSeconds: 0,
-        });
-        return;
-      }
 
       if (!response.ok) {
         throw new Error('Failed to fetch usage data');
@@ -60,24 +44,14 @@ export function useUsageData(): UseUsageDataReturn {
 
       const data = await response.json();
 
-      // Calculate used seconds from remaining
-      const limitSeconds = 60; // Default 1 minute limit - should match backend config
-      const remainingSeconds = data.remaining_seconds || 0;
-      const usedSeconds = Math.max(0, limitSeconds - remainingSeconds);
-
       setUsageData({
-        usedSeconds,
-        limitSeconds,
-        remainingSeconds,
+        usedSeconds: data.used_seconds,
+        limitSeconds: data.limit_seconds,
+        remainingSeconds: data.remaining_seconds,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
-      // Set default values on error
-      setUsageData({
-        usedSeconds: 0,
-        limitSeconds: 60,
-        remainingSeconds: 60,
-      });
+      setUsageData(null);
     } finally {
       setIsLoading(false);
     }
