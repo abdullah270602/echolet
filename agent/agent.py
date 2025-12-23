@@ -65,23 +65,28 @@ async def handle_limit_reached(session: AgentSession, ctx: agents.JobContext) ->
     """Handle graceful disconnection when usage limit is reached."""
     logger.info("Usage limit reached, saying farewell...")
     try:
-        # Interrupt any ongoing speech first
+        # Interrupt any ongoing speech/processing
         session.interrupt()
-        # Small delay to let interrupt complete
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.3)
 
-        # Use say() for direct TTS - skips LLM, faster and more reliable
-        speech_handle = session.say(FAREWELL_MESSAGE, allow_interruptions=False)
-        # Wait for audio to actually finish playing to the user
-        await asyncio.wait_for(speech_handle.wait_for_playout(), timeout=20.0)
-        logger.info("Farewell message completed")
-    except asyncio.TimeoutError:
-        logger.warning("Farewell message timed out")
+        # Say farewell - don't wait for full playout, just wait for TTS to start
+        session.say(FAREWELL_MESSAGE, allow_interruptions=False)
+
+        # Wait briefly for audio to start playing (not full playout)
+        # This gives ~5s for the short farewell message
+        await asyncio.sleep(5.0)
+        logger.info("Farewell audio sent")
     except Exception as e:
         logger.error(f"Error during farewell: {e}")
 
+    # Disconnect - this will end the session
     logger.info("Disconnecting from room...")
-    await ctx.room.disconnect()
+    try:
+        await asyncio.wait_for(ctx.room.disconnect(), timeout=3.0)
+    except asyncio.TimeoutError:
+        logger.warning("Room disconnect timed out, forcing exit")
+    except Exception as e:
+        logger.error(f"Error disconnecting: {e}")
 
 
 async def monitor_usage(
