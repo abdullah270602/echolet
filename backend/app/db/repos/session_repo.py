@@ -1,6 +1,7 @@
-from typing import Optional
+from datetime import datetime
+from typing import Optional, Any
 
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.call_session import CallSession
@@ -118,3 +119,70 @@ async def update_status(
     await session.commit()
     await session.refresh(call_session)
     return call_session
+
+
+async def update_call_log(
+    session: AsyncSession,
+    room_name: str,
+    transcript: list[dict[str, Any]],
+    duration_seconds: int,
+    status: str = "completed",
+    summary: Optional[str] = "Pending",
+    priority: str = "normal",
+) -> Optional[CallSession]:
+    """
+    Update a call session with transcript and completion data.
+
+    Args:
+        session: Database session
+        room_name: The UUID room name
+        transcript: List of message dicts with role, content, timestamp
+        duration_seconds: Total call duration in seconds
+        status: Session status (default: "completed")
+        summary: AI-generated summary (default: "Pending")
+        priority: Call priority level (default: "normal")
+
+    Returns:
+        The updated CallSession or None if not found
+    """
+    call_session = await get_by_room_name(session, room_name)
+    if not call_session:
+        return None
+
+    call_session.transcript = transcript
+    call_session.duration_seconds = duration_seconds
+    call_session.status = status
+    call_session.summary = summary
+    call_session.priority = priority
+    call_session.ended_at = datetime.utcnow()
+
+    await session.commit()
+    await session.refresh(call_session)
+    return call_session
+
+
+async def get_user_call_history(
+    session: AsyncSession,
+    user_id: str,
+    limit: int = 50,
+) -> list[CallSession]:
+    """
+    Get recent call history for a user, ordered by created_at descending.
+
+    Args:
+        session: Database session
+        user_id: The user's identifier
+        limit: Maximum number of records to return (default: 50)
+
+    Returns:
+        List of CallSession objects
+    """
+    stmt = (
+        select(CallSession)
+        .where(CallSession.user_id == user_id)
+        .where(CallSession.status.in_(["completed", "failed"]))
+        .order_by(desc(CallSession.created_at))
+        .limit(limit)
+    )
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
