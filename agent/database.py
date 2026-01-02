@@ -4,9 +4,11 @@ Provides async queries to fetch session and agent configuration.
 """
 
 import ssl
+import json
 import logging
-from typing import Optional
+from typing import Optional, Any
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 import asyncpg
 
@@ -121,3 +123,98 @@ async def get_session_config(room_name: str) -> Optional[SessionConfig]:
     except Exception as e:
         logger.error(f"Database error fetching session config: {e}")
         return None
+
+
+async def save_call_log(
+    room_name: str,
+    transcript: list[dict[str, Any]],
+    duration_seconds: int,
+    status: str = "completed",
+    summary: Optional[str] = "Pending",
+    priority: str = "normal",
+) -> bool:
+    """
+    Save call transcript and metadata to the database, and update user's daily usage.
+
+    Args:
+        room_name: The UUID room name (used to identify the call session)
+        transcript: List of message dicts with role, content, timestamp
+        duration_seconds: Total call duration in seconds
+        status: Session status (default: "completed")
+        summary: AI-generated summary (default: "Pending")
+        priority: Call priority level (default: "normal")
+
+    Returns:
+        True if saved successfully, False otherwise
+    """
+    try:
+        url = get_database_url()
+
+        # Handle SSL for cloud databases
+        ssl_context = None
+        if "sslmode=require" in url:
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            url = url.replace("?sslmode=require", "").replace("&sslmode=require", "")
+
+        conn = await asyncpg.connect(url, ssl=ssl_context)
+
+        try:
+            # Convert transcript to JSON string for asyncpg
+            transcript_json = json.dumps(transcript)
+
+            # Update call session and get the user_id
+            row = await conn.fetchrow(
+                """
+                UPDATE call_sessions
+                SET
+                    transcript = $1::jsonb,
+                    duration_seconds = $2,
+                    status = $3,
+                    summary = $4,
+                    priority = $5,
+                    ended_at = $6
+                WHERE room_name = $7
+                RETURNING user_id
+                """,
+                transcript_json,
+                duration_seconds,
+                status,
+                summary,
+                priority,
+                datetime.utcnow(),
+                room_name,
+            )
+
+            if row is None:
+                logger.warning(f"No call session found: {room_name}")
+                return False
+
+            user_id = row["user_id"]
+
+            # Update user's daily usage
+            today = datetime.now(timezone.utc).date()
+            await conn.execute(
+                """
+                INSERT INTO user_daily_usage (user_id, usage_date, talk_seconds_used, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $4)
+                ON CONFLICT ON CONSTRAINT uq_user_daily_usage_user_date
+                DO UPDATE SET
+                    talk_seconds_used = user_daily_usage.talk_seconds_used + $3,
+                    updated_at = $4
+                """,
+                user_id,
+                today,
+                duration_seconds,
+                datetime.utcnow(),
+            )
+
+            return True
+
+        finally:
+            await conn.close()
+
+    except Exception as e:
+        logger.error(f"Database error saving call log: {e}")
+        return False
