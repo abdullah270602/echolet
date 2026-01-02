@@ -31,7 +31,7 @@ export function useUsageData(): UseUsageDataReturn {
       }
 
       // Fetch usage data from the backend
-      const response = await fetch('/api/livekit/usage', {
+      const response = await fetch('/livekit/usage', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,

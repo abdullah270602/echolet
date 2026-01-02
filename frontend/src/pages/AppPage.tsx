@@ -10,7 +10,7 @@ export function AppPage() {
       </header>
 
       <main className="w-full">
-        <VoiceRoom />
+        <VoiceRoom agentId={0} />
       </main>
     </div>
   );
