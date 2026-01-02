@@ -69,7 +69,7 @@ export function VoiceRoom({ agentId }: VoiceRoomProps) {
         throw new Error("Not authenticated");
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/session/start`, {
+      const response = await fetch(`${API_BASE_URL}/session/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
