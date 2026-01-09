@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, Any
 import uuid
 
-from sqlalchemy import String, Integer, DateTime, ForeignKey, Index, func
+from sqlalchemy import String, Integer, DateTime, ForeignKey, Index, Boolean, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -70,6 +70,41 @@ class CallSession(Base):
         String(20),
         nullable=False,
         default="normal",
+    )
+
+    # Sentiment analysis: "positive", "neutral", "negative"
+    sentiment: Mapped[Optional[str]] = mapped_column(
+        String(20),
+        nullable=True,
+        default=None,
+    )
+
+    # Action items extracted from call (JSON array of strings)
+    action_items: Mapped[Optional[list[str]]] = mapped_column(
+        JSONB,
+        nullable=True,
+        default=None,
+    )
+
+    # Call category: Appointment, Inquiry, Complaint, Spam, Urgent Service, Other
+    category: Mapped[Optional[str]] = mapped_column(
+        String(30),
+        nullable=True,
+        default=None,
+    )
+
+    # Urgency level: High, Medium, Low
+    urgency: Mapped[Optional[str]] = mapped_column(
+        String(10),
+        nullable=True,
+        default=None,
+    )
+
+    # Whether human follow-up is required
+    action_required: Mapped[Optional[bool]] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=None,
     )
 
     __table_args__ = (
