@@ -14,11 +14,20 @@ import {
   User,
   CheckCircle,
   CircleDot,
+  Smile,
+  Meh,
+  Frown,
+  Angry,
+  Bell,
+  BellOff,
 } from 'lucide-react';
-import type { CallHistoryItem } from '../../types/callHistory';
+import type { CallHistoryItem, CallSentiment } from '../../types/callHistory';
 import {
   formatDuration,
   formatRelativeTime,
+  getCategoryClasses,
+  getUrgencyClasses,
+  getSentimentClasses,
 } from '../../types/callHistory';
 
 interface TicketListProps {
@@ -96,6 +105,52 @@ function ServiceTag({ label }: { label: string }) {
 }
 
 /**
+ * Category Badge Component
+ */
+function CategoryBadge({ category }: { category: string | null }) {
+  if (!category) return null;
+  const classes = getCategoryClasses(category as any);
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border ${classes}`}>
+      <Tag className="w-3 h-3" />
+      {category}
+    </span>
+  );
+}
+
+/**
+ * Urgency Badge Component
+ */
+function UrgencyBadge({ urgency }: { urgency: string | null }) {
+  if (!urgency) return null;
+  const classes = getUrgencyClasses(urgency as any);
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border ${classes}`}>
+      <AlertCircle className="w-3 h-3" />
+      {urgency}
+    </span>
+  );
+}
+
+/**
+ * Get sentiment icon based on sentiment value
+ */
+function getSentimentIcon(sentiment: CallSentiment | null) {
+  switch (sentiment) {
+    case 'Positive':
+      return <Smile className="w-3.5 h-3.5 text-green-400" />;
+    case 'Neutral':
+      return <Meh className="w-3.5 h-3.5 text-slate-400" />;
+    case 'Frustrated':
+      return <Frown className="w-3.5 h-3.5 text-orange-400" />;
+    case 'Angry':
+      return <Angry className="w-3.5 h-3.5 text-red-400" />;
+    default:
+      return <Meh className="w-3.5 h-3.5 text-gray-400" />;
+  }
+}
+
+/**
  * Single Ticket Card Component
  */
 function TicketCard({
@@ -142,9 +197,17 @@ function TicketCard({
       </div>
 
       {/* Tags Row */}
-      <div className="flex items-center gap-2 mb-3">
-        <ServiceTag label={call.status === 'completed' ? 'Completed Call' : call.status} />
-        <PriorityBadge priority={call.priority} />
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        {call.category ? (
+          <CategoryBadge category={call.category} />
+        ) : (
+          <ServiceTag label={call.status === 'completed' ? 'Completed Call' : call.status} />
+        )}
+        {call.urgency ? (
+          <UrgencyBadge urgency={call.urgency} />
+        ) : (
+          <PriorityBadge priority={call.priority} />
+        )}
         {call.duration_seconds && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-white/50">
             <Clock className="w-3 h-3" />
@@ -161,21 +224,36 @@ function TicketCard({
       {/* AI Analysis Section */}
       <div className="pt-3 border-t border-white/5">
         <p className="text-teal-400 text-xs font-medium mb-1.5">AI Analysis</p>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-4 text-sm flex-wrap">
           <div className="flex items-center gap-1.5">
-            <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+            {getSentimentIcon(call.sentiment)}
             <span className="text-white/50">Sentiment:</span>
-            <span className="text-white/70">
-              {call.priority === 'urgent' ? 'Concerned' : 'Neutral'}
+            <span className={`${getSentimentClasses(call.sentiment).split(' ')[1] || 'text-white/70'}`}>
+              {call.sentiment || 'Pending'}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <CircleDot className="w-3.5 h-3.5 text-purple-400" />
+            {call.action_required ? (
+              <Bell className="w-3.5 h-3.5 text-amber-400" />
+            ) : (
+              <BellOff className="w-3.5 h-3.5 text-green-400" />
+            )}
             <span className="text-white/50">Action:</span>
-            <span className="text-white/70">
-              {call.priority === 'urgent' ? 'Callback' : 'None Required'}
+            <span className={call.action_required ? 'text-amber-400' : 'text-green-400'}>
+              {call.action_required === null
+                ? 'Pending'
+                : call.action_required
+                  ? 'Required'
+                  : 'None Required'}
             </span>
           </div>
+          {call.action_items && call.action_items.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <CheckCircle className="w-3.5 h-3.5 text-purple-400" />
+              <span className="text-white/50">Tasks:</span>
+              <span className="text-purple-400">{call.action_items.length}</span>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
