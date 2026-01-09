@@ -34,6 +34,7 @@ from prompts import (
 from database import get_session_config, save_call_log
 from usage import get_remaining_seconds_from_metadata, monitor_usage
 from transcript import create_dynamic_assistant, create_user_transcript_handler
+from sqs import send_to_analysis_queue
 
 # Load environment variables
 load_dotenv(override=True)
@@ -176,6 +177,8 @@ async def agent_session(ctx: agents.JobContext) -> None:
 
         if success:
             logger.info(f"Call ended: {duration}s, {len(transcript_messages)} messages")
+            # Send to analysis queue for async processing
+            await send_to_analysis_queue(room_name)
         else:
             logger.warning(f"Failed to save call log: {room_name}")
 
