@@ -5,6 +5,9 @@
 
 export type CallPriority = 'urgent' | 'normal' | 'low';
 export type CallStatus = 'pending' | 'active' | 'completed' | 'failed';
+export type CallCategory = 'Appointment' | 'Inquiry' | 'Complaint' | 'Spam' | 'Urgent Service' | 'Other';
+export type CallUrgency = 'High' | 'Medium' | 'Low';
+export type CallSentiment = 'Positive' | 'Neutral' | 'Frustrated' | 'Angry';
 
 /**
  * A single message in a call transcript
@@ -30,6 +33,12 @@ export interface CallHistoryItem {
   priority: CallPriority;
   created_at: string | null;
   ended_at: string | null;
+  // Analysis fields
+  category: CallCategory | null;
+  urgency: CallUrgency | null;
+  sentiment: CallSentiment | null;
+  action_required: boolean | null;
+  action_items: string[] | null;
 }
 
 /**
@@ -110,5 +119,60 @@ export function getStatusClasses(status: CallStatus): string {
       return 'bg-red-500/20 text-red-400';
     default:
       return 'bg-gray-500/20 text-gray-400';
+  }
+}
+
+/**
+ * Get category badge color classes
+ */
+export function getCategoryClasses(category: CallCategory | null): string {
+  switch (category) {
+    case 'Appointment':
+      return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+    case 'Inquiry':
+      return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+    case 'Complaint':
+      return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+    case 'Spam':
+      return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    case 'Urgent Service':
+      return 'bg-red-500/20 text-red-400 border-red-500/30';
+    case 'Other':
+    default:
+      return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+  }
+}
+
+/**
+ * Get urgency badge color classes
+ */
+export function getUrgencyClasses(urgency: CallUrgency | null): string {
+  switch (urgency) {
+    case 'High':
+      return 'bg-red-500/20 text-red-400 border-red-500/30';
+    case 'Medium':
+      return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+    case 'Low':
+      return 'bg-green-500/20 text-green-400 border-green-500/30';
+    default:
+      return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  }
+}
+
+/**
+ * Get sentiment badge color classes and icon
+ */
+export function getSentimentClasses(sentiment: CallSentiment | null): string {
+  switch (sentiment) {
+    case 'Positive':
+      return 'bg-green-500/20 text-green-400 border-green-500/30';
+    case 'Neutral':
+      return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+    case 'Frustrated':
+      return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+    case 'Angry':
+      return 'bg-red-500/20 text-red-400 border-red-500/30';
+    default:
+      return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
   }
 }
