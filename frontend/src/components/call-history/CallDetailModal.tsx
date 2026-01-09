@@ -5,13 +5,33 @@
 
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, Phone, User, Bot, Calendar } from 'lucide-react';
-import type { CallHistoryItem, TranscriptMessage } from '../../types/callHistory';
+import {
+  X,
+  Clock,
+  Phone,
+  User,
+  Bot,
+  Calendar,
+  Tag,
+  AlertCircle,
+  Smile,
+  Meh,
+  Frown,
+  Angry,
+  Bell,
+  BellOff,
+  CheckSquare,
+  Square,
+} from 'lucide-react';
+import type { CallHistoryItem, TranscriptMessage, CallSentiment } from '../../types/callHistory';
 import {
   formatDuration,
   formatMessageTime,
   getPriorityClasses,
   getStatusClasses,
+  getCategoryClasses,
+  getUrgencyClasses,
+  getSentimentClasses,
 } from '../../types/callHistory';
 
 interface CallDetailModalProps {
@@ -44,6 +64,52 @@ function StatusBadge({ status }: { status: string }) {
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );
+}
+
+/**
+ * Category Badge Component
+ */
+function CategoryBadge({ category }: { category: string | null }) {
+  if (!category) return null;
+  const classes = getCategoryClasses(category as any);
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border ${classes}`}>
+      <Tag className="w-3 h-3" />
+      {category}
+    </span>
+  );
+}
+
+/**
+ * Urgency Badge Component
+ */
+function UrgencyBadge({ urgency }: { urgency: string | null }) {
+  if (!urgency) return null;
+  const classes = getUrgencyClasses(urgency as any);
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border ${classes}`}>
+      <AlertCircle className="w-3 h-3" />
+      {urgency} Priority
+    </span>
+  );
+}
+
+/**
+ * Get sentiment icon
+ */
+function getSentimentIcon(sentiment: CallSentiment | null) {
+  switch (sentiment) {
+    case 'Positive':
+      return <Smile className="w-4 h-4 text-green-400" />;
+    case 'Neutral':
+      return <Meh className="w-4 h-4 text-slate-400" />;
+    case 'Frustrated':
+      return <Frown className="w-4 h-4 text-orange-400" />;
+    case 'Angry':
+      return <Angry className="w-4 h-4 text-red-400" />;
+    default:
+      return <Meh className="w-4 h-4 text-gray-400" />;
+  }
 }
 
 /**
@@ -199,10 +265,15 @@ export function CallDetailModal({
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/10">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <h2 className="text-lg font-semibold text-white">Call Details</h2>
                 <StatusBadge status={call.status} />
-                <PriorityBadge priority={call.priority} />
+                {call.category ? (
+                  <CategoryBadge category={call.category} />
+                ) : (
+                  <PriorityBadge priority={call.priority} />
+                )}
+                {call.urgency && <UrgencyBadge urgency={call.urgency} />}
               </div>
               <button
                 onClick={onClose}
@@ -240,15 +311,69 @@ export function CallDetailModal({
               )}
             </div>
 
-            {/* Summary Footer */}
-            {call.summary && call.summary !== 'Pending' && (
-              <div className="p-4 border-t border-white/10 bg-white/5">
-                <h3 className="text-sm font-medium text-white/70 mb-2">
-                  Summary
-                </h3>
-                <p className="text-sm text-white/80 leading-relaxed">
-                  {call.summary}
-                </p>
+            {/* Analysis Panel */}
+            {(call.sentiment || call.action_required !== null || (call.action_items && call.action_items.length > 0) || (call.summary && call.summary !== 'Pending')) && (
+              <div className="p-4 border-t border-white/10 bg-white/5 space-y-4">
+                {/* Summary */}
+                {call.summary && call.summary !== 'Pending' && (
+                  <div>
+                    <h3 className="text-sm font-medium text-teal-400 mb-2">
+                      Summary
+                    </h3>
+                    <p className="text-sm text-white/80 leading-relaxed">
+                      {call.summary}
+                    </p>
+                  </div>
+                )}
+
+                {/* Analysis Metrics Row */}
+                {(call.sentiment || call.action_required !== null) && (
+                  <div className="flex items-center gap-6 flex-wrap">
+                    {/* Sentiment */}
+                    {call.sentiment && (
+                      <div className="flex items-center gap-2">
+                        {getSentimentIcon(call.sentiment)}
+                        <span className="text-white/50 text-sm">Sentiment:</span>
+                        <span className={`text-sm font-medium ${getSentimentClasses(call.sentiment).split(' ')[1]}`}>
+                          {call.sentiment}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Action Required */}
+                    {call.action_required !== null && (
+                      <div className="flex items-center gap-2">
+                        {call.action_required ? (
+                          <Bell className="w-4 h-4 text-amber-400" />
+                        ) : (
+                          <BellOff className="w-4 h-4 text-green-400" />
+                        )}
+                        <span className="text-white/50 text-sm">Action Required:</span>
+                        <span className={`text-sm font-medium ${call.action_required ? 'text-amber-400' : 'text-green-400'}`}>
+                          {call.action_required ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Action Items */}
+                {call.action_items && call.action_items.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium text-purple-400 mb-2 flex items-center gap-2">
+                      <CheckSquare className="w-4 h-4" />
+                      Action Items ({call.action_items.length})
+                    </h3>
+                    <ul className="space-y-1.5">
+                      {call.action_items.map((item, index) => (
+                        <li key={index} className="flex items-start gap-2 text-sm text-white/70">
+                          <Square className="w-3.5 h-3.5 mt-0.5 text-purple-400/60 flex-shrink-0" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </motion.div>
