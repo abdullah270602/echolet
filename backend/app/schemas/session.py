@@ -43,6 +43,12 @@ class CallHistoryResponse(BaseModel):
     priority: str = "normal"
     created_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
+    # Analysis fields
+    category: Optional[str] = None
+    urgency: Optional[str] = None
+    sentiment: Optional[str] = None
+    action_required: Optional[bool] = None
+    action_items: Optional[list[str]] = None
 
     class Config:
         from_attributes = True
