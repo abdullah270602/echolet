@@ -1,33 +1,22 @@
-# Echolet Caddyfile Configuration
-# ================================
-# Gateway configuration for routing and authentication
+# Caddyfile
 
-# Development/Staging Frontend with Basic Auth
 dev.echolet.xyz {
-    # Basic Authentication - protects the dev environment
-    # Generate hash: docker run --rm caddy:alpine caddy hash-password --plaintext 'your-password'
+    # 1. Global Security (Basic Auth)
+    # This now protects BOTH the React App and the API
     basicauth {
         {$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
     }
 
-    # Reverse proxy to frontend container
-    reverse_proxy frontend:80
-}
+    # 2. API Routing
+    # Routes requests from dev.echolet.xyz/api/* -> backend container
+    # "handle_path" STRIPS the "/api" prefix, so backend gets "/users" instead of "/api/users"
+    handle_path /api/* {
+        reverse_proxy backend:8000
+    }
 
-# API Endpoint (no auth - handled by Clerk JWT in backend)
-api.echolet.xyz {
-    # Reverse proxy to backend container
-    reverse_proxy backend:8000
-
-    # Enable CORS headers if needed
-    header {
-        Access-Control-Allow-Origin *
-        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        Access-Control-Allow-Headers "Authorization, Content-Type"
+    # 3. Frontend Routing
+    # Routes everything else -> frontend container
+    handle {
+        reverse_proxy frontend:80
     }
 }
-
-# Optional: Production frontend (without basic auth)
-# echolet.com, www.echolet.com {
-#     reverse_proxy frontend:80
-# }
