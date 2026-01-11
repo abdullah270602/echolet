@@ -3,7 +3,7 @@
 # Gateway configuration for routing and authentication
 
 # Development/Staging Frontend with Basic Auth
-dev.echolet.com {
+dev.echolet.xyz {
     # Basic Authentication - protects the dev environment
     # Generate hash: docker run --rm caddy:alpine caddy hash-password --plaintext 'your-password'
     basicauth {
@@ -15,7 +15,7 @@ dev.echolet.com {
 }
 
 # API Endpoint (no auth - handled by Clerk JWT in backend)
-api.echolet.com {
+api.echolet.xyz {
     # Reverse proxy to backend container
     reverse_proxy backend:8000
 
