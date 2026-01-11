@@ -1,6 +1,6 @@
 dev.echolet.xyz {
-    # 1. API 
-    handle_path /api/* {
+    # 1. API
+    handle /api/* {
         reverse_proxy backend:8000
     }
 
