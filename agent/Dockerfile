@@ -33,5 +33,8 @@ COPY . .
 # Install the project itself
 RUN uv sync --frozen --no-dev
 
+# Download model files for turn-detector, silero, noise-cancellation plugins
+RUN uv run agent.py download-files
+
 # Run the agent
 CMD ["uv", "run", "python", "agent.py", "start"]
