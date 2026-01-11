@@ -86,7 +86,7 @@ export async function fetchCallHistory(
   limit: number = 50
 ): Promise<CallHistoryItem[]> {
   return apiRequest<CallHistoryItem[]>(
-    `/api/session/history?limit=${limit}`,
+    `/session/history?limit=${limit}`,
     getToken
   );
 }
@@ -101,7 +101,7 @@ export async function fetchCallById(
   getToken: () => Promise<string | null>
 ): Promise<CallHistoryItem> {
   return apiRequest<CallHistoryItem>(
-    `/api/session/${id}`,
+    `/session/${id}`,
     getToken
   );
 }

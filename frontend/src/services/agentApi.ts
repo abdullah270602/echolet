@@ -154,7 +154,7 @@ async function apiRequest<T>(
 
 // Fetch agent configuration (no auth required)
 export async function fetchAgentConfig(): Promise<AgentConfig> {
-  const response = await fetch(`${API_BASE_URL}/api/config`);
+  const response = await fetch(`${API_BASE_URL}/config`);
   if (!response.ok) {
     throw new ApiError('Failed to fetch config', response.status);
   }
@@ -163,7 +163,7 @@ export async function fetchAgentConfig(): Promise<AgentConfig> {
 
 // Fetch available voices (no auth required)
 export async function fetchVoices(): Promise<VoiceOption[]> {
-  const response = await fetch(`${API_BASE_URL}/api/voices`);
+  const response = await fetch(`${API_BASE_URL}/voices`);
   if (!response.ok) {
     throw new ApiError('Failed to fetch voices', response.status);
   }
@@ -172,7 +172,7 @@ export async function fetchVoices(): Promise<VoiceOption[]> {
 
 // Fetch available tones (no auth required)
 export async function fetchTones(): Promise<ToneOption[]> {
-  const response = await fetch(`${API_BASE_URL}/api/tones`);
+  const response = await fetch(`${API_BASE_URL}/tones`);
   if (!response.ok) {
     throw new ApiError('Failed to fetch tones', response.status);
   }
@@ -184,7 +184,7 @@ export async function fetchAgents(
   getToken: () => Promise<string | null>
 ): Promise<Agent[]> {
   const data = await apiRequest<AgentApiResponse[]>(
-    '/api/agents',
+    '/agents',
     getToken
   );
   return data.map(mapApiResponseToAgent);
@@ -196,7 +196,7 @@ export async function fetchAgent(
   getToken: () => Promise<string | null>
 ): Promise<Agent> {
   const data = await apiRequest<AgentApiResponse>(
-    `/api/agents/${agentId}`,
+    `/agents/${agentId}`,
     getToken
   );
   return mapApiResponseToAgent(data);
@@ -208,7 +208,7 @@ export async function createAgent(
   getToken: () => Promise<string | null>
 ): Promise<Agent> {
   const data = await apiRequest<AgentApiResponse>(
-    '/api/agents',
+    '/agents',
     getToken,
     {
       method: 'POST',
@@ -225,7 +225,7 @@ export async function updateAgent(
   getToken: () => Promise<string | null>
 ): Promise<Agent> {
   const data = await apiRequest<AgentApiResponse>(
-    `/api/agents/${agentId}`,
+    `/agents/${agentId}`,
     getToken,
     {
       method: 'PATCH',
@@ -241,7 +241,7 @@ export async function deleteAgent(
   getToken: () => Promise<string | null>
 ): Promise<void> {
   await apiRequest<void>(
-    `/api/agents/${agentId}`,
+    `/agents/${agentId}`,
     getToken,
     {
       method: 'DELETE',

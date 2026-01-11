@@ -45,7 +45,7 @@ app.add_middleware(
 )
 
 
-app.include_router(livekit_router, prefix="/livekit", tags=["livekit"])
+app.include_router(livekit_router, prefix="/api/livekit", tags=["livekit"])
 app.include_router(agents_router, prefix="/api", tags=["agents"])
 app.include_router(session_router, prefix="/api/session", tags=["session"])
 

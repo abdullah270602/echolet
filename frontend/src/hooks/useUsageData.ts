@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
 interface UsageData {
   usedSeconds: number;
   limitSeconds: number;
@@ -31,7 +33,7 @@ export function useUsageData(): UseUsageDataReturn {
       }
 
       // Fetch usage data from the backend
-      const response = await fetch('/livekit/usage', {
+      const response = await fetch(`${API_BASE_URL}/livekit/usage`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
