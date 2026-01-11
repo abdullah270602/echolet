@@ -1,22 +1,14 @@
-# Caddyfile
-
 dev.echolet.xyz {
-    # 1. Global Security (Basic Auth)
-    # This now protects BOTH the React App and the API
-    basicauth {
-        {$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
-    }
-
-    # 2. API Routing
-    # Routes requests from dev.echolet.xyz/api/* -> backend container
-    # "handle_path" STRIPS the "/api" prefix, so backend gets "/users" instead of "/api/users"
+    # 1. API 
     handle_path /api/* {
         reverse_proxy backend:8000
     }
 
-    # 3. Frontend Routing
-    # Routes everything else -> frontend container
+    # 2. FRONTEND BLOCK (Protected)
     handle {
+        basicauth {
+            {$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+        }
         reverse_proxy frontend:80
     }
 }
