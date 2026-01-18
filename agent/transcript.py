@@ -86,33 +86,28 @@ def create_dynamic_assistant(
                     description="The reason for ending: 'user_goodbye' or 'user_requested'"
                 )
             ] = "user_goodbye",
+            already_said_goodbye: Annotated[
+                bool,
+                Field(
+                    description="Set to true if you already said goodbye in your response text. Set to false if you need the system to play a goodbye message."
+                )
+            ] = False,
         ) -> str:
             """
             End the current call gracefully.
 
-            IMPORTANT: Say your goodbye in your response BEFORE calling this tool.
-
             ONLY call when user EXPLICITLY says goodbye:
             - "goodbye", "bye", "bye bye", "see you", "take care"
-            - Explicitly asks to hang up
+            - Explicitly asks to hang up or end the call
 
             DO NOT call when user says:
             - "no", "nothing else", "that's all" - these are answers, not goodbyes
             - After these, YOU say goodbye and wait for them to say bye back
-            """
-            logger.info(f"End call requested: {reason}")
 
-            # Pre-defined goodbye messages (short and simple for reliable TTS)
-            import random
-            goodbyes = [
-                "Thanks for calling! Take care.",
-                "Goodbye! Have a great day.",
-                "Thanks for reaching out. Bye!",
-                "Thanks for calling, bye",
-                "Goodbye, and have a great day.",
-                "Thanks for reaching out, bye.",
-            ]
-            goodbye_msg = random.choice(goodbyes)
+            IMPORTANT: Set already_said_goodbye=true if you said goodbye in your response.
+            If you didn't say goodbye, set already_said_goodbye=false and the system will play one.
+            """
+            logger.info(f"End call requested: {reason}, already_said_goodbye={already_said_goodbye}")
 
             # Log the end call event
             self._transcript_log.append({
@@ -121,14 +116,27 @@ def create_dynamic_assistant(
                 "timestamp": time.time(),
             })
 
-            # 1. Play goodbye message and wait for it to finish
-            try:
-                speech_handle = ctx.session.say(goodbye_msg, allow_interruptions=False)
-                await speech_handle.wait_for_playout()
-                logger.debug(f"Outro Played: {goodbye_msg}")
-            except Exception as e:
-                logger.warning(f"Goodbye playout failed: {e}")
-                await asyncio.sleep(2.0)  # Fallback delay
+            # 1. Play goodbye message only if LLM didn't already say one
+            if not already_said_goodbye:
+                import random
+                goodbyes = [
+                    "Thanks for calling, take care.",
+                    "Goodbye, have a great day.",
+                    "Thanks for reaching out, bye.",
+                ]
+                goodbye_msg = random.choice(goodbyes)
+
+                try:
+                    speech_handle = ctx.session.say(goodbye_msg, allow_interruptions=False)
+                    await speech_handle.wait_for_playout()
+                    logger.info(f"Outro played: {goodbye_msg}")
+                except Exception as e:
+                    logger.warning(f"Goodbye playout failed: {e}")
+                    await asyncio.sleep(2.0)  # Fallback delay
+            else:
+                # LLM already said goodbye, just wait for it to finish
+                await asyncio.sleep(2.5)
+                logger.info("Waiting for LLM goodbye to finish")
 
             # 2. Small natural pause
             await asyncio.sleep(0.3)
