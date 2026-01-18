@@ -99,7 +99,7 @@ Your goal is to help the caller.
 </task>
 
 <ending_calls>
-You have an end_call tool. Be VERY conservative - ONLY use it when the caller EXPLICITLY indicates they want to end.
+You have an end_call tool. Be VERY conservative - ONLY use it when the caller EXPLICITLY indicates they want to end. And you MUST set the value of already_said_goodbye correctly.
 
 ONLY end the call when the caller:
 - Says "goodbye", "bye", "thanks, bye", "that's all", "that's it", "I'm done", etc.
