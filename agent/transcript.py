@@ -3,6 +3,7 @@ Transcript capture module for the voice agent.
 Handles capturing and logging agent/user speech.
 """
 
+import random
 import asyncio
 import logging
 import os
@@ -118,7 +119,6 @@ def create_dynamic_assistant(
 
             # 1. Play goodbye message only if LLM didn't already say one
             if not already_said_goodbye:
-                import random
                 goodbyes = [
                     "Thanks for calling, take care.",
                     "Goodbye, have a great day.",
@@ -129,14 +129,14 @@ def create_dynamic_assistant(
                 try:
                     speech_handle = ctx.session.say(goodbye_msg, allow_interruptions=False)
                     await speech_handle.wait_for_playout()
-                    logger.info(f"Outro played: {goodbye_msg}")
+                    logger.debug(f"Outro played: {goodbye_msg}")
                 except Exception as e:
                     logger.warning(f"Goodbye playout failed: {e}")
                     await asyncio.sleep(2.0)  # Fallback delay
             else:
                 # LLM already said goodbye, just wait for it to finish
-                await asyncio.sleep(2.5)
-                logger.info("Waiting for LLM goodbye to finish")
+                await asyncio.sleep(1)
+                logger.debug("Waiting for LLM goodbye to finish")
 
             # 2. Small natural pause
             await asyncio.sleep(0.3)
