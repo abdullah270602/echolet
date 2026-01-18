@@ -60,6 +60,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
     session_start_time = time.time()
     transcript_messages: list[dict] = []
     call_status = "completed"
+    cleanup_done = {"value": False}  # Track if end_call tool handled cleanup
 
     logger.info(f"Session started: {room_name}")
 
@@ -90,10 +91,14 @@ async def agent_session(ctx: agents.JobContext) -> None:
             voice_id = TTS_VOICE
             max_duration = 600
 
-        # Create dynamic agent with transcript logging
+        # Create dynamic agent with transcript logging and cleanup capabilities
         DynamicAssistant = create_dynamic_assistant(
             instructions=prompts.system_instructions,
             transcript_log=transcript_messages,
+            room_name=room_name,
+            session_start_time=session_start_time,
+            save_call_log_fn=save_call_log,
+            send_to_queue_fn=send_to_analysis_queue,
         )
 
         # Wait for participant and get usage limits
@@ -154,6 +159,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
 
         @session.on("close")
         def on_close():
+            cleanup_done["value"] = True  # Mark that session closed (tool handled cleanup)
             session_closed.set()
 
         await session_closed.wait()
@@ -166,25 +172,27 @@ async def agent_session(ctx: agents.JobContext) -> None:
             except asyncio.CancelledError:
                 pass
 
-        # Save call log
-        duration = int(time.time() - session_start_time)
-        success = await save_call_log(
-            room_name=room_name,
-            transcript=transcript_messages,
-            duration_seconds=duration,
-            status=call_status,
-        )
-
-        if success:
-            logger.info(f"Call ended: {duration}s, {len(transcript_messages)} messages")
-            # Send to analysis queue for async processing
-            await send_to_analysis_queue(room_name)
-        else:
-            logger.warning(f"Failed to save call log: {room_name}")
+        # Note: Cleanup (save logs, SQS, room deletion) is handled by end_call tool
+        # This on_close just cleans up the usage monitor
 
     except Exception as e:
         logger.error(f"Session error: {e}")
         call_status = "failed"
+
+        # Fallback cleanup if session errored before end_call tool ran
+        if not cleanup_done["value"]:
+            logger.info("Fallback cleanup - session error")
+            duration = int(time.time() - session_start_time)
+            try:
+                await save_call_log(
+                    room_name=room_name,
+                    transcript=transcript_messages,
+                    duration_seconds=duration,
+                    status=call_status,
+                )
+            except Exception as save_error:
+                logger.error(f"Fallback save failed: {save_error}")
+
         raise
 
 

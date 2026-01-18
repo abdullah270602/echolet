@@ -62,9 +62,7 @@ class AgentConfig(Base):
         onupdate=func.now(),
     )
 
-    __table_args__ = (
-        Index("ix_agent_configs_user_id", "user_id"),
-    )
+    __table_args__ = (Index("ix_agent_configs_user_id", "user_id"),)
 
     def __repr__(self) -> str:
         return (
