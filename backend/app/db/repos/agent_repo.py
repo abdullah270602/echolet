@@ -1,3 +1,4 @@
+from datetime import datetime, UTC
 from typing import Optional
 
 from sqlalchemy import select, func
@@ -31,16 +32,19 @@ async def get_by_user_id(
     user_id: str,
 ) -> list[AgentConfig]:
     """
-    Get all agent configurations for a user.
+    Get all active (non-deleted) agent configurations for a user.
 
     Args:
         session: Database session
         user_id: The user's identifier
 
     Returns:
-        List of AgentConfig objects
+        List of AgentConfig objects (excludes soft-deleted)
     """
-    stmt = select(AgentConfig).where(AgentConfig.user_id == user_id)
+    stmt = select(AgentConfig).where(
+        AgentConfig.user_id == user_id,
+        AgentConfig.deleted_at.is_(None),
+    )
     result = await session.execute(stmt)
     return list(result.scalars().all())
 
@@ -50,17 +54,18 @@ async def get_user_agent_count(
     user_id: str,
 ) -> int:
     """
-    Get the count of agents for a user.
+    Get the count of active (non-deleted) agents for a user.
 
     Args:
         session: Database session
         user_id: The user's identifier
 
     Returns:
-        Number of agents the user has
+        Number of active agents the user has (excludes soft-deleted)
     """
     stmt = select(func.count()).select_from(AgentConfig).where(
-        AgentConfig.user_id == user_id
+        AgentConfig.user_id == user_id,
+        AgentConfig.deleted_at.is_(None),
     )
     result = await session.execute(stmt)
     return result.scalar_one()
@@ -125,12 +130,37 @@ async def update(
     return agent
 
 
+async def soft_delete(
+    session: AsyncSession,
+    agent: AgentConfig,
+) -> AgentConfig:
+    """
+    Soft delete an agent by setting deleted_at timestamp.
+
+    This preserves the agent record and associated call history.
+
+    Args:
+        session: Database session
+        agent: The agent to soft delete
+
+    Returns:
+        The soft-deleted AgentConfig
+    """
+    agent.deleted_at = datetime.now(UTC)
+    await session.commit()
+    await session.refresh(agent)
+    return agent
+
+
 async def delete(
     session: AsyncSession,
     agent: AgentConfig,
 ) -> None:
     """
-    Delete an agent configuration.
+    Hard delete an agent configuration.
+
+    WARNING: This permanently deletes the agent and cascades to call_sessions.
+    Use soft_delete() instead to preserve call history.
 
     Args:
         session: Database session

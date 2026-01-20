@@ -165,9 +165,9 @@ async def get_user_call_history(
     session: AsyncSession,
     user_id: str,
     limit: int = 50,
-) -> list[CallSession]:
+) -> list[dict[str, Any]]:
     """
-    Get recent call history for a user, ordered by created_at descending.
+    Get recent call history for a user with agent info, ordered by created_at descending.
 
     Args:
         session: Database session
@@ -175,14 +175,46 @@ async def get_user_call_history(
         limit: Maximum number of records to return (default: 50)
 
     Returns:
-        List of CallSession objects
+        List of dicts with CallSession data plus agent_name and is_agent_deleted
     """
     stmt = (
-        select(CallSession)
+        select(
+            CallSession,
+            AgentConfig.name.label('agent_name'),
+            AgentConfig.deleted_at.label('agent_deleted_at'),
+        )
+        .outerjoin(AgentConfig, CallSession.agent_id == AgentConfig.id)
         .where(CallSession.user_id == user_id)
         .where(CallSession.status.in_(["completed", "failed"]))
         .order_by(desc(CallSession.created_at))
         .limit(limit)
     )
     result = await session.execute(stmt)
-    return list(result.scalars().all())
+    rows = result.all()
+
+    call_history = []
+    for call_session, agent_name, agent_deleted_at in rows:
+        # Convert CallSession to dict and add agent info
+        call_dict = {
+            "id": call_session.id,
+            "room_name": call_session.room_name,
+            "user_id": call_session.user_id,
+            "agent_id": call_session.agent_id,
+            "status": call_session.status,
+            "duration_seconds": call_session.duration_seconds,
+            "transcript": call_session.transcript,
+            "summary": call_session.summary,
+            "priority": call_session.priority,
+            "sentiment": call_session.sentiment,
+            "action_items": call_session.action_items,
+            "category": call_session.category,
+            "urgency": call_session.urgency,
+            "action_required": call_session.action_required,
+            "created_at": call_session.created_at,
+            "ended_at": call_session.ended_at,
+            "agent_name": agent_name,
+            "is_agent_deleted": agent_deleted_at is not None,
+        }
+        call_history.append(call_dict)
+
+    return call_history

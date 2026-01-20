@@ -122,7 +122,7 @@ async def delete_agent(
     agent_id: int,
 ) -> None:
     """
-    Delete an agent.
+    Soft delete an agent (preserves call history).
 
     Args:
         session: Database session
@@ -130,7 +130,7 @@ async def delete_agent(
         agent_id: The agent's ID
 
     Raises:
-        HTTPException: If agent not found or user not authorized
+        HTTPException: If agent not found, already deleted, or user not authorized
     """
     agent = await agent_repo.get_by_id(session, agent_id)
 
@@ -140,4 +140,7 @@ async def delete_agent(
     if agent.user_id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this agent")
 
-    await agent_repo.delete(session, agent)
+    if agent.deleted_at is not None:
+        raise HTTPException(status_code=400, detail="Agent already deleted")
+
+    await agent_repo.soft_delete(session, agent)

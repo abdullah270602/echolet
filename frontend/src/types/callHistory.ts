@@ -39,6 +39,9 @@ export interface CallHistoryItem {
   sentiment: CallSentiment | null;
   action_required: boolean | null;
   action_items: string[] | null;
+  // Agent info
+  agent_name: string | null;
+  is_agent_deleted: boolean;
 }
 
 /**
@@ -78,6 +81,22 @@ export function formatRelativeTime(dateString: string | null): string {
   if (diffDays < 7) return `${diffDays}d ago`;
 
   return date.toLocaleDateString();
+}
+
+/**
+ * Helper function to format timestamp to absolute time in user's local timezone
+ * (e.g., "Jan 21, 14:30")
+ */
+export function formatAbsoluteTime(dateString: string | null): string {
+  if (!dateString) return '';
+
+  const date = new Date(dateString);
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 /**

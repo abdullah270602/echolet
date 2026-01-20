@@ -49,6 +49,9 @@ class CallHistoryResponse(BaseModel):
     sentiment: Optional[str] = None
     action_required: Optional[bool] = None
     action_items: Optional[list[str]] = None
+    # Agent info
+    agent_name: Optional[str] = None
+    is_agent_deleted: bool = False
 
     class Config:
         from_attributes = True

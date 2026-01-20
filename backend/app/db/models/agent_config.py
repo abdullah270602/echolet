@@ -61,6 +61,11 @@ class AgentConfig(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        default=None,
+    )
 
     __table_args__ = (Index("ix_agent_configs_user_id", "user_id"),)
 

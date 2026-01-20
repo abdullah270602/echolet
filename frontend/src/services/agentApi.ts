@@ -1,6 +1,6 @@
 import type { Agent } from '../types/agent';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // Backend API response types
 interface AgentApiResponse {

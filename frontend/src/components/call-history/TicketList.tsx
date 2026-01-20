@@ -11,7 +11,6 @@ import {
   AlertCircle,
   Loader2,
   RefreshCw,
-  User,
   CheckCircle,
   CircleDot,
   Smile,
@@ -20,11 +19,13 @@ import {
   Angry,
   Bell,
   BellOff,
+  Bot,
 } from 'lucide-react';
 import type { CallHistoryItem, CallSentiment } from '../../types/callHistory';
 import {
   formatDuration,
   formatRelativeTime,
+  formatAbsoluteTime,
   getCategoryClasses,
   getUrgencyClasses,
   getSentimentClasses,
@@ -164,9 +165,6 @@ function TicketCard({
 }) {
   const description = getCallDescription(call);
 
-  // Extract caller info placeholder (in real app, would come from user data)
-  const callerId = call.room_name.slice(0, 8);
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -177,23 +175,37 @@ function TicketCard({
                  hover:bg-white/10 hover:border-teal-500/30
                  transition-all duration-200 cursor-pointer"
     >
-      {/* Header: User Info + Timestamp */}
+      {/* Header: Agent Info + Timestamp */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500/30 to-purple-500/30 flex items-center justify-center border border-white/10">
-            <User className="w-5 h-5 text-teal-400" />
+            <Bot className="w-5 h-5 text-teal-400" />
           </div>
           <div>
-            <p className="text-white font-medium">Caller #{callerId}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-white font-medium">
+                {call.agent_name || 'Unknown Agent'}
+              </p>
+              {call.is_agent_deleted && (
+                <span className="px-1.5 py-0.5 text-xs rounded bg-white/10 text-white/40 border border-white/10">
+                  Deleted
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-1 text-white/50 text-sm">
               <Phone className="w-3 h-3" />
               <span>Session {call.id}</span>
             </div>
           </div>
         </div>
-        <span className="text-white/40 text-xs">
-          {formatRelativeTime(call.created_at)}
-        </span>
+        <div className="text-right">
+          <p className="text-white/70 text-sm">
+            {formatAbsoluteTime(call.created_at)}
+          </p>
+          <p className="text-white/40 text-xs">
+            {formatRelativeTime(call.created_at)}
+          </p>
+        </div>
       </div>
 
       {/* Tags Row */}
