@@ -99,6 +99,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
             session_start_time=session_start_time,
             save_call_log_fn=save_call_log,
             send_to_queue_fn=send_to_analysis_queue,
+            cleanup_done=cleanup_done,
         )
 
         # Wait for participant and get usage limits
@@ -159,7 +160,6 @@ async def agent_session(ctx: agents.JobContext) -> None:
 
         @session.on("close")
         def on_close():
-            cleanup_done["value"] = True  # Mark that session closed (tool handled cleanup)
             session_closed.set()
 
         await session_closed.wait()
@@ -178,10 +178,12 @@ async def agent_session(ctx: agents.JobContext) -> None:
     except Exception as e:
         logger.error(f"Session error: {e}")
         call_status = "failed"
+        raise
 
-        # Fallback cleanup if session errored before end_call tool ran
+    finally:
+        # Always save call log if end_call tool didn't handle it
         if not cleanup_done["value"]:
-            logger.info("Fallback cleanup - session error")
+            logger.info(f"Cleanup: saving call log")
             duration = int(time.time() - session_start_time)
             try:
                 await save_call_log(
@@ -190,10 +192,17 @@ async def agent_session(ctx: agents.JobContext) -> None:
                     duration_seconds=duration,
                     status=call_status,
                 )
-            except Exception as save_error:
-                logger.error(f"Fallback save failed: {save_error}")
+                logger.info(f"Call log saved: {duration}s, {len(transcript_messages)} messages")
 
-        raise
+                # Send to analysis queue
+                try:
+                    await send_to_analysis_queue(room_name)
+                    logger.debug(f"Sent to analysis queue: {room_name}")
+                except Exception as sqs_error:
+                    logger.error(f"SQS send error: {sqs_error}")
+
+            except Exception as save_error:
+                logger.error(f"Cleanup save failed: {save_error}")
 
 
 if __name__ == "__main__":

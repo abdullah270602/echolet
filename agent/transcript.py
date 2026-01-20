@@ -30,6 +30,7 @@ def create_dynamic_assistant(
     session_start_time: float,
     save_call_log_fn: Callable[..., Awaitable[bool]],
     send_to_queue_fn: Callable[[str], Awaitable[None]],
+    cleanup_done: dict[str, bool],
 ) -> type[Agent]:
     """
     Factory function to create a DynamicAssistant class with transcript logging.
@@ -41,6 +42,7 @@ def create_dynamic_assistant(
         session_start_time: Session start timestamp for duration calculation
         save_call_log_fn: Async function to save call logs
         send_to_queue_fn: Async function to send to analysis queue
+        cleanup_done: Shared dict to track if cleanup was handled
 
     Returns:
         A DynamicAssistant class configured with the given instructions
@@ -54,6 +56,7 @@ def create_dynamic_assistant(
             self._session_start_time = session_start_time
             self._save_call_log_fn = save_call_log_fn
             self._send_to_queue_fn = send_to_queue_fn
+            self._cleanup_done = cleanup_done
 
         async def transcription_node(
             self,
@@ -152,6 +155,7 @@ def create_dynamic_assistant(
                 )
                 if success:
                     logger.info(f"Call log saved: {duration}s, {len(self._transcript_log)} messages")
+                    self._cleanup_done["value"] = True  # Mark cleanup as done
                 else:
                     logger.warning(f"Failed to save call log: {self._room_name}")
             except Exception as e:
