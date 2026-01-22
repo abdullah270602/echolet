@@ -87,11 +87,30 @@ AVAILABLE_VOICES: list[VoiceOption] = [
         description="Call center style, clear pronunciation",
     ),
     VoiceOption(
-        id="Denis",
-        name="Denis",
+        id="Dennis",
+        name="Dennis",
         gender="Male",
         description="Supportive and warm tone",
     ),
+    VoiceOption(
+        id="Clive",
+        name="Clive",
+        gender="Male",
+        description="British-accented English-language male voice with a calm, cordial quality",
+    ),
+    VoiceOption(
+        id="Olivia",
+        name="Olivia",
+        gender="Female",
+        description="Young British femail with an upbeat and friendly tone",
+    ),
+    VoiceOption(
+        id="Timothy",
+        name="Timothy",
+        gender="Male",
+        description="Lively upbeat American male voice",
+    ),
+    
 ]
 
 # List of available tones
