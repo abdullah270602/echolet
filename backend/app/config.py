@@ -10,6 +10,8 @@ LIVEKIT_URL = os.getenv("LIVEKIT_URL")
 # Clerk Authentication
 # Format: https://<your-clerk-frontend-api>.clerk.accounts.dev/.well-known/jwks.json
 CLERK_JWKS_URL = os.getenv("CLERK_JWKS_URL")
+# Clerk Webhook signing secret (from Clerk Dashboard -> Webhooks)
+CLERK_WEBHOOK_SIGNING_SECRET = os.getenv("CLERK_WEBHOOK_SIGNING_SECRET")
 
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL")
