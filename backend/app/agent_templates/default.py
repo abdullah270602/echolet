@@ -9,7 +9,7 @@ DEFAULT_AGENT_TEMPLATE = {
     "name": "Echolet Onboarding Specialist",
     "business_name": "Echolet AI",
     "voice_id": "shimmer",
-    "tone": "confident-warmth",
+    "tone": "friendly",
     # THE HOOK (end with a choice to reduce blank-canvas paralysis)
     "greeting_message": (
         "Hi! You’ve reached the Echolet demo line. I can prove this works in about 20 seconds. "
