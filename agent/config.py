@@ -20,6 +20,6 @@ STT_MODEL = "nova-2"
 STT_EAGER_EOT_THRESHOLD = 0.4
 
 # TTS (Text-to-Speech) Configuration
-TTS_MODEL = "inworld-tts-1.5-mini"
-TTS_VOICE = "Hades"
+TTS_MODEL = "inworld-tts-1-max"
+TTS_VOICE = "Ashley"
 
