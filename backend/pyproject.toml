@@ -14,4 +14,5 @@ dependencies = [
     "alembic>=1.17.2",
     "sqlalchemy[asyncio]>=2.0.45",
     "asyncpg>=0.30.0",
+    "svix>=1.84.1",
 ]
