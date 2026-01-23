@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, UTC
 from typing import Optional
 
@@ -29,7 +30,7 @@ async def get_by_id(
 
 async def get_by_user_id(
     session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
 ) -> list[AgentConfig]:
     """
     Get all active (non-deleted) agent configurations for a user.
@@ -51,7 +52,7 @@ async def get_by_user_id(
 
 async def get_user_agent_count(
     session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
 ) -> int:
     """
     Get the count of active (non-deleted) agents for a user.
@@ -73,7 +74,7 @@ async def get_user_agent_count(
 
 async def create(
     session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
     data: AgentCreateRequest,
 ) -> AgentConfig:
     """

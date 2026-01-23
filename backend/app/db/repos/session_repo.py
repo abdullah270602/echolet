@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from typing import Optional, Any
 
@@ -74,7 +75,7 @@ async def get_by_room_name_with_agent(
 
 async def create(
     session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
     agent_id: int,
 ) -> CallSession:
     """
@@ -163,7 +164,7 @@ async def update_call_log(
 
 async def get_user_call_history(
     session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
     limit: int = 50,
 ) -> list[dict[str, Any]]:
     """

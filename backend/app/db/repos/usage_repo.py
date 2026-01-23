@@ -1,3 +1,4 @@
+import uuid
 from datetime import date, datetime, timezone
 
 from sqlalchemy import select
@@ -9,7 +10,7 @@ from app.db.models.usage import UserDailyUsage
 
 async def get_daily_usage(
     session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
     usage_date: date | None = None,
 ) -> int:
     """
@@ -39,7 +40,7 @@ async def get_daily_usage(
 
 async def increment_usage(
     session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
     seconds: int,
     usage_date: date | None = None,
 ) -> int:

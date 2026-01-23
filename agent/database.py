@@ -107,7 +107,7 @@ async def get_session_config(room_name: str) -> Optional[SessionConfig]:
             return SessionConfig(
                 session_id=row["session_id"],
                 agent_id=row["agent_id"],
-                user_id=row["user_id"],
+                user_id=str(row["user_id"]),  # Convert UUID to string
                 name=row["name"],
                 business_name=row["business_name"],
                 voice_id=row["voice_id"],
