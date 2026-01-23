@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,7 +10,7 @@ from app.schemas.agent import AgentCreateRequest, AgentUpdateRequest, DEFAULT_CO
 
 async def list_agents(
     session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
 ) -> list[AgentConfig]:
     """
     List all agents for a user.
@@ -25,7 +27,7 @@ async def list_agents(
 
 async def get_agent(
     session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
     agent_id: int,
 ) -> AgentConfig:
     """
@@ -55,7 +57,7 @@ async def get_agent(
 
 async def create_agent(
     session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
     data: AgentCreateRequest,
 ) -> AgentConfig:
     """
@@ -86,7 +88,7 @@ async def create_agent(
 
 async def update_agent(
     session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
     agent_id: int,
     data: AgentUpdateRequest,
 ) -> AgentConfig:
@@ -118,7 +120,7 @@ async def update_agent(
 
 async def delete_agent(
     session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
     agent_id: int,
 ) -> None:
     """

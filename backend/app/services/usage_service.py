@@ -1,10 +1,12 @@
+import uuid
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import DAILY_TALK_LIMIT_SECONDS
 from app.db.repos import usage_repo
 
 
-async def check_user_limit(session: AsyncSession, user_id: str) -> dict:
+async def check_user_limit(session: AsyncSession, user_id: uuid.UUID) -> dict:
     """
     Check if user has remaining talk time for today.
 
@@ -30,7 +32,7 @@ async def check_user_limit(session: AsyncSession, user_id: str) -> dict:
     }
 
 
-async def record_usage(session: AsyncSession, user_id: str, seconds: int) -> dict:
+async def record_usage(session: AsyncSession, user_id: uuid.UUID, seconds: int) -> dict:
     """
     Record talk time usage for a user.
 

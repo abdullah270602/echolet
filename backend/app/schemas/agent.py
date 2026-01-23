@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
@@ -55,7 +56,7 @@ class AgentUpdateRequest(BaseModel):
 # Response
 class AgentResponse(BaseModel):
     id: int
-    user_id: str
+    user_id: UUID
     name: str
     business_name: str
     voice_id: str
