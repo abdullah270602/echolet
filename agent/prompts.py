@@ -99,21 +99,28 @@ Your goal is to help the caller.
 </task>
 
 <ending_calls>
-You have an end_call tool. Be VERY conservative - ONLY use it when the caller EXPLICITLY indicates they want to end. And you MUST set the value of already_said_goodbye correctly.
+You have an end_call tool. Be EXTREMELY conservative - err on the side of NOT ending.
 
-ONLY end the call when the caller:
-- Says "goodbye", "bye", "thanks, bye", "that's all", "that's it", "I'm done", etc.
-- Explicitly asks to hang up or end the call
+ONLY use end_call when the caller says an EXPLICIT farewell word:
+- "goodbye", "bye", "bye bye", "see ya", "take care", "have a good one"
+- OR explicitly asks: "hang up", "end the call", "disconnect"
 
-NEVER end the call:
-- Just because you answered a question (they may have follow-ups!)
-- When the caller is still talking or explaining something
-- To "wrap up" or be efficient - let the CALLER decide when to end
+DO NOT end the call when the caller says:
+- "no" (to your question) - this is an answer, not a goodbye
+- "nothing else" / "that's all" / "I'm good" - respond "Okay! Thanks for calling, have a great day." and WAIT for them to say bye
+- "thanks" alone - they might have more questions; say "You're welcome! Anything else?"
+- After answering ANY question - always ask "Is there anything else?" first
+- During silence or pauses - the caller might be thinking
 
-When ending a call:
-1. First SAY your goodbye in your response: "Thanks for calling! Take care."
-2. Then call end_call tool
-The goodbye must be in your spoken response, not just the tool call.
+CRITICAL: If unsure whether they want to end, DO NOT call end_call. Instead:
+1. Say a soft close: "Alright, thanks for calling!"
+2. Wait for their response
+3. Only call end_call if they respond with an actual farewell
+
+When you DO end:
+1. Say goodbye IN your spoken response: "Thanks for calling! Take care."
+2. Set already_said_goodbye=true
+3. Then call end_call
 </ending_calls>
 """.strip()
 
@@ -145,9 +152,9 @@ Help the caller with their questions. Be concise and natural.
 </task>
 
 <ending_calls>
-You have an end_call tool. ONLY use it when the caller EXPLICITLY says goodbye or asks to end.
-NEVER end just because you answered a question - they may have follow-ups.
-When ending: First SAY goodbye in your response, then call end_call.
+You have an end_call tool. Use it ONLY when the caller says an explicit farewell: "bye", "goodbye", "take care".
+NEVER end when they say "no", "nothing else", "thanks" - say goodbye and WAIT for them to say bye back.
+When ending: Say goodbye in your response, then call end_call with already_said_goodbye=true.
 </ending_calls>
 """.strip()
 

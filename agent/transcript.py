@@ -87,29 +87,29 @@ def create_dynamic_assistant(
             reason: Annotated[
                 str,
                 Field(
-                    description="The reason for ending: 'user_goodbye' or 'user_requested'"
+                    description="The reason for ending: 'user_goodbye' (user said bye/goodbye/take care) or 'user_requested' (user asked to hang up)"
                 )
             ] = "user_goodbye",
             already_said_goodbye: Annotated[
                 bool,
                 Field(
-                    description="Set to true if you already said goodbye in your response text. Set to false if you need the system to play a goodbye message."
+                    description="MUST be true if you said goodbye in your response text. Only set false if you forgot to say goodbye."
                 )
-            ] = False,
+            ] = True,
         ) -> str:
             """
-            End the current call gracefully.
+            End the current call gracefully. USE SPARINGLY - only when absolutely certain.
 
-            ONLY call when user EXPLICITLY says goodbye:
-            - "goodbye", "bye", "bye bye", "see you", "take care"
-            - Explicitly asks to hang up or end the call
+            REQUIRED: User must say an EXPLICIT farewell word before you call this:
+            ✅ VALID triggers: "bye", "goodbye", "bye bye", "see ya", "take care", "have a good one", "hang up"
 
-            DO NOT call when user says:
-            - "no", "nothing else", "that's all" - these are answers, not goodbyes
-            - After these, YOU say goodbye and wait for them to say bye back
+            ❌ INVALID - DO NOT end on these:
+            - "no" / "nope" / "nothing else" / "that's all" / "I'm good" → Say "Thanks for calling!" and WAIT
+            - "thanks" / "thank you" → Say "You're welcome! Anything else?" and WAIT
+            - Silence or pauses → The caller might be thinking, WAIT
+            - After answering any question → Ask "Anything else?" and WAIT
 
-            IMPORTANT: Set already_said_goodbye=true if you said goodbye in your response.
-            If you didn't say goodbye, set already_said_goodbye=false and the system will play one.
+            ALWAYS say goodbye in your response BEFORE calling this tool.
             """
             logger.info(f"End call requested: {reason}, already_said_goodbye={already_said_goodbye}")
 

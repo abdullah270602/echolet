@@ -8,7 +8,7 @@ DEFAULT_AGENT_TEMPLATE = {
     # META DATA
     "name": "Echolet Onboarding Specialist",
     "business_name": "Echolet AI",
-    "voice_id": "shimmer",
+    "voice_id": "Ashley",
     "tone": "friendly",
     # THE HOOK (end with a choice to reduce blank-canvas paralysis)
     "greeting_message": (
