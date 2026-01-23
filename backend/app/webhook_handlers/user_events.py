@@ -31,20 +31,51 @@ async def handle_user_created(session: AsyncSession, data: dict[str, Any]) -> No
     # Extract primary email
     email = _extract_primary_email(data)
 
-    # 1. Upsert user to database
-    await user_repo.upsert_user(session, clerk_id, email)
-    logger.info(f"User synced: {clerk_id}")
+    # 1. Upsert user to database and get internal ID
+    user = await user_repo.upsert_user(session, clerk_id, email)
+    logger.info(f"User synced: {clerk_id} -> internal ID: {user.id}")
 
     # 2. Check if user already has agents (idempotency)
-    agent_count = await agent_repo.get_user_agent_count(session, clerk_id)
+    agent_count = await agent_repo.get_user_agent_count(session, user.id)
     if agent_count > 0:
         logger.info(f"User {clerk_id} already has {agent_count} agent(s), skipping seed")
         return
 
-    # 3. Seed default agent
+    # 3. Seed default agent with internal user ID
     agent_data = AgentCreateRequest(**DEFAULT_AGENT_TEMPLATE)
-    agent = await agent_repo.create(session, user_id=clerk_id, data=agent_data)
+    agent = await agent_repo.create(session, user_id=user.id, data=agent_data)
     logger.info(f"Default agent seeded for {clerk_id}: agent_id={agent.id}")
+
+
+async def handle_user_deleted(session: AsyncSession, data: dict[str, Any]) -> None:
+    """
+    Handle user.deleted event - permanently delete user and all associated data.
+
+    With FK CASCADE constraints, deleting the user automatically deletes:
+    - All agent_configs
+    - All call_sessions
+    - All user_daily_usage records
+
+    Args:
+        session: Database session
+        data: Clerk user data payload
+    """
+    clerk_id = data.get("id")
+    if not clerk_id:
+        logger.warning("user.deleted event missing clerk_id")
+        return
+
+    # Look up user by clerk_id
+    user = await user_repo.get_by_clerk_id(session, clerk_id)
+    if not user:
+        logger.info(f"User {clerk_id} not found in database (may already be deleted)")
+        return
+
+    # Delete user - CASCADE handles all related data
+    await session.delete(user)
+    await session.commit()
+
+    logger.info(f"Permanently deleted user and all associated data for Clerk ID: {clerk_id}")
 
 
 def _extract_primary_email(data: dict[str, Any]) -> str:

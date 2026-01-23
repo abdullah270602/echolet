@@ -15,8 +15,7 @@ HandlerType = Callable[[AsyncSession, dict[str, Any]], Coroutine[Any, Any, None]
 # Registry: event_type -> handler function
 HANDLERS: dict[str, HandlerType] = {
     "user.created": user_events.handle_user_created,
-    # Add more handlers here:
-    # "user.deleted": user_events.handle_user_deleted,
+    "user.deleted": user_events.handle_user_deleted,
 }
 
 
