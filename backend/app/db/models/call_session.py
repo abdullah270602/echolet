@@ -3,7 +3,7 @@ from typing import Optional, Any
 import uuid
 
 from sqlalchemy import String, Integer, DateTime, ForeignKey, Index, Boolean, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -25,7 +25,12 @@ class CallSession(Base):
     )
 
     # Foreign keys
-    user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     agent_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("agent_configs.id", ondelete="CASCADE"),

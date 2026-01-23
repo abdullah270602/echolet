@@ -1,7 +1,9 @@
+import uuid
 from datetime import date, datetime
 from typing import Optional
 
-from sqlalchemy import String, Integer, Date, DateTime, UniqueConstraint, Index, func
+from sqlalchemy import Integer, Date, DateTime, UniqueConstraint, Index, ForeignKey, func
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -13,7 +15,11 @@ class UserDailyUsage(Base):
     __tablename__ = "user_daily_usage"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     usage_date: Mapped[date] = mapped_column(
         Date,
         nullable=False,
