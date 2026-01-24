@@ -220,18 +220,18 @@ DO NOT use if: user just gave information, said 'no' to a question, said 'thanks
             """
             End the current call gracefully. USE WITH EXTREME CAUTION.
 
-            ⛔ BEFORE calling, verify:
+            BEFORE calling, verify:
             1. Is this a REAL ending? (Not just user answering your question)
             2. Have there been at least 2 user messages?
             3. Did you say goodbye in your response?
 
-            ✅ VALID endings:
+            VALID endings:
             - User: "Okay, bye!" → reason='user_goodbye', detected_closing_phrase='bye'
             - User: "Thanks, take care!" → reason='user_goodbye', detected_closing_phrase='take care'
             - User: "Please hang up" → reason='user_hangup_request', detected_closing_phrase='hang up'
             - Full sequence completed → reason='natural_close'
 
-            ❌ INVALID - DO NOT END:
+            INVALID - DO NOT END:
             - User gave their name, phone number, or other info you asked for
             - User said "no" to YOUR question (this is an ANSWER, not a goodbye)
             - User said "thanks" alone (say "You're welcome! Anything else?")
