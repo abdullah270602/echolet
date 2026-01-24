@@ -43,13 +43,6 @@ class AgentConfig(Base):
     # Knowledge
     knowledge_base_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    # Limits
-    max_duration_seconds: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=600,
-    )
-
     # Status
     status: Mapped[str] = mapped_column(
         String(20),

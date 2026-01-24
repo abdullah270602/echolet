@@ -4,38 +4,15 @@ Handles session time limits and graceful disconnection.
 """
 
 import asyncio
-import json
 import logging
 import time
 
-from livekit import agents, rtc
+from livekit import agents
 from livekit.agents import AgentSession
 
 from prompts import FAREWELL_MESSAGE
 
 logger = logging.getLogger(__name__)
-
-
-def get_remaining_seconds_from_metadata(
-    participant: rtc.RemoteParticipant,
-) -> int | None:
-    """
-    Extract remaining_seconds from participant metadata.
-
-    Args:
-        participant: The remote participant to extract metadata from
-
-    Returns:
-        Remaining seconds if found, None otherwise
-    """
-    if not participant.metadata:
-        return None
-
-    try:
-        metadata = json.loads(participant.metadata)
-        return metadata.get("remaining_seconds")
-    except (json.JSONDecodeError, TypeError):
-        return None
 
 
 async def handle_limit_reached(

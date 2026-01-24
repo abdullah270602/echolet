@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 
 import asyncpg
 
-from config import DATABASE_URL
+from config import DATABASE_URL, DAILY_TALK_LIMIT_SECONDS
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +37,6 @@ class SessionConfig:
 
     # Knowledge
     knowledge_base_text: Optional[str]
-
-    # Limits
-    max_duration_seconds: int
 
 
 def get_database_url() -> str:
@@ -91,8 +88,7 @@ async def get_session_config(room_name: str) -> Optional[SessionConfig]:
                     ac.greeting_message,
                     ac.tone,
                     ac.custom_instructions,
-                    ac.knowledge_base_text,
-                    ac.max_duration_seconds
+                    ac.knowledge_base_text
                 FROM call_sessions cs
                 JOIN agent_configs ac ON cs.agent_id = ac.id
                 WHERE cs.room_name = $1
@@ -115,13 +111,65 @@ async def get_session_config(room_name: str) -> Optional[SessionConfig]:
                 tone=row["tone"],
                 custom_instructions=row["custom_instructions"],
                 knowledge_base_text=row["knowledge_base_text"],
-                max_duration_seconds=row["max_duration_seconds"],
             )
         finally:
             await conn.close()
 
     except Exception as e:
         logger.error(f"Database error fetching session config: {e}")
+        return None
+
+
+async def get_user_remaining_seconds(user_id: str) -> Optional[int]:
+    """
+    Query user's remaining talk seconds for today from database.
+
+    Args:
+        user_id: The user's UUID (from session_config.user_id)
+
+    Returns:
+        Remaining seconds for today, or None if error
+    """
+    try:
+        url = get_database_url()
+
+        # Handle SSL for cloud databases
+        ssl_context = None
+        if "sslmode=require" in url:
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            url = url.replace("?sslmode=require", "").replace("&sslmode=require", "")
+
+        conn = await asyncpg.connect(url, ssl=ssl_context)
+
+        try:
+            today = datetime.now(timezone.utc).date()
+
+            # Get today's usage for this user
+            row = await conn.fetchrow(
+                """
+                SELECT talk_seconds_used
+                FROM user_daily_usage
+                WHERE user_id = $1 AND usage_date = $2
+                """,
+                user_id,
+                today,
+            )
+
+            used_seconds = row["talk_seconds_used"] if row else 0
+            remaining = max(0, DAILY_TALK_LIMIT_SECONDS - used_seconds)
+
+            logger.debug(
+                f"User {user_id}: used={used_seconds}s, limit={DAILY_TALK_LIMIT_SECONDS}s, remaining={remaining}s"
+            )
+            return remaining
+
+        finally:
+            await conn.close()
+
+    except Exception as e:
+        logger.error(f"Database error fetching user remaining seconds: {e}")
         return None
 
 

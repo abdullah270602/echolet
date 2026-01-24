@@ -31,8 +31,8 @@ from prompts import (
     DynamicPrompts,
     build_prompts,
 )
-from database import get_session_config, save_call_log
-from usage import get_remaining_seconds_from_metadata, monitor_usage
+from database import get_session_config, get_user_remaining_seconds, save_call_log
+from usage import monitor_usage
 from transcript import create_dynamic_assistant, create_user_transcript_handler
 from sqs import send_to_analysis_queue
 
@@ -81,7 +81,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
                 greeting_message=session_config.greeting_message,
             )
             voice_id = session_config.voice_id
-            max_duration = session_config.max_duration_seconds
+            user_id = session_config.user_id
         else:
             logger.error(f"No config for room: {room_name}, using fallback")
             prompts = DynamicPrompts(
@@ -89,7 +89,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
                 greeting_instructions=FALLBACK_GREETING,
             )
             voice_id = TTS_VOICE
-            max_duration = 600
+            user_id = None
 
         # Create dynamic agent with transcript logging and cleanup capabilities
         DynamicAssistant = create_dynamic_assistant(
@@ -102,15 +102,14 @@ async def agent_session(ctx: agents.JobContext) -> None:
             cleanup_done=cleanup_done,
         )
 
-        # Wait for participant and get usage limits
+        # Wait for participant
         participant = await ctx.wait_for_participant()
-        remaining_seconds = get_remaining_seconds_from_metadata(participant)
 
-        effective_limit = remaining_seconds
-        if effective_limit is None:
-            effective_limit = max_duration
-        elif max_duration:
-            effective_limit = min(effective_limit, max_duration)
+        # Get user's remaining talk time from database (global daily limit)
+        remaining_seconds = None
+        if user_id:
+            remaining_seconds = await get_user_remaining_seconds(user_id)
+            logger.info(f"User {user_id} has {remaining_seconds}s remaining today")
 
         # Create the agent session
         session = AgentSession(
@@ -145,11 +144,11 @@ async def agent_session(ctx: agents.JobContext) -> None:
             ),
         )
 
-        # Start usage monitoring
+        # Start usage monitoring (if we have a remaining limit)
         usage_task: asyncio.Task | None = None
-        if effective_limit is not None:
+        if remaining_seconds is not None and remaining_seconds > 0:
             usage_task = asyncio.create_task(
-                monitor_usage(session, ctx, effective_limit, session_start_time)
+                monitor_usage(session, ctx, remaining_seconds, session_start_time)
             )
 
         # Send greeting

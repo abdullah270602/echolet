@@ -63,7 +63,6 @@ async def start_session(
         room_name=call_session.room_name,
         identity=str(user_id),
         name=None,
-        remaining_seconds=usage["remaining_seconds"],
     )
 
     return {

@@ -23,3 +23,7 @@ STT_EAGER_EOT_THRESHOLD = 0.4
 TTS_MODEL = "inworld-tts-1-max"
 TTS_VOICE = "Ashley"
 
+# Usage Limits
+# Default: 1 hour (3600 seconds) per day
+DAILY_TALK_LIMIT_SECONDS = int(os.getenv("DAILY_TALK_LIMIT_SECONDS", "3600"))
+

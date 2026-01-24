@@ -37,7 +37,6 @@ class AgentCreateRequest(BaseModel):
     tone: Literal["professional", "friendly", "urgent"] = "professional"
     custom_instructions: Optional[str] = None
     knowledge_base_text: Optional[str] = None
-    max_duration_seconds: int = 600
 
 
 # Update request (all optional for PATCH)
@@ -49,7 +48,6 @@ class AgentUpdateRequest(BaseModel):
     tone: Optional[Literal["professional", "friendly", "urgent"]] = None
     custom_instructions: Optional[str] = None
     knowledge_base_text: Optional[str] = None
-    max_duration_seconds: Optional[int] = None
     status: Optional[Literal["active", "inactive", "paused"]] = None
 
 
@@ -64,7 +62,6 @@ class AgentResponse(BaseModel):
     tone: str
     custom_instructions: Optional[str]
     knowledge_base_text: Optional[str]
-    max_duration_seconds: int
     status: str
     phone: Optional[str]
     created_at: Optional[datetime]
