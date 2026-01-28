@@ -139,19 +139,12 @@ class TestHappyPathCallFlow:
             assert created_session.status == "pending"
             assert created_session.room_name == room_name
 
-        # === STEP 2: Agent detects proper farewell ===
-        from transcript import is_farewell_closing, detect_closing_sequence
-
+        # === STEP 2: Agent conversation ends naturally ===
+        # (Call ending is now handled by LLM via prompts, not code validation)
         last_user_message = sample_transcript[-1]["content"]  # "Bye!"
-        is_farewell, word = is_farewell_closing(last_user_message)
-        assert is_farewell is True
-        assert word == "bye"
+        assert "bye" in last_user_message.lower()
 
-        # === STEP 3: Agent validates closing sequence ===
-        has_closing_sequence = detect_closing_sequence(sample_transcript)
-        assert has_closing_sequence is True  # Has "anything else?" → "no" → "goodbye"
-
-        # === STEP 4: Agent sends to SQS ===
+        # === STEP 3: Agent sends to SQS ===
         from sqs import send_to_analysis_queue
 
         with patch("sqs.SQS_QUEUE_URL", "https://sqs.test/queue"), \
@@ -306,12 +299,10 @@ class TestAbnormalDisconnectFlow:
             # Call drops here
         ]
 
-        # === Transcript should NOT have farewell ===
-        from transcript import is_farewell_closing
-
+        # === Transcript does NOT have farewell ===
+        # (Call ending validation removed - LLM handles this via prompts)
         last_message = partial_transcript[-1]["content"]
-        is_farewell, _ = is_farewell_closing(last_message)
-        assert is_farewell is False  # No farewell detected
+        assert "bye" not in last_message.lower()  # No farewell detected
 
         # === Session saved with "failed" status ===
         from app.db.repos import session_repo

@@ -348,62 +348,6 @@ def mock_env_vars() -> Generator[dict[str, str], None, None]:
 
 
 # =============================================================================
-# Transcript Test Data
-# =============================================================================
-
-
-@pytest.fixture
-def transcript_with_farewell() -> list[dict[str, Any]]:
-    """Transcript ending with proper farewell."""
-    return [
-        {"role": "agent", "content": "How can I help you?", "timestamp": 1000},
-        {"role": "user", "content": "I have a question.", "timestamp": 1005},
-        {"role": "agent", "content": "Sure, what's your question?", "timestamp": 1010},
-        {"role": "user", "content": "Never mind, goodbye!", "timestamp": 1015},
-    ]
-
-
-@pytest.fixture
-def transcript_without_farewell() -> list[dict[str, Any]]:
-    """Transcript without proper farewell."""
-    return [
-        {"role": "agent", "content": "How can I help you?", "timestamp": 1000},
-        {"role": "user", "content": "I have a question about my order.", "timestamp": 1005},
-    ]
-
-
-@pytest.fixture
-def transcript_with_natural_close() -> list[dict[str, Any]]:
-    """Transcript with natural close sequence."""
-    return [
-        {"role": "agent", "content": "Is there anything else I can help with?", "timestamp": 1000},
-        {"role": "user", "content": "No, that's all.", "timestamp": 1005},
-        {"role": "agent", "content": "Great! Thanks for calling. Have a nice day!", "timestamp": 1010},
-        {"role": "user", "content": "Thanks, you too!", "timestamp": 1015},
-    ]
-
-
-@pytest.fixture
-def transcript_single_message() -> list[dict[str, Any]]:
-    """Transcript with only one user message."""
-    return [
-        {"role": "agent", "content": "Hello! How can I help?", "timestamp": 1000},
-        {"role": "user", "content": "Bye!", "timestamp": 1005},
-    ]
-
-
-@pytest.fixture
-def transcript_mid_sentence_bye() -> list[dict[str, Any]]:
-    """Transcript with 'bye' in middle of sentence."""
-    return [
-        {"role": "agent", "content": "How can I help?", "timestamp": 1000},
-        {"role": "user", "content": "I need to say bye to my friend first.", "timestamp": 1005},
-        {"role": "agent", "content": "Sure, take your time.", "timestamp": 1010},
-        {"role": "user", "content": "Okay my friend said bye yesterday.", "timestamp": 1015},
-    ]
-
-
-# =============================================================================
 # Utility Functions
 # =============================================================================
 
