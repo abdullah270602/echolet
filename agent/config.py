@@ -13,7 +13,7 @@ AWS_REGION = os.getenv("AWS_REGION")
 
 # LLM Configuration
 LLM_BASE_URL = "https://openrouter.ai/api/v1"
-LLM_MODEL = "google/gemini-2.5-flash-lite"  
+LLM_MODEL = "google/gemini-2.5-flash"  
 
 # STT (Speech-to-Text) Configuration
 STT_MODEL = "nova-2"

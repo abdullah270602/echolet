@@ -35,10 +35,10 @@ from .builder import (
 from .system import (
     SYSTEM_PROMPT,
     FALLBACK_SYSTEM_PROMPT,
-    VOICE_RULES,
-    BASE_GUARDRAILS,
-    TASK_DEFINITION,
-    CALL_ENDING_RULES,
+    VOICE_STYLE,
+    CORE_BEHAVIOR,
+    GUARDRAILS,
+    CALL_ENDING,
 )
 
 __all__ = [
@@ -56,8 +56,8 @@ __all__ = [
     # System prompts (for advanced use/testing)
     "SYSTEM_PROMPT",
     "FALLBACK_SYSTEM_PROMPT",
-    "VOICE_RULES",
-    "BASE_GUARDRAILS",
-    "TASK_DEFINITION",
-    "CALL_ENDING_RULES",
+    "VOICE_STYLE",
+    "CORE_BEHAVIOR",
+    "GUARDRAILS",
+    "CALL_ENDING",
 ]
