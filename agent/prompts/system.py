@@ -67,25 +67,42 @@ Handling difficult moments:
 
 CALL_ENDING = """
 <ending>
-You have an end_call tool to hang up the phone.
+You have an end_call tool to hang up the phone. USE IT SPARINGLY.
 
-When to end:
-- User says goodbye: "bye", "goodbye", "take care", "talk to you later", etc.
-- User confirms they're done: "that's all", "I'm good", "nothing else"
-- User asks you to hang up
+ONLY end the call when user says an EXPLICIT goodbye word:
+- "bye", "goodbye", "see you", "take care", "later", "gotta go"
+- "that's all I needed", "I'm done", "nothing else", "all good"
+- "hang up", "end the call", "disconnect"
 
-How to end:
-1. Say a warm goodbye: "Thanks for calling! Take care."
-2. Call end_call(already_said_goodbye=true) in the SAME response
-Both must happen together, or the call won't actually end.
+NEVER end the call for these (keep talking!):
+- User answered your question ("Most advanced one" = they want that option!)
+- User asked a question ("How to buy?" = answer them!)
+- User declined something ("I won't buy it" = say "No problem! Anything else?")
+- User said "okay" or "alright" (acknowledge and continue)
+- User said "leave it" or "never mind" (move on to next topic)
+- User said "thanks" without "bye" (say "You're welcome! Anything else?")
+- ANY statement that isn't clearly ending the conversation
 
-When NOT to end:
-- User asked a question (answer it first!)
-- User gave you information you requested (continue the conversation!)
-- User said "no" to something (that's an answer, not a goodbye!)
-- User said "thanks" (say "you're welcome, anything else?" and wait)
+Examples of what IS a goodbye:
+- "Okay bye!" ✓
+- "Thanks, goodbye!" ✓
+- "That's all, take care" ✓
+- "Disconnect the call" ✓
 
-Simple rule: If they haven't said goodbye, don't hang up on them.
+Examples of what is NOT a goodbye (DON'T END):
+- "I won't buy it" ✗ (respond: "No problem! Anything else I can help with?")
+- "Most advanced one" ✗ (this answers your question - continue!)
+- "How to buy it?" ✗ (this is a QUESTION - answer it!)
+- "Okay" ✗ (just acknowledging - keep going)
+- "Thanks" ✗ (say "You're welcome! Is there anything else?")
+- "Leave it" ✗ (move to next topic)
+
+When you DO end:
+1. Say a complete goodbye: "Thanks for calling! Take care, goodbye!"
+2. WAIT 2 seconds for your message to finish
+3. Then call end_call(already_said_goodbye=true)
+
+CRITICAL: If in doubt, DON'T end. Ask "Is there anything else I can help with?" instead.
 </ending>
 """
 
@@ -134,9 +151,8 @@ Help the caller. Be honest if you don't know something.
 </behavior>
 
 <ending>
-When user says "bye" or "that's all":
-1. Say goodbye warmly
-2. Call end_call(already_said_goodbye=true)
-Both must happen together.
+ONLY end call when user says explicit goodbye: "bye", "goodbye", "that's all"
+NOT for: questions, "okay", "thanks", "no", or ANY other statement.
+When ending: Say complete goodbye, wait, then call end_call(already_said_goodbye=true)
 </ending>
 """.strip()

@@ -92,13 +92,16 @@ def create_dynamic_assistant(
             ] = True,
         ) -> str:
             """
-            End the current call. Call this ONLY when:
-            - User said farewell (bye, goodbye, take care, see ya, later)
-            - User said "that's all" or "I'm done" or "nothing else"
-            - User explicitly asked to hang up
-            - User is persistently off-topic after you tried to redirect them
+            End the current call. USE SPARINGLY - only when user explicitly says goodbye.
 
-            NEVER call this when user just gave information you asked for, or said "no" to your question.
+            ONLY call when user said: "bye", "goodbye", "take care", "that's all", "nothing else", "hang up"
+
+            DO NOT call when user:
+            - Asked a question (even "how to buy?")
+            - Answered YOUR question (even "most advanced one")
+            - Said "no", "I won't buy", "leave it", "okay", "thanks"
+
+            When in doubt, ask "Anything else?" instead of ending.
             """
             logger.info(f"end_call called, already_said_goodbye={already_said_goodbye}")
 
@@ -115,7 +118,17 @@ def create_dynamic_assistant(
                 "timestamp": time.time(),
             })
 
-            # Play goodbye if needed
+            # Wait for the LLM's goodbye message to finish playing
+            # ctx.wait_for_playout() waits for speech generated BEFORE this tool call
+            try:
+                await ctx.wait_for_playout()
+                logger.debug("Playout complete, proceeding to end call")
+            except Exception as e:
+                logger.warning(f"wait_for_playout failed: {e}")
+                # Fallback: give some time for speech to play
+                await asyncio.sleep(3.0)
+
+            # If LLM didn't say goodbye, say one now
             if not already_said_goodbye:
                 try:
                     speech_handle = ctx.session.say(
@@ -123,13 +136,9 @@ def create_dynamic_assistant(
                         allow_interruptions=False
                     )
                     await speech_handle.wait_for_playout()
-                    logger.debug("Goodbye played")
+                    logger.debug("Fallback goodbye played")
                 except Exception as e:
-                    logger.warning(f"Goodbye playout failed: {e}")
-                    await asyncio.sleep(2.0)
-            else:
-                # Wait for LLM's goodbye to finish
-                await asyncio.sleep(1.5)
+                    logger.warning(f"Fallback goodbye failed: {e}")
 
             # Save call log
             duration = int(time.time() - self._session_start_time)
