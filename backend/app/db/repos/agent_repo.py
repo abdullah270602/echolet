@@ -97,7 +97,6 @@ async def create(
         tone=data.tone,
         custom_instructions=data.custom_instructions,
         knowledge_base_text=data.knowledge_base_text,
-        max_duration_seconds=data.max_duration_seconds,
     )
     session.add(agent)
     await session.commit()

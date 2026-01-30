@@ -59,7 +59,6 @@ def mock_agent(user_id):
     agent.tone = "professional"
     agent.custom_instructions = None
     agent.knowledge_base_text = None
-    agent.max_duration_seconds = 300
     agent.status = "active"
     agent.phone = None
     agent.deleted_at = None

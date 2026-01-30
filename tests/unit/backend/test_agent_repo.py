@@ -52,7 +52,6 @@ def mock_agent(user_id):
     agent.tone = "professional"
     agent.custom_instructions = None
     agent.knowledge_base_text = None
-    agent.max_duration_seconds = 300
     agent.deleted_at = None
     return agent
 
@@ -68,7 +67,6 @@ def mock_create_request():
     request.tone = "friendly"
     request.custom_instructions = "Be helpful"
     request.knowledge_base_text = "FAQ here"
-    request.max_duration_seconds = 600
     return request
 
 
@@ -223,7 +221,6 @@ class TestCreate:
                 tone=mock_create_request.tone,
                 custom_instructions=mock_create_request.custom_instructions,
                 knowledge_base_text=mock_create_request.knowledge_base_text,
-                max_duration_seconds=mock_create_request.max_duration_seconds,
             )
             mock_session.add.assert_called_once_with(mock_instance)
             mock_session.commit.assert_called_once()
