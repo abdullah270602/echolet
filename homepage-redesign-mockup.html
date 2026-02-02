@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Echolet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #000000;
+      --white: #ffffff;
+      --gray-50: #fafafa;
+      --gray-100: #f5f5f5;
+      --gray-200: #e5e5e5;
+      --gray-300: #d4d4d4;
+      --gray-400: #a3a3a3;
+      --gray-500: #737373;
+      --gray-600: #525252;
+      --gray-900: #171717;
+
+      /* Brand accent - used sparingly */
+      --accent: #57d4b2;
+      --accent-dark: #4baab0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--white);
+      color: var(--gray-900);
+      -webkit-font-smoothing: antialiased;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* ===== NAV ===== */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .nav-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 32px;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-weight: 600;
+      font-size: 18px;
+      color: var(--black);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-mark {
+      height: 120px;
+      width: 300px;
+    }
+
+    .logo-mark img {
+      height: 100%;
+      width: 100%;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      font-size: 14px;
+      color: var(--gray-600);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover {
+      color: var(--black);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--gray-600);
+    }
+
+    .btn-ghost:hover {
+      color: var(--black);
+    }
+
+    .btn-primary {
+      background: var(--black);
+      color: var(--white);
+    }
+
+    .btn-primary:hover {
+      background: var(--gray-900);
+    }
+
+    .btn-lg {
+      padding: 14px 28px;
+      font-size: 15px;
+    }
+
+    .btn-outline {
+      background: var(--white);
+      color: var(--black);
+      border: 1px solid var(--gray-300);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--gray-400);
+      background: var(--gray-50);
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      padding: 200px 32px 80px;
+      text-align: center;
+    }
+
+    .hero-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero-label {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: 56px;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+      color: var(--black);
+    }
+
+    .hero p {
+      font-size: 20px;
+      color: var(--gray-500);
+      max-width: 560px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    /* ===== PRODUCT DEMO ===== */
+    .demo-section {
+      padding: 0 32px 120px;
+    }
+
+    .demo-container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .demo-window {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .demo-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .demo-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--gray-300);
+    }
+
+    /* ===== BROWSER TABS (Chrome-style) ===== */
+    .demo-tabs {
+      display: flex;
+      align-items: flex-end;
+      padding: 0 8px;
+      background: var(--gray-100);
+      height: 38px;
+      gap: 1px;
+    }
+
+    .demo-tab {
+      flex: 0 0 160px;
+      height: 32px;
+      padding: 0 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-500);
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+      background: transparent;
+      border-radius: 8px 8px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .demo-tab:hover {
+      background: var(--gray-200);
+      color: var(--gray-700);
+    }
+
+    .demo-tab.active {
+      background: var(--white);
+      color: var(--black);
+      z-index: 1;
+    }
+
+    .demo-tab.active::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: -10px;
+      width: 10px;
+      height: 10px;
+      background: radial-gradient(circle at 0 0, transparent 10px, var(--white) 10px);
+    }
+
+    .demo-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: -10px;
+      width: 10px;
+      height: 10px;
+      background: radial-gradient(circle at 100% 0, transparent 10px, var(--white) 10px);
+    }
+
+    .tab-bar-line {
+      display: none;
+    }
+
+    /* ===== TAB CONTENT ===== */
+    .tab-content {
+      display: none;
+      padding: 40px;
+      height: 480px;
+      overflow-y: auto;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .demo-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      height: 100%;
+    }
+
+    .demo-left h3 {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    .demo-agent {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+
+    .demo-agent-avatar {
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      border-radius: 8px;
+    }
+
+    .demo-agent-info {
+      flex: 1;
+    }
+
+    .demo-agent-name {
+      font-weight: 500;
+      font-size: 15px;
+      color: var(--black);
+    }
+
+    .demo-agent-status {
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    .demo-waveform {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      height: 60px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+    }
+
+    .wave-bar {
+      width: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+      animation: wave 1s ease-in-out infinite;
+    }
+
+    .wave-bar:nth-child(1) { height: 20px; animation-delay: 0s; }
+    .wave-bar:nth-child(2) { height: 35px; animation-delay: 0.1s; }
+    .wave-bar:nth-child(3) { height: 25px; animation-delay: 0.2s; }
+    .wave-bar:nth-child(4) { height: 40px; animation-delay: 0.3s; }
+    .wave-bar:nth-child(5) { height: 30px; animation-delay: 0.4s; }
+    .wave-bar:nth-child(6) { height: 20px; animation-delay: 0.5s; }
+
+    @keyframes wave {
+      0%, 100% { transform: scaleY(1); }
+      50% { transform: scaleY(0.6); }
+    }
+
+    .demo-right h3 {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    .transcript {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 16px;
+      height: auto;
+    }
+
+    .transcript-line {
+      margin-bottom: 16px;
+    }
+
+    .transcript-label {
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .transcript-label.caller {
+      color: var(--gray-500);
+    }
+
+    .transcript-label.agent {
+      color: var(--accent-dark);
+    }
+
+    .transcript-text {
+      font-size: 14px;
+      color: var(--gray-600);
+      line-height: 1.5;
+    }
+
+    /* ===== OVERVIEW TAB ===== */
+    .overview-content {
+      text-align: center;
+      padding: 40px 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .overview-content h2 {
+      font-size: 32px;
+      font-weight: 600;
+      color: var(--black);
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .overview-content > p {
+      font-size: 16px;
+      color: var(--gray-500);
+      margin-bottom: 32px;
+    }
+
+    .overview-features {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      margin-bottom: 32px;
+    }
+
+    .overview-feature {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .overview-feature-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gray-100);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .overview-feature-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--gray-600);
+    }
+
+    .overview-feature span {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray-700);
+    }
+
+    /* ===== HOW IT WORKS CAROUSEL ===== */
+    .carousel-container {
+      position: relative;
+    }
+
+    .carousel-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .carousel-arrow {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .carousel-arrow:hover {
+      background: var(--gray-50);
+      border-color: var(--gray-300);
+    }
+
+    .carousel-arrow:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .carousel-arrow svg {
+      width: 20px;
+      height: 20px;
+      color: var(--gray-600);
+    }
+
+    .carousel-content {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .carousel-slides {
+      display: flex;
+      transition: transform 0.4s ease;
+    }
+
+    .carousel-slide {
+      min-width: 100%;
+      padding: 0 16px;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      color: var(--white);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--black);
+    }
+
+    .step-content {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    /* Step indicators */
+    .carousel-indicators {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .carousel-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gray-300);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .carousel-indicator.active {
+      background: var(--accent);
+      width: 24px;
+      border-radius: 4px;
+    }
+
+    /* ===== STEP 1: CONFIGURE AGENT ===== */
+    .config-layout {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 24px;
+      height: 100%;
+    }
+
+    .config-sidebar {
+      background: var(--gray-50);
+      border-radius: 10px;
+      padding: 6px;
+    }
+
+    .config-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 13px;
+      color: var(--gray-600);
+    }
+
+    .config-menu-item:hover {
+      background: var(--white);
+      color: var(--gray-900);
+    }
+
+    .config-menu-item.active {
+      background: var(--white);
+      color: var(--accent-dark);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .config-menu-item svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .config-menu-item.active svg {
+      color: var(--accent);
+    }
+
+    .config-preview {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .config-preview-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .config-preview-icon svg {
+      width: 32px;
+      height: 32px;
+      color: var(--white);
+    }
+
+    .config-preview h4 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--black);
+      margin-bottom: 8px;
+    }
+
+    .config-preview p {
+      font-size: 14px;
+      color: var(--gray-500);
+      max-width: 280px;
+      line-height: 1.5;
+    }
+
+    .config-form {
+      display: grid;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-600);
+    }
+
+    .form-input {
+      padding: 10px 12px;
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--gray-900);
+      background: var(--gray-50);
+    }
+
+    .form-select {
+      padding: 10px 12px;
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--gray-900);
+      background: var(--gray-50);
+      cursor: pointer;
+    }
+
+    .file-upload {
+      border: 2px dashed var(--gray-200);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .file-upload:hover {
+      border-color: var(--gray-300);
+      background: var(--gray-50);
+    }
+
+    .file-upload-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gray-100);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 8px;
+    }
+
+    .file-upload-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--gray-500);
+    }
+
+    .file-upload span {
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    .btn-train {
+      background: var(--accent);
+      color: var(--white);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+
+    .btn-train:hover {
+      background: var(--accent-dark);
+    }
+
+    /* ===== STEP 2: CUSTOMER CALLS ===== */
+    .incoming-call {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .call-icon {
+      width: 80px;
+      height: 80px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      animation: ring 1.5s ease-in-out infinite;
+    }
+
+    .call-icon svg {
+      width: 36px;
+      height: 36px;
+      color: var(--white);
+    }
+
+    @keyframes ring {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      10% { transform: rotate(-15deg) scale(1.1); }
+      20% { transform: rotate(15deg) scale(1.1); }
+      30% { transform: rotate(-15deg) scale(1.1); }
+      40% { transform: rotate(15deg) scale(1); }
+      50% { transform: rotate(0deg) scale(1); }
+    }
+
+    .caller-info {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 16px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+
+    .caller-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--black);
+      margin-bottom: 4px;
+    }
+
+    .caller-number {
+      font-size: 14px;
+      color: var(--gray-500);
+    }
+
+    .call-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--accent-dark);
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ===== STEP 4: TICKET ===== */
+    .ticket-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .ticket-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .ticket-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--black);
+    }
+
+    .ticket-priority {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .ticket-body {
+      padding: 16px;
+    }
+
+    .ticket-meta {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    .ticket-summary {
+      font-size: 14px;
+      color: var(--gray-600);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .ticket-actions {
+      background: var(--gray-50);
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .ticket-actions-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .ticket-action-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--gray-700);
+      margin-bottom: 6px;
+    }
+
+    .ticket-action-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .ticket-checkbox {
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--gray-300);
+      border-radius: 4px;
+    }
+
+    /* ===== PRICING TAB ===== */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      height: 100%;
+      align-items: start;
+    }
+
+    .pricing-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .pricing-card:hover {
+      border-color: var(--gray-300);
+    }
+
+    .pricing-card.featured {
+      border-color: var(--accent);
+      position: relative;
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: var(--white);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pricing-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--black);
+      margin-bottom: 4px;
+    }
+
+    .pricing-price {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--black);
+      margin-bottom: 2px;
+    }
+
+    .pricing-price span {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--gray-500);
+    }
+
+    .pricing-desc {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-bottom: 16px;
+    }
+
+    .pricing-features {
+      text-align: left;
+      margin-bottom: 16px;
+    }
+
+    .pricing-feature {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--gray-600);
+      margin-bottom: 8px;
+    }
+
+    .pricing-feature svg {
+      width: 16px;
+      height: 16px;
+      color: var(--accent);
+    }
+
+    .btn-pricing {
+      width: 100%;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-pricing-outline {
+      background: var(--white);
+      color: var(--black);
+      border: 1px solid var(--gray-300);
+    }
+
+    .btn-pricing-outline:hover {
+      background: var(--gray-50);
+      border-color: var(--gray-400);
+    }
+
+    .btn-pricing-primary {
+      background: var(--black);
+      color: var(--white);
+      border: none;
+    }
+
+    .btn-pricing-primary:hover {
+      background: var(--gray-900);
+    }
+
+    /* ===== LOGOS ===== */
+    .logos-section {
+      padding: 60px 32px;
+      border-top: 1px solid var(--gray-200);
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .logos-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .logos-label {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin-bottom: 32px;
+    }
+
+    .logos-grid {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+
+    .logo-item {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--gray-400);
+      letter-spacing: -0.01em;
+    }
+
+    /* ===== FEATURES ===== */
+    .features {
+      padding: 120px 32px;
+    }
+
+    .features-container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .features-header {
+      text-align: center;
+      margin-bottom: 80px;
+    }
+
+    .features-header h2 {
+      font-size: 40px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      color: var(--black);
+    }
+
+    .features-header p {
+      font-size: 18px;
+      color: var(--gray-500);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+
+    .feature {
+      padding: 32px;
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      transition: border-color 0.2s;
+    }
+
+    .feature:hover {
+      border-color: var(--gray-300);
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gray-100);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .feature-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--gray-600);
+    }
+
+    .feature h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--black);
+    }
+
+    .feature p {
+      font-size: 14px;
+      color: var(--gray-500);
+      line-height: 1.6;
+    }
+
+    /* ===== CTA ===== */
+    .cta {
+      padding: 120px 32px;
+      background: var(--gray-50);
+      text-align: center;
+    }
+
+    .cta-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .cta h2 {
+      font-size: 36px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      color: var(--black);
+    }
+
+    .cta p {
+      font-size: 17px;
+      color: var(--gray-500);
+      margin-bottom: 32px;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      padding: 48px 32px;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .footer-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      color: var(--gray-600);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      font-size: 14px;
+      color: var(--gray-500);
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      color: var(--black);
+    }
+
+    .footer-copy {
+      font-size: 14px;
+      color: var(--gray-400);
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 36px;
+      }
+
+      .hero p {
+        font-size: 17px;
+      }
+
+      .demo-content {
+        grid-template-columns: 1fr;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .nav-links {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-container">
+      <a href="#" class="logo">
+        <div class="logo-mark"><img src="echolet_logo.svg" alt="Echolet"></div>
+      </a>
+
+      <div class="nav-links">
+        <a href="#">Product</a>
+        <a href="#">Pricing</a>
+        <a href="#">Docs</a>
+        <a href="#">Blog</a>
+      </div>
+
+      <div class="nav-right">
+        <a href="#" class="btn btn-ghost">Sign in</a>
+        <a href="#" class="btn btn-primary">Get started</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-container">
+      <span class="hero-label">AI Voice Agent</span>
+      <h1>Turn missed calls into revenue</h1>
+      <p>Your AI receptionist answers calls 24/7, trained on your business. Every conversation becomes an actionable ticket.</p>
+      <div class="hero-buttons">
+        <a href="#" class="btn btn-primary btn-lg">Get started free</a>
+        <a href="#" class="btn btn-outline btn-lg">Watch demo</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="demo-section">
+    <div class="demo-container">
+      <div class="demo-window">
+        <div class="demo-header">
+          <div class="demo-dot"></div>
+          <div class="demo-dot"></div>
+          <div class="demo-dot"></div>
+        </div>
+
+        <!-- Tab Bar (Chrome-style) -->
+        <div class="demo-tabs">
+          <div class="demo-tab active" data-tab="overview">Overview</div>
+          <div class="demo-tab" data-tab="how-it-works">How it Works</div>
+          <div class="demo-tab" data-tab="demo">Demo</div>
+          <div class="demo-tab" data-tab="pricing">Pricing</div>
+        </div>
+        <div class="tab-bar-line"></div>
+
+        <!-- Tab 1: Overview -->
+        <div class="tab-content active" id="tab-overview">
+          <div class="overview-content">
+            <h2>Your AI receptionist, ready in minutes</h2>
+            <p>Set up once, answer calls forever. No coding required.</p>
+            <div class="overview-features">
+              <div class="overview-feature">
+                <div class="overview-feature-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                </div>
+                <span>24/7 Answering</span>
+              </div>
+              <div class="overview-feature">
+                <div class="overview-feature-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                  </svg>
+                </div>
+                <span>Smart Tickets</span>
+              </div>
+              <div class="overview-feature">
+                <div class="overview-feature-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                </div>
+                <span>Trained on You</span>
+              </div>
+            </div>
+            <a href="#" class="btn btn-primary btn-lg">Get Started Free</a>
+          </div>
+        </div>
+
+        <!-- Tab 2: How it Works -->
+        <div class="tab-content" id="tab-how-it-works">
+          <div class="carousel-container">
+            <div class="carousel-wrapper">
+              <button class="carousel-arrow" id="prev-arrow" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+              </button>
+              <div class="carousel-content">
+                <div class="carousel-slides" id="carousel-slides">
+                  <!-- Step 1: Configure Agent -->
+                  <div class="carousel-slide">
+                    <div class="step-header">
+                      <div class="step-number">1</div>
+                      <div class="step-title">Configure Your Agent</div>
+                    </div>
+                    <div class="step-content">
+                      <div class="config-layout">
+                        <div class="config-sidebar">
+                          <div class="config-menu-item active">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <circle cx="12" cy="12" r="3"/>
+                              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                            </svg>
+                            Agent Setup
+                          </div>
+                          <div class="config-menu-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                              <line x1="12" y1="19" x2="12" y2="23"/>
+                              <line x1="8" y1="23" x2="16" y2="23"/>
+                            </svg>
+                            Voice & Model
+                          </div>
+                          <div class="config-menu-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                              <line x1="8" y1="21" x2="16" y2="21"/>
+                              <line x1="12" y1="17" x2="12" y2="21"/>
+                            </svg>
+                            Services
+                          </div>
+                          <div class="config-menu-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                            </svg>
+                            Knowledge Base
+                          </div>
+                          <div class="config-menu-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                            </svg>
+                            Integrations
+                          </div>
+                          <div class="config-menu-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>
+                            Actions
+                          </div>
+                          <div class="config-menu-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                              <polyline points="14 2 14 8 20 8"/>
+                              <line x1="16" y1="13" x2="8" y2="13"/>
+                              <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                            Ticket Output
+                          </div>
+                          <div class="config-menu-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            Guardrails
+                          </div>
+                        </div>
+                        <div class="config-preview">
+                          <div class="config-preview-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <circle cx="12" cy="12" r="3"/>
+                              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                            </svg>
+                          </div>
+                          <h4>Agent Setup</h4>
+                          <p>Name your agent, set its personality, and define how it should greet callers.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Step 2: Customer Calls -->
+                  <div class="carousel-slide">
+                    <div class="step-header">
+                      <div class="step-number">2</div>
+                      <div class="step-title">Customer Calls In</div>
+                    </div>
+                    <div class="step-content">
+                      <div class="incoming-call">
+                        <div class="call-icon">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                          </svg>
+                        </div>
+                        <div class="caller-info">
+                          <div class="caller-name">Sarah Johnson</div>
+                          <div class="caller-number">+1 (555) 123-4567</div>
+                        </div>
+                        <div class="call-status">
+                          <div class="status-dot"></div>
+                          Agent answering...
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Step 3: Agent Interacts -->
+                  <div class="carousel-slide">
+                    <div class="step-header">
+                      <div class="step-number">3</div>
+                      <div class="step-title">Agent Handles the Call</div>
+                    </div>
+                    <div class="step-content">
+                      <div class="demo-content" style="padding: 0;">
+                        <div class="demo-left" style="padding-right: 24px;">
+                          <h3>Active Agent</h3>
+                          <div class="demo-agent">
+                            <div class="demo-agent-avatar"></div>
+                            <div class="demo-agent-info">
+                              <div class="demo-agent-name">Front Desk Agent</div>
+                              <div class="demo-agent-status">Handling call • 0:47</div>
+                            </div>
+                          </div>
+                          <div class="demo-waveform">
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                          </div>
+                        </div>
+                        <div class="demo-right">
+                          <h3>Live Transcript</h3>
+                          <div class="transcript" style="height: auto;">
+                            <div class="transcript-line">
+                              <div class="transcript-label caller">Caller</div>
+                              <div class="transcript-text">I'd like to schedule an appointment for Tuesday.</div>
+                            </div>
+                            <div class="transcript-line">
+                              <div class="transcript-label agent">Agent</div>
+                              <div class="transcript-text">I have 10am and 2pm available. Which works for you?</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Step 4: Ticket Generated -->
+                  <div class="carousel-slide">
+                    <div class="step-header">
+                      <div class="step-number">4</div>
+                      <div class="step-title">Ticket Generated</div>
+                    </div>
+                    <div class="step-content">
+                      <div class="ticket-card">
+                        <div class="ticket-header">
+                          <div class="ticket-title">Appointment Request - Sarah Johnson</div>
+                          <div class="ticket-priority">Medium</div>
+                        </div>
+                        <div class="ticket-body">
+                          <div class="ticket-meta">
+                            <span>+1 (555) 123-4567</span>
+                            <span>Today, 2:34 PM</span>
+                            <span>Duration: 1:23</span>
+                          </div>
+                          <div class="ticket-summary">
+                            Customer called to schedule an appointment for next Tuesday. Offered 10am and 2pm slots. Customer selected 2pm. Confirmed appointment for Tuesday at 2pm.
+                          </div>
+                          <div class="ticket-actions">
+                            <div class="ticket-actions-title">Action Items</div>
+                            <div class="ticket-action-item">
+                              <div class="ticket-checkbox"></div>
+                              <span>Add appointment to calendar for Tuesday 2pm</span>
+                            </div>
+                            <div class="ticket-action-item">
+                              <div class="ticket-checkbox"></div>
+                              <span>Send confirmation email to customer</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button class="carousel-arrow" id="next-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+            </div>
+            <div class="carousel-indicators">
+              <div class="carousel-indicator active" data-slide="0"></div>
+              <div class="carousel-indicator" data-slide="1"></div>
+              <div class="carousel-indicator" data-slide="2"></div>
+              <div class="carousel-indicator" data-slide="3"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Demo -->
+        <div class="tab-content" id="tab-demo">
+          <div class="demo-content">
+            <div class="demo-left">
+              <h3>Active Agent</h3>
+              <div class="demo-agent">
+                <div class="demo-agent-avatar"></div>
+                <div class="demo-agent-info">
+                  <div class="demo-agent-name">Front Desk Agent</div>
+                  <div class="demo-agent-status">Handling call • 0:47</div>
+                </div>
+              </div>
+              <div class="demo-waveform">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+              </div>
+            </div>
+            <div class="demo-right">
+              <h3>Live Transcript</h3>
+              <div class="transcript">
+                <div class="transcript-line">
+                  <div class="transcript-label caller">Caller</div>
+                  <div class="transcript-text">Hi, I'd like to schedule an appointment for next Tuesday if possible.</div>
+                </div>
+                <div class="transcript-line">
+                  <div class="transcript-label agent">Agent</div>
+                  <div class="transcript-text">Of course! I have availability at 10am and 2pm on Tuesday. Which works better for you?</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Pricing -->
+        <div class="tab-content" id="tab-pricing">
+          <div class="pricing-grid">
+            <div class="pricing-card">
+              <div class="pricing-name">Free</div>
+              <div class="pricing-price">$0<span>/mo</span></div>
+              <div class="pricing-desc">Perfect for trying it out</div>
+              <div class="pricing-features">
+                <div class="pricing-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>50 calls/month</span>
+                </div>
+                <div class="pricing-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>1 agent</span>
+                </div>
+                <div class="pricing-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>Basic transcripts</span>
+                </div>
+              </div>
+              <button class="btn-pricing btn-pricing-outline">Get Started</button>
+            </div>
+            <div class="pricing-card featured">
+              <div class="pricing-badge">Popular</div>
+              <div class="pricing-name">Pro</div>
+              <div class="pricing-price">$49<span>/mo</span></div>
+              <div class="pricing-desc">For growing businesses</div>
+              <div class="pricing-features">
+                <div class="pricing-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>500 calls/month</span>
+                </div>
+                <div class="pricing-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>3 agents</span>
+                </div>
+                <div class="pricing-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>Smart tickets</span>
+                </div>
+                <div class="pricing-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>CRM integrations</span>
+                </div>
+              </div>
+              <button class="btn-pricing btn-pricing-primary">Get Started</button>
+            </div>
+            <div class="pricing-card">
+              <div class="pricing-name">Enterprise</div>
+              <div class="pricing-price">Custom</div>
+              <div class="pricing-desc">For large teams</div>
+              <div class="pricing-features">
+                <div class="pricing-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>Unlimited calls</span>
+                </div>
+                <div class="pricing-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>Unlimited agents</span>
+                </div>
+                <div class="pricing-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>Custom integrations</span>
+                </div>
+                <div class="pricing-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>Dedicated support</span>
+                </div>
+              </div>
+              <button class="btn-pricing btn-pricing-outline">Contact Sales</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="logos-section">
+    <div class="logos-container">
+      <p class="logos-label">Trusted by businesses everywhere</p>
+      <div class="logos-grid">
+        <span class="logo-item">Acme Corp</span>
+        <span class="logo-item">Globex</span>
+        <span class="logo-item">Initech</span>
+        <span class="logo-item">Hooli</span>
+        <span class="logo-item">Pied Piper</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="features-container">
+      <div class="features-header">
+        <h2>Everything you need</h2>
+        <p>Simple tools to handle every call professionally</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          </div>
+          <h3>24/7 answering</h3>
+          <p>Never miss a call. Your AI agent picks up instantly, any time of day.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </div>
+          <h3>Smart tickets</h3>
+          <p>Every call becomes an organized ticket with summary and next steps.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <h3>Your knowledge</h3>
+          <p>Train on your docs. It answers questions like you would.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="cta-container">
+      <h2>Start answering calls today</h2>
+      <p>Set up in minutes. No credit card required.</p>
+      <a href="#" class="btn btn-primary btn-lg">Get started free</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-container">
+      <div class="footer-left">
+        <div class="logo-mark" style="height: 80px; width: 240px;"><img src="echolet_logo.svg" alt="Echolet"></div>
+      </div>
+      <div class="footer-links">
+        <a href="#">Product</a>
+        <a href="#">Pricing</a>
+        <a href="#">Docs</a>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+      </div>
+      <div class="footer-copy">© 2025</div>
+    </div>
+  </footer>
+
+  <script>
+    // Tab switching
+    const tabs = document.querySelectorAll('.demo-tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetTab = tab.dataset.tab;
+
+        // Remove active from all tabs
+        tabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(tc => tc.classList.remove('active'));
+
+        // Add active to clicked tab
+        tab.classList.add('active');
+        document.getElementById(`tab-${targetTab}`).classList.add('active');
+      });
+    });
+
+    // Carousel functionality
+    let currentSlide = 0;
+    const totalSlides = 4;
+    const slides = document.getElementById('carousel-slides');
+    const prevArrow = document.getElementById('prev-arrow');
+    const nextArrow = document.getElementById('next-arrow');
+    const indicators = document.querySelectorAll('.carousel-indicator');
+
+    function updateCarousel() {
+      slides.style.transform = `translateX(-${currentSlide * 100}%)`;
+
+      // Update arrows
+      prevArrow.disabled = currentSlide === 0;
+      nextArrow.disabled = currentSlide === totalSlides - 1;
+
+      // Update indicators
+      indicators.forEach((ind, i) => {
+        ind.classList.toggle('active', i === currentSlide);
+      });
+    }
+
+    prevArrow.addEventListener('click', () => {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateCarousel();
+      }
+    });
+
+    nextArrow.addEventListener('click', () => {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+        updateCarousel();
+      }
+    });
+
+    indicators.forEach((indicator, index) => {
+      indicator.addEventListener('click', () => {
+        currentSlide = index;
+        updateCarousel();
+      });
+    });
+  </script>
+
+</body>
+</html>
