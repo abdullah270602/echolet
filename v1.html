@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Echolet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #000000;
+      --white: #ffffff;
+      --gray-50: #fafafa;
+      --gray-100: #f5f5f5;
+      --gray-200: #e5e5e5;
+      --gray-300: #d4d4d4;
+      --gray-400: #a3a3a3;
+      --gray-500: #737373;
+      --gray-600: #525252;
+      --gray-900: #171717;
+
+      /* Brand accent - used sparingly */
+      --accent: #57d4b2;
+      --accent-dark: #4baab0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--white);
+      color: var(--gray-900);
+      -webkit-font-smoothing: antialiased;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* ===== NAV ===== */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .nav-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 32px;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-weight: 600;
+      font-size: 18px;
+      color: var(--black);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-mark {
+      height: 120px;
+      width: 300px;
+    }
+
+    .logo-mark img {
+      height: 100%;
+      width: 100%;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      font-size: 14px;
+      color: var(--gray-600);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover {
+      color: var(--black);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--gray-600);
+    }
+
+    .btn-ghost:hover {
+      color: var(--black);
+    }
+
+    .btn-primary {
+      background: var(--black);
+      color: var(--white);
+    }
+
+    .btn-primary:hover {
+      background: var(--gray-900);
+    }
+
+    .btn-lg {
+      padding: 14px 28px;
+      font-size: 15px;
+    }
+
+    .btn-outline {
+      background: var(--white);
+      color: var(--black);
+      border: 1px solid var(--gray-300);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--gray-400);
+      background: var(--gray-50);
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      padding: 200px 32px 80px;
+      text-align: center;
+    }
+
+    .hero-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero-label {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: 56px;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+      color: var(--black);
+    }
+
+    .hero p {
+      font-size: 20px;
+      color: var(--gray-500);
+      max-width: 560px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    /* ===== PRODUCT DEMO ===== */
+    .demo-section {
+      padding: 0 32px 120px;
+    }
+
+    .demo-container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .demo-window {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .demo-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .demo-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--gray-300);
+    }
+
+    .demo-content {
+      padding: 48px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+    }
+
+    .demo-left h3 {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    .demo-agent {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+
+    .demo-agent-avatar {
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      border-radius: 8px;
+    }
+
+    .demo-agent-info {
+      flex: 1;
+    }
+
+    .demo-agent-name {
+      font-weight: 500;
+      font-size: 15px;
+      color: var(--black);
+    }
+
+    .demo-agent-status {
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    .demo-waveform {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      height: 60px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+    }
+
+    .wave-bar {
+      width: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+      animation: wave 1s ease-in-out infinite;
+    }
+
+    .wave-bar:nth-child(1) { height: 20px; animation-delay: 0s; }
+    .wave-bar:nth-child(2) { height: 35px; animation-delay: 0.1s; }
+    .wave-bar:nth-child(3) { height: 25px; animation-delay: 0.2s; }
+    .wave-bar:nth-child(4) { height: 40px; animation-delay: 0.3s; }
+    .wave-bar:nth-child(5) { height: 30px; animation-delay: 0.4s; }
+    .wave-bar:nth-child(6) { height: 20px; animation-delay: 0.5s; }
+
+    @keyframes wave {
+      0%, 100% { transform: scaleY(1); }
+      50% { transform: scaleY(0.6); }
+    }
+
+    .demo-right h3 {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    .transcript {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 20px;
+      height: 180px;
+    }
+
+    .transcript-line {
+      margin-bottom: 16px;
+    }
+
+    .transcript-label {
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .transcript-label.caller {
+      color: var(--gray-500);
+    }
+
+    .transcript-label.agent {
+      color: var(--accent-dark);
+    }
+
+    .transcript-text {
+      font-size: 14px;
+      color: var(--gray-600);
+      line-height: 1.5;
+    }
+
+    /* ===== LOGOS ===== */
+    .logos-section {
+      padding: 60px 32px;
+      border-top: 1px solid var(--gray-200);
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .logos-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .logos-label {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin-bottom: 32px;
+    }
+
+    .logos-grid {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+
+    .logo-item {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--gray-400);
+      letter-spacing: -0.01em;
+    }
+
+    /* ===== FEATURES ===== */
+    .features {
+      padding: 120px 32px;
+    }
+
+    .features-container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .features-header {
+      text-align: center;
+      margin-bottom: 80px;
+    }
+
+    .features-header h2 {
+      font-size: 40px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      color: var(--black);
+    }
+
+    .features-header p {
+      font-size: 18px;
+      color: var(--gray-500);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+
+    .feature {
+      padding: 32px;
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      transition: border-color 0.2s;
+    }
+
+    .feature:hover {
+      border-color: var(--gray-300);
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gray-100);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .feature-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--gray-600);
+    }
+
+    .feature h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--black);
+    }
+
+    .feature p {
+      font-size: 14px;
+      color: var(--gray-500);
+      line-height: 1.6;
+    }
+
+    /* ===== CTA ===== */
+    .cta {
+      padding: 120px 32px;
+      background: var(--gray-50);
+      text-align: center;
+    }
+
+    .cta-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .cta h2 {
+      font-size: 36px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      color: var(--black);
+    }
+
+    .cta p {
+      font-size: 17px;
+      color: var(--gray-500);
+      margin-bottom: 32px;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      padding: 48px 32px;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .footer-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      color: var(--gray-600);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      font-size: 14px;
+      color: var(--gray-500);
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      color: var(--black);
+    }
+
+    .footer-copy {
+      font-size: 14px;
+      color: var(--gray-400);
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 36px;
+      }
+
+      .hero p {
+        font-size: 17px;
+      }
+
+      .demo-content {
+        grid-template-columns: 1fr;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .nav-links {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-container">
+      <a href="#" class="logo">
+        <div class="logo-mark"><img src="echolet_logo.svg" alt="Echolet"></div>
+      </a>
+
+      <div class="nav-links">
+        <a href="#">Product</a>
+        <a href="#">Pricing</a>
+        <a href="#">Docs</a>
+        <a href="#">Blog</a>
+      </div>
+
+      <div class="nav-right">
+        <a href="#" class="btn btn-ghost">Sign in</a>
+        <a href="#" class="btn btn-primary">Get started</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-container">
+      <span class="hero-label">AI Voice Agent</span>
+      <h1>Turn missed calls into revenue</h1>
+      <p>Your AI receptionist answers calls 24/7, trained on your business. Every conversation becomes an actionable ticket.</p>
+      <div class="hero-buttons">
+        <a href="#" class="btn btn-primary btn-lg">Get started free</a>
+        <a href="#" class="btn btn-outline btn-lg">Watch demo</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="demo-section">
+    <div class="demo-container">
+      <div class="demo-window">
+        <div class="demo-header">
+          <div class="demo-dot"></div>
+          <div class="demo-dot"></div>
+          <div class="demo-dot"></div>
+        </div>
+        <div class="demo-content">
+          <div class="demo-left">
+            <h3>Active Agent</h3>
+            <div class="demo-agent">
+              <div class="demo-agent-avatar"></div>
+              <div class="demo-agent-info">
+                <div class="demo-agent-name">Front Desk Agent</div>
+                <div class="demo-agent-status">Handling call • 0:47</div>
+              </div>
+            </div>
+            <div class="demo-waveform">
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+            </div>
+          </div>
+          <div class="demo-right">
+            <h3>Live Transcript</h3>
+            <div class="transcript">
+              <div class="transcript-line">
+                <div class="transcript-label caller">Caller</div>
+                <div class="transcript-text">Hi, I'd like to schedule an appointment for next Tuesday if possible.</div>
+              </div>
+              <div class="transcript-line">
+                <div class="transcript-label agent">Agent</div>
+                <div class="transcript-text">Of course! I have availability at 10am and 2pm on Tuesday. Which works better for you?</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="logos-section">
+    <div class="logos-container">
+      <p class="logos-label">Trusted by businesses everywhere</p>
+      <div class="logos-grid">
+        <span class="logo-item">Acme Corp</span>
+        <span class="logo-item">Globex</span>
+        <span class="logo-item">Initech</span>
+        <span class="logo-item">Hooli</span>
+        <span class="logo-item">Pied Piper</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="features-container">
+      <div class="features-header">
+        <h2>Everything you need</h2>
+        <p>Simple tools to handle every call professionally</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          </div>
+          <h3>24/7 answering</h3>
+          <p>Never miss a call. Your AI agent picks up instantly, any time of day.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </div>
+          <h3>Smart tickets</h3>
+          <p>Every call becomes an organized ticket with summary and next steps.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <h3>Your knowledge</h3>
+          <p>Train on your docs. It answers questions like you would.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="cta-container">
+      <h2>Start answering calls today</h2>
+      <p>Set up in minutes. No credit card required.</p>
+      <a href="#" class="btn btn-primary btn-lg">Get started free</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-container">
+      <div class="footer-left">
+        <div class="logo-mark" style="height: 80px; width: 240px;"><img src="echolet_logo.svg" alt="Echolet"></div>
+      </div>
+      <div class="footer-links">
+        <a href="#">Product</a>
+        <a href="#">Pricing</a>
+        <a href="#">Docs</a>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+      </div>
+      <div class="footer-copy">© 2025</div>
+    </div>
+  </footer>
+
+</body>
+</html>
