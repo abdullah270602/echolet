@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Echolet – AI that answers your calls</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #000000;
+      --white: #ffffff;
+      --gray-50: #fafafa;
+      --gray-100: #f4f4f5;
+      --gray-200: #e4e4e7;
+      --gray-300: #d4d4d8;
+      --gray-400: #a1a1aa;
+      --gray-500: #71717a;
+      --gray-600: #52525b;
+      --gray-700: #3f3f46;
+      --gray-800: #27272a;
+      --gray-900: #18181b;
+
+      --accent: #57d4b2;
+      --accent-soft: #57d4b220;
+      --accent-dark: #3db897;
+      --nile: #193958;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--white);
+      color: var(--gray-900);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ============ DECORATIVE WAVES ============ */
+    .bg-decoration {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .wave-left {
+      position: absolute;
+      left: -200px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 400px;
+      height: 800px;
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(87, 212, 178, 0.08) 30%,
+        rgba(75, 170, 176, 0.12) 50%,
+        rgba(87, 212, 178, 0.08) 70%,
+        transparent 100%
+      );
+      filter: blur(60px);
+      border-radius: 50%;
+    }
+
+    .wave-right {
+      position: absolute;
+      right: -200px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 400px;
+      height: 800px;
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(25, 57, 88, 0.06) 30%,
+        rgba(66, 140, 167, 0.1) 50%,
+        rgba(25, 57, 88, 0.06) 70%,
+        transparent 100%
+      );
+      filter: blur(60px);
+      border-radius: 50%;
+    }
+
+    /* ============ NAV ============ */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      height: 36px;
+      width: 120px;
+    }
+
+    .nav-logo img {
+      height: 100%;
+      width: 100%;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray-600);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover { color: var(--black); }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--gray-600);
+    }
+    .btn-ghost:hover { background: var(--gray-100); color: var(--black); }
+
+    .btn-dark {
+      background: var(--gray-900);
+      color: var(--white);
+    }
+    .btn-dark:hover { background: var(--black); }
+
+    .btn-outline {
+      background: var(--white);
+      color: var(--gray-900);
+      border: 1px solid var(--gray-200);
+    }
+    .btn-outline:hover { background: var(--gray-50); border-color: var(--gray-300); }
+
+    .btn-lg {
+      padding: 14px 28px;
+      font-size: 15px;
+      border-radius: 10px;
+    }
+
+    /* ============ HERO ============ */
+    .hero {
+      position: relative;
+      z-index: 1;
+      padding: 140px 32px 60px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 56px;
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--black);
+      margin-bottom: 20px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-sub {
+      font-size: 19px;
+      color: var(--gray-500);
+      max-width: 540px;
+      margin: 0 auto 36px;
+      line-height: 1.6;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .hero-note {
+      font-size: 13px;
+      color: var(--gray-400);
+    }
+
+    /* ============ INTERACTIVE DEMO ============ */
+    .demo-section {
+      position: relative;
+      z-index: 1;
+      padding: 40px 32px 100px;
+    }
+
+    .demo-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Tabs */
+    .demo-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .demo-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray-600);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .demo-tab:hover {
+      border-color: var(--gray-300);
+      color: var(--gray-900);
+    }
+
+    .demo-tab.active {
+      background: var(--gray-900);
+      border-color: var(--gray-900);
+      color: var(--white);
+    }
+
+    .demo-tab svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Demo Card */
+    .demo-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.03),
+        0 2px 4px rgba(0,0,0,0.02),
+        0 12px 24px rgba(0,0,0,0.04);
+    }
+
+    .demo-panel {
+      display: none;
+      padding: 32px;
+    }
+
+    .demo-panel.active {
+      display: block;
+    }
+
+    /* ===== PANEL 1: LIVE CALL ===== */
+    .call-interface {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 32px;
+      min-height: 380px;
+    }
+
+    .call-left {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .call-scenario-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gray-400);
+      margin-bottom: 12px;
+    }
+
+    .scenario-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 24px;
+    }
+
+    .scenario-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--gray-50);
+      border: 1px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .scenario-item:hover {
+      background: var(--gray-100);
+    }
+
+    .scenario-item.active {
+      background: var(--white);
+      border-color: var(--gray-900);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .scenario-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .scenario-info {
+      flex: 1;
+    }
+
+    .scenario-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+
+    .scenario-desc {
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+
+    .call-agent-card {
+      background: var(--gray-50);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-top: auto;
+    }
+
+    .agent-avatar {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--accent), #4baab0);
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .agent-avatar::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      width: 12px;
+      height: 12px;
+      background: #22c55e;
+      border: 2px solid var(--gray-50);
+      border-radius: 50%;
+    }
+
+    .agent-avatar svg {
+      width: 28px;
+      height: 28px;
+      color: white;
+    }
+
+    .agent-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-bottom: 2px;
+    }
+
+    .agent-status {
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+
+    .call-right {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .call-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .call-live-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: #dcfce7;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #166534;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse-live 1.5s infinite;
+    }
+
+    @keyframes pulse-live {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .call-timer {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-400);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .call-transcript {
+      flex: 1;
+      background: var(--gray-50);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      max-height: 260px;
+    }
+
+    .msg {
+      display: flex;
+      gap: 10px;
+    }
+
+    .msg-bubble {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .msg.caller .msg-bubble {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      color: var(--gray-700);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg.agent {
+      justify-content: flex-end;
+    }
+
+    .msg.agent .msg-bubble {
+      background: var(--gray-900);
+      color: var(--white);
+      border-bottom-right-radius: 4px;
+    }
+
+    .call-waveform {
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .play-btn {
+      width: 44px;
+      height: 44px;
+      background: var(--gray-900);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s;
+      flex-shrink: 0;
+    }
+
+    .play-btn:hover { transform: scale(1.05); }
+
+    .play-btn svg {
+      width: 18px;
+      height: 18px;
+      color: white;
+      margin-left: 2px;
+    }
+
+    .waveform-bars {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 32px;
+    }
+
+    .waveform-bar {
+      flex: 1;
+      background: var(--gray-200);
+      border-radius: 2px;
+      max-width: 4px;
+    }
+
+    /* Generate random heights */
+    .waveform-bar:nth-child(1) { height: 40%; }
+    .waveform-bar:nth-child(2) { height: 65%; }
+    .waveform-bar:nth-child(3) { height: 45%; }
+    .waveform-bar:nth-child(4) { height: 80%; }
+    .waveform-bar:nth-child(5) { height: 55%; }
+    .waveform-bar:nth-child(6) { height: 90%; }
+    .waveform-bar:nth-child(7) { height: 70%; }
+    .waveform-bar:nth-child(8) { height: 50%; }
+    .waveform-bar:nth-child(9) { height: 85%; }
+    .waveform-bar:nth-child(10) { height: 60%; }
+    .waveform-bar:nth-child(11) { height: 75%; }
+    .waveform-bar:nth-child(12) { height: 45%; }
+    .waveform-bar:nth-child(13) { height: 95%; }
+    .waveform-bar:nth-child(14) { height: 65%; }
+    .waveform-bar:nth-child(15) { height: 50%; }
+    .waveform-bar:nth-child(16) { height: 80%; }
+    .waveform-bar:nth-child(17) { height: 55%; }
+    .waveform-bar:nth-child(18) { height: 70%; }
+    .waveform-bar:nth-child(19) { height: 40%; }
+    .waveform-bar:nth-child(20) { height: 60%; }
+    .waveform-bar:nth-child(n+8) { background: var(--accent); }
+
+    .waveform-time {
+      font-size: 13px;
+      color: var(--gray-500);
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    /* ===== PANEL 2: VOICES ===== */
+    .voices-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .voice-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--gray-50);
+      border: 1px solid transparent;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .voice-card:hover {
+      background: var(--white);
+      border-color: var(--gray-200);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .voice-card.active {
+      background: var(--white);
+      border-color: var(--gray-900);
+    }
+
+    .voice-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .voice-avatar.purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+    .voice-avatar.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .voice-avatar.teal { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); }
+    .voice-avatar.orange { background: linear-gradient(135deg, #f97316, #ea580c); }
+    .voice-avatar.pink { background: linear-gradient(135deg, #ec4899, #db2777); }
+    .voice-avatar.green { background: linear-gradient(135deg, #22c55e, #16a34a); }
+
+    .voice-info {
+      flex: 1;
+    }
+
+    .voice-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-bottom: 2px;
+    }
+
+    .voice-style {
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    .voice-play {
+      width: 40px;
+      height: 40px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .voice-card:hover .voice-play {
+      background: var(--gray-900);
+      border-color: var(--gray-900);
+    }
+
+    .voice-card:hover .voice-play svg {
+      color: white;
+    }
+
+    .voice-play svg {
+      width: 16px;
+      height: 16px;
+      color: var(--gray-600);
+      margin-left: 2px;
+    }
+
+    /* ===== PANEL 3: TICKET ===== */
+    .ticket-preview {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .ticket-left h4,
+    .ticket-right h4 {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gray-400);
+      margin-bottom: 16px;
+    }
+
+    .ticket-card {
+      background: var(--gray-50);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .ticket-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .ticket-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-bottom: 4px;
+    }
+
+    .ticket-meta {
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    .ticket-priority {
+      padding: 4px 10px;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 100px;
+      text-transform: uppercase;
+    }
+
+    .ticket-priority.high {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .ticket-section {
+      margin-bottom: 16px;
+    }
+
+    .ticket-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .ticket-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-500);
+      margin-bottom: 6px;
+    }
+
+    .ticket-section-content {
+      font-size: 14px;
+      color: var(--gray-700);
+      line-height: 1.5;
+    }
+
+    .ticket-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .ticket-tag {
+      padding: 4px 10px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 100px;
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+
+    .ticket-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .ticket-action {
+      flex: 1;
+      padding: 10px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-700);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .ticket-action:hover {
+      background: var(--gray-100);
+    }
+
+    .ticket-action.primary {
+      background: var(--gray-900);
+      border-color: var(--gray-900);
+      color: white;
+    }
+
+    .ticket-right .mini-transcript {
+      background: var(--gray-50);
+      border-radius: 12px;
+      padding: 16px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .mini-msg {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .mini-msg:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .mini-msg-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .mini-msg-label.caller { color: var(--gray-500); }
+    .mini-msg-label.agent { color: var(--accent-dark); }
+
+    .mini-msg-text {
+      font-size: 13px;
+      color: var(--gray-700);
+      line-height: 1.5;
+    }
+
+    /* Demo footer */
+    .demo-footer {
+      padding: 16px 24px;
+      background: var(--gray-50);
+      border-top: 1px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    .demo-footer strong {
+      color: var(--gray-900);
+    }
+
+    /* ============ STATS ============ */
+    .stats-section {
+      position: relative;
+      z-index: 1;
+      padding: 80px 32px;
+      border-top: 1px solid var(--gray-100);
+    }
+
+    .stats-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      text-align: center;
+    }
+
+    .stat h3 {
+      font-size: 40px;
+      font-weight: 800;
+      color: var(--black);
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .stat h3 span { color: var(--accent-dark); }
+
+    .stat p {
+      font-size: 14px;
+      color: var(--gray-500);
+    }
+
+    /* ============ FEATURES ============ */
+    .features-section {
+      position: relative;
+      z-index: 1;
+      padding: 100px 32px;
+      background: var(--gray-50);
+    }
+
+    .features-inner {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .features-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .features-header h2 {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--black);
+      letter-spacing: -0.02em;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.2s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--gray-300);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+    }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--gray-100);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .feature-icon svg {
+      width: 22px;
+      height: 22px;
+      color: var(--gray-700);
+    }
+
+    .feature-card h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--gray-500);
+      line-height: 1.6;
+    }
+
+    /* ============ CTA ============ */
+    .cta-section {
+      position: relative;
+      z-index: 1;
+      padding: 120px 32px;
+      background: var(--gray-900);
+      text-align: center;
+    }
+
+    .cta-inner {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .cta-section h2 {
+      font-size: 40px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .cta-section p {
+      font-size: 18px;
+      color: var(--gray-400);
+      margin-bottom: 32px;
+    }
+
+    .btn-white {
+      background: white;
+      color: var(--gray-900);
+    }
+
+    .btn-white:hover {
+      background: var(--gray-100);
+    }
+
+    /* ============ FOOTER ============ */
+    footer {
+      position: relative;
+      z-index: 1;
+      padding: 40px 32px;
+      background: var(--white);
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-logo {
+      height: 32px;
+      width: 100px;
+    }
+
+    .footer-logo img {
+      height: 100%;
+      width: 100%;
+      object-fit: contain;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      font-size: 14px;
+      color: var(--gray-500);
+      text-decoration: none;
+    }
+
+    .footer-links a:hover { color: var(--gray-900); }
+
+    .footer-copy {
+      font-size: 13px;
+      color: var(--gray-400);
+    }
+
+    /* ============ RESPONSIVE ============ */
+    @media (max-width: 900px) {
+      .call-interface { grid-template-columns: 1fr; }
+      .ticket-preview { grid-template-columns: 1fr; }
+      .voices-grid { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 36px; }
+      .nav-links { display: none; }
+      .demo-tabs { gap: 4px; }
+      .demo-tab { padding: 8px 12px; font-size: 12px; }
+      .demo-tab span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-decoration">
+    <div class="wave-left"></div>
+    <div class="wave-right"></div>
+  </div>
+
+  <nav>
+    <div class="nav-inner">
+      <div class="nav-logo"><img src="echolet_logo.svg" alt="Echolet"></div>
+      <div class="nav-links">
+        <a href="#">Features</a>
+        <a href="#">Pricing</a>
+        <a href="#">Docs</a>
+      </div>
+      <div class="nav-right">
+        <a href="#" class="btn btn-ghost">Log in</a>
+        <a href="#" class="btn btn-dark">Get started</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>Your AI receptionist that never misses a call</h1>
+    <p class="hero-sub">Answers calls 24/7 with your business knowledge. Books appointments. Creates tickets. Works while you sleep.</p>
+    <div class="hero-buttons">
+      <a href="#" class="btn btn-dark btn-lg">Try it free</a>
+      <a href="#" class="btn btn-outline btn-lg">Contact sales</a>
+    </div>
+    <p class="hero-note">No credit card required · Setup in 5 minutes</p>
+  </section>
+
+  <section class="demo-section">
+    <div class="demo-container">
+      <div class="demo-tabs">
+        <button class="demo-tab active" onclick="showPanel('call')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <span>Live Call Demo</span>
+        </button>
+        <button class="demo-tab" onclick="showPanel('voices')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+          <span>Voice Options</span>
+        </button>
+        <button class="demo-tab" onclick="showPanel('ticket')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Ticket Output</span>
+        </button>
+      </div>
+
+      <div class="demo-card">
+        <!-- Panel 1: Live Call -->
+        <div class="demo-panel active" id="panel-call">
+          <div class="call-interface">
+            <div class="call-left">
+              <div class="call-scenario-label">Select a scenario</div>
+              <div class="scenario-list">
+                <div class="scenario-item active">
+                  <div class="scenario-icon">🏥</div>
+                  <div class="scenario-info">
+                    <div class="scenario-name">Medical Clinic</div>
+                    <div class="scenario-desc">Appointment booking</div>
+                  </div>
+                </div>
+                <div class="scenario-item">
+                  <div class="scenario-icon">⚖️</div>
+                  <div class="scenario-info">
+                    <div class="scenario-name">Law Firm</div>
+                    <div class="scenario-desc">Consultation request</div>
+                  </div>
+                </div>
+                <div class="scenario-item">
+                  <div class="scenario-icon">🏠</div>
+                  <div class="scenario-info">
+                    <div class="scenario-name">Real Estate</div>
+                    <div class="scenario-desc">Property inquiry</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="call-agent-card">
+                <div class="agent-avatar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div class="agent-name">Sarah</div>
+                <div class="agent-status">Your AI Receptionist</div>
+              </div>
+            </div>
+
+            <div class="call-right">
+              <div class="call-header">
+                <div class="call-live-badge">
+                  <div class="live-dot"></div>
+                  Live Demo
+                </div>
+                <div class="call-timer">01:47</div>
+              </div>
+
+              <div class="call-transcript">
+                <div class="msg caller">
+                  <div class="msg-bubble">Hi, I'd like to schedule a checkup appointment please.</div>
+                </div>
+                <div class="msg agent">
+                  <div class="msg-bubble">Of course! I'd be happy to help you schedule that. Do you have a preferred day this week?</div>
+                </div>
+                <div class="msg caller">
+                  <div class="msg-bubble">Thursday works best for me, preferably in the morning.</div>
+                </div>
+                <div class="msg agent">
+                  <div class="msg-bubble">I have Thursday at 9:30 AM or 11:00 AM available. Which would you prefer?</div>
+                </div>
+                <div class="msg caller">
+                  <div class="msg-bubble">9:30 works perfectly.</div>
+                </div>
+              </div>
+
+              <div class="call-waveform">
+                <div class="play-btn">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <div class="waveform-bars">
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                </div>
+                <div class="waveform-time">0:00 / 1:47</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 2: Voices -->
+        <div class="demo-panel" id="panel-voices">
+          <div class="voices-grid">
+            <div class="voice-card active">
+              <div class="voice-avatar teal">S</div>
+              <div class="voice-info">
+                <div class="voice-name">Sarah</div>
+                <div class="voice-style">Warm & Professional</div>
+              </div>
+              <div class="voice-play">
+                <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+            </div>
+            <div class="voice-card">
+              <div class="voice-avatar blue">M</div>
+              <div class="voice-info">
+                <div class="voice-name">Marcus</div>
+                <div class="voice-style">Confident & Clear</div>
+              </div>
+              <div class="voice-play">
+                <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+            </div>
+            <div class="voice-card">
+              <div class="voice-avatar purple">E</div>
+              <div class="voice-info">
+                <div class="voice-name">Emma</div>
+                <div class="voice-style">Friendly & Energetic</div>
+              </div>
+              <div class="voice-play">
+                <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+            </div>
+            <div class="voice-card">
+              <div class="voice-avatar orange">J</div>
+              <div class="voice-info">
+                <div class="voice-name">James</div>
+                <div class="voice-style">Calm & Reassuring</div>
+              </div>
+              <div class="voice-play">
+                <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+            </div>
+            <div class="voice-card">
+              <div class="voice-avatar pink">O</div>
+              <div class="voice-info">
+                <div class="voice-name">Olivia</div>
+                <div class="voice-style">Soft & Empathetic</div>
+              </div>
+              <div class="voice-play">
+                <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+            </div>
+            <div class="voice-card">
+              <div class="voice-avatar green">D</div>
+              <div class="voice-info">
+                <div class="voice-name">David</div>
+                <div class="voice-style">Authoritative & Direct</div>
+              </div>
+              <div class="voice-play">
+                <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 3: Ticket -->
+        <div class="demo-panel" id="panel-ticket">
+          <div class="ticket-preview">
+            <div class="ticket-left">
+              <h4>Generated Ticket</h4>
+              <div class="ticket-card">
+                <div class="ticket-header">
+                  <div>
+                    <div class="ticket-title">Appointment Request</div>
+                    <div class="ticket-meta">Today at 2:34 PM · 1m 47s call</div>
+                  </div>
+                  <div class="ticket-priority">Medium</div>
+                </div>
+
+                <div class="ticket-section">
+                  <div class="ticket-section-title">Caller</div>
+                  <div class="ticket-section-content">John Smith · (555) 123-4567</div>
+                </div>
+
+                <div class="ticket-section">
+                  <div class="ticket-section-title">Summary</div>
+                  <div class="ticket-section-content">New patient requesting a routine checkup. Scheduled for Thursday at 9:30 AM. First visit to the clinic.</div>
+                </div>
+
+                <div class="ticket-section">
+                  <div class="ticket-section-title">Tags</div>
+                  <div class="ticket-tags">
+                    <span class="ticket-tag">New Patient</span>
+                    <span class="ticket-tag">Checkup</span>
+                    <span class="ticket-tag">Appointment</span>
+                  </div>
+                </div>
+
+                <div class="ticket-actions">
+                  <button class="ticket-action">Edit</button>
+                  <button class="ticket-action primary">Confirm</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="ticket-right">
+              <h4>Full Transcript</h4>
+              <div class="mini-transcript">
+                <div class="mini-msg">
+                  <div class="mini-msg-label caller">Caller</div>
+                  <div class="mini-msg-text">Hi, I'd like to schedule a checkup appointment please.</div>
+                </div>
+                <div class="mini-msg">
+                  <div class="mini-msg-label agent">Sarah (AI)</div>
+                  <div class="mini-msg-text">Of course! I'd be happy to help you schedule that. Do you have a preferred day this week?</div>
+                </div>
+                <div class="mini-msg">
+                  <div class="mini-msg-label caller">Caller</div>
+                  <div class="mini-msg-text">Thursday works best for me, preferably in the morning.</div>
+                </div>
+                <div class="mini-msg">
+                  <div class="mini-msg-label agent">Sarah (AI)</div>
+                  <div class="mini-msg-text">I have Thursday at 9:30 AM or 11:00 AM available. Which would you prefer?</div>
+                </div>
+                <div class="mini-msg">
+                  <div class="mini-msg-label caller">Caller</div>
+                  <div class="mini-msg-text">9:30 works perfectly.</div>
+                </div>
+                <div class="mini-msg">
+                  <div class="mini-msg-label agent">Sarah (AI)</div>
+                  <div class="mini-msg-text">Great! I've booked you for Thursday at 9:30 AM. Can I get your name and phone number?</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-footer">
+          <strong>Try it yourself:</strong> Call (555) 123-ECHO to experience Echolet live
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats-section">
+    <div class="stats-inner">
+      <div class="stat">
+        <h3>98<span>%</span></h3>
+        <p>Calls answered</p>
+      </div>
+      <div class="stat">
+        <h3>24<span>/7</span></h3>
+        <p>Availability</p>
+      </div>
+      <div class="stat">
+        <h3>2<span>min</span></h3>
+        <p>Avg setup time</p>
+      </div>
+      <div class="stat">
+        <h3>500<span>+</span></h3>
+        <p>Businesses</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="features-section">
+    <div class="features-inner">
+      <div class="features-header">
+        <h2>Everything you need to handle calls</h2>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+          </div>
+          <h3>Natural conversations</h3>
+          <p>AI that sounds human, handles interruptions, and adapts to any caller.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <h3>Your knowledge</h3>
+          <p>Train on your FAQs, services, and policies. It knows your business.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+          </div>
+          <h3>Books appointments</h3>
+          <p>Integrates with your calendar. Schedules meetings automatically.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <h3>Smart tickets</h3>
+          <p>Every call becomes an organized ticket with summary and action items.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+          </div>
+          <h3>Always available</h3>
+          <p>Never miss a call. Handles after-hours, weekends, and holidays.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3>Real-time analytics</h3>
+          <p>Track call volume, common questions, and conversion rates.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <div class="cta-inner">
+      <h2>Ready to stop missing calls?</h2>
+      <p>Join 500+ businesses that never miss a lead.</p>
+      <a href="#" class="btn btn-white btn-lg">Start free trial</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-logo"><img src="echolet_logo.svg" alt="Echolet"></div>
+      <div class="footer-links">
+        <a href="#">Features</a>
+        <a href="#">Pricing</a>
+        <a href="#">Docs</a>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+      </div>
+      <div class="footer-copy">© 2025 Echolet</div>
+    </div>
+  </footer>
+
+  <script>
+    function showPanel(panel) {
+      // Remove active from all tabs
+      document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+      // Remove active from all panels
+      document.querySelectorAll('.demo-panel').forEach(p => p.classList.remove('active'));
+
+      // Add active to clicked tab
+      event.target.closest('.demo-tab').classList.add('active');
+      // Add active to corresponding panel
+      document.getElementById('panel-' + panel).classList.add('active');
+    }
+  </script>
+
+</body>
+</html>
