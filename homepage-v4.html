@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Echolet – AI Voice Agents That Answer Every Call</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --white: #ffffff;
+      --black: #000000;
+      --gray-50: #fafafa;
+      --gray-100: #f4f4f5;
+      --gray-200: #e4e4e7;
+      --gray-300: #d4d4d8;
+      --gray-400: #a1a1aa;
+      --gray-500: #71717a;
+      --gray-600: #52525b;
+      --gray-700: #3f3f46;
+      --gray-800: #27272a;
+      --gray-900: #18181b;
+      --gray-950: #09090b;
+
+      --accent: #57d4b2;
+      --accent-light: #7ee8ca;
+      --accent-dark: #3db897;
+      --nile: #193958;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--gray-950);
+      color: var(--white);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ========== NAV ========== */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(9, 9, 11, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--gray-800);
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      height: 36px;
+      width: 120px;
+    }
+
+    .nav-logo img {
+      height: 100%;
+      width: 100%;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray-400);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover { color: var(--white); }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--gray-400);
+    }
+
+    .btn-ghost:hover {
+      color: var(--white);
+    }
+
+    .btn-primary {
+      background: var(--white);
+      color: var(--gray-950);
+    }
+
+    .btn-primary:hover {
+      background: var(--gray-100);
+      transform: translateY(-1px);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: var(--gray-950);
+    }
+
+    .btn-accent:hover {
+      background: var(--accent-light);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--white);
+      border: 1px solid var(--gray-700);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--gray-500);
+      background: var(--gray-900);
+    }
+
+    .btn-lg {
+      padding: 16px 32px;
+      font-size: 16px;
+      border-radius: 10px;
+    }
+
+    /* ========== HERO ========== */
+    .hero {
+      padding: 160px 24px 100px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1000px;
+      height: 600px;
+      background: radial-gradient(ellipse at center, rgba(87, 212, 178, 0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--gray-900);
+      border: 1px solid var(--gray-800);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-300);
+      margin-bottom: 32px;
+    }
+
+    .hero-badge-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--accent);
+    }
+
+    .hero h1 {
+      font-size: 72px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      margin-bottom: 24px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero h1 .accent {
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      font-size: 20px;
+      color: var(--gray-400);
+      max-width: 560px;
+      margin: 0 auto 48px;
+      line-height: 1.6;
+    }
+
+    /* ========== CALL DEMO BOX ========== */
+    .demo-box {
+      max-width: 480px;
+      margin: 0 auto 48px;
+      background: var(--gray-900);
+      border: 1px solid var(--gray-800);
+      border-radius: 16px;
+      padding: 28px;
+      position: relative;
+    }
+
+    .demo-box::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 17px;
+      padding: 1px;
+      background: linear-gradient(135deg, var(--accent) 0%, transparent 50%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .demo-box-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+
+    .demo-box-sub {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin-bottom: 20px;
+    }
+
+    .demo-input-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .demo-input {
+      flex: 1;
+      padding: 14px 16px;
+      background: var(--gray-950);
+      border: 1px solid var(--gray-700);
+      border-radius: 10px;
+      font-size: 15px;
+      color: var(--white);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .demo-input::placeholder {
+      color: var(--gray-600);
+    }
+
+    .demo-input:focus {
+      border-color: var(--accent);
+    }
+
+    .demo-btn {
+      padding: 14px 24px;
+      background: var(--accent);
+      color: var(--gray-950);
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .demo-btn:hover {
+      background: var(--accent-light);
+    }
+
+    .demo-note {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+
+    .hero-links {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      margin-bottom: 64px;
+    }
+
+    .hero-link {
+      font-size: 14px;
+      color: var(--gray-400);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.15s;
+    }
+
+    .hero-link:hover {
+      color: var(--white);
+    }
+
+    .hero-link svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ========== LOGO CAROUSEL ========== */
+    .logos-section {
+      padding: 48px 0;
+      border-top: 1px solid var(--gray-800);
+      border-bottom: 1px solid var(--gray-800);
+      overflow: hidden;
+    }
+
+    .logos-label {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 32px;
+    }
+
+    .logos-track {
+      display: flex;
+      gap: 64px;
+      animation: scroll 30s linear infinite;
+    }
+
+    .logos-track:hover {
+      animation-play-state: paused;
+    }
+
+    @keyframes scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .logo-item {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gray-600);
+      white-space: nowrap;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+
+    .logo-item:hover {
+      opacity: 1;
+    }
+
+    /* ========== STATS ========== */
+    .stats-section {
+      padding: 100px 24px;
+    }
+
+    .stats-inner {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+    }
+
+    .stat-card {
+      background: var(--gray-900);
+      border: 1px solid var(--gray-800);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 48px;
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .stat-value span {
+      color: var(--accent);
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: var(--gray-500);
+    }
+
+    /* ========== PRODUCT PREVIEW ========== */
+    .product-section {
+      padding: 100px 24px;
+    }
+
+    .product-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .product-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .product-header h2 {
+      font-size: 44px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .product-header p {
+      font-size: 18px;
+      color: var(--gray-400);
+    }
+
+    .product-window {
+      background: var(--gray-900);
+      border: 1px solid var(--gray-800);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .product-bar {
+      padding: 16px 20px;
+      background: var(--gray-950);
+      border-bottom: 1px solid var(--gray-800);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .product-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--gray-700);
+    }
+
+    .product-dot.red { background: #ef4444; }
+    .product-dot.yellow { background: #eab308; }
+    .product-dot.green { background: #22c55e; }
+
+    .product-tabs {
+      display: flex;
+      gap: 4px;
+      margin-left: auto;
+    }
+
+    .product-tab {
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-500);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .product-tab:hover {
+      color: var(--white);
+    }
+
+    .product-tab.active {
+      background: var(--gray-800);
+      color: var(--white);
+    }
+
+    .product-body {
+      padding: 32px;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 32px;
+    }
+
+    .product-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .agent-card {
+      background: var(--gray-950);
+      border: 1px solid var(--gray-800);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .agent-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .agent-avatar {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .agent-avatar svg {
+      width: 24px;
+      height: 24px;
+      color: var(--gray-950);
+    }
+
+    .agent-info h4 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .agent-info p {
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    .agent-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .agent-stat {
+      background: var(--gray-900);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .agent-stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .agent-stat-label {
+      font-size: 11px;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .recent-calls {
+      background: var(--gray-950);
+      border: 1px solid var(--gray-800);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .recent-calls h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    .call-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .call-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--gray-900);
+      border-radius: 8px;
+    }
+
+    .call-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--gray-800);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .call-icon svg {
+      width: 16px;
+      height: 16px;
+      color: var(--gray-400);
+    }
+
+    .call-icon.success { background: rgba(34, 197, 94, 0.15); }
+    .call-icon.success svg { color: #22c55e; }
+
+    .call-details {
+      flex: 1;
+    }
+
+    .call-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--white);
+    }
+
+    .call-meta {
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+
+    .call-duration {
+      font-size: 13px;
+      color: var(--gray-400);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .product-main {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .transcript-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .transcript-header h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: rgba(34, 197, 94, 0.15);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #22c55e;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .transcript-body {
+      flex: 1;
+      background: var(--gray-950);
+      border: 1px solid var(--gray-800);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-height: 360px;
+      overflow-y: auto;
+    }
+
+    .msg {
+      display: flex;
+      gap: 12px;
+      max-width: 90%;
+    }
+
+    .msg.agent {
+      flex-direction: row-reverse;
+      margin-left: auto;
+    }
+
+    .msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--gray-700);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-300);
+      flex-shrink: 0;
+    }
+
+    .msg.agent .msg-avatar {
+      background: var(--accent);
+      color: var(--gray-950);
+    }
+
+    .msg-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .msg-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-500);
+    }
+
+    .msg-bubble {
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .msg.caller .msg-bubble {
+      background: var(--gray-800);
+      color: var(--gray-200);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg.agent .msg-bubble {
+      background: var(--accent);
+      color: var(--gray-950);
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg.agent .msg-name {
+      text-align: right;
+    }
+
+    /* ========== FEATURES ========== */
+    .features-section {
+      padding: 100px 24px;
+      background: var(--gray-900);
+    }
+
+    .features-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .features-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .features-header h2 {
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .features-header p {
+      font-size: 18px;
+      color: var(--gray-400);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--gray-950);
+      border: 1px solid var(--gray-800);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.2s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--gray-700);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--gray-800);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .feature-icon svg {
+      width: 24px;
+      height: 24px;
+      color: var(--accent);
+    }
+
+    .feature-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--gray-400);
+      line-height: 1.6;
+    }
+
+    /* ========== TRUST BADGES ========== */
+    .trust-section {
+      padding: 80px 24px;
+      border-top: 1px solid var(--gray-800);
+    }
+
+    .trust-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 24px;
+      background: var(--gray-900);
+      border: 1px solid var(--gray-800);
+      border-radius: 12px;
+    }
+
+    .trust-badge-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gray-800);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .trust-badge-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--accent);
+    }
+
+    .trust-badge-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .trust-badge-sub {
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+
+    /* ========== CTA ========== */
+    .cta-section {
+      padding: 120px 24px;
+      text-align: center;
+      position: relative;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 400px;
+      background: radial-gradient(ellipse at center, rgba(87, 212, 178, 0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .cta-inner {
+      max-width: 600px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .cta-section h2 {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .cta-section p {
+      font-size: 18px;
+      color: var(--gray-400);
+      margin-bottom: 40px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+    }
+
+    /* ========== FOOTER ========== */
+    footer {
+      padding: 48px 24px;
+      border-top: 1px solid var(--gray-800);
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-logo {
+      height: 32px;
+      width: 100px;
+    }
+
+    .footer-logo img {
+      height: 100%;
+      width: 100%;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 32px;
+    }
+
+    .footer-links a {
+      font-size: 14px;
+      color: var(--gray-500);
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      color: var(--white);
+    }
+
+    .footer-copy {
+      font-size: 13px;
+      color: var(--gray-600);
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 900px) {
+      .hero h1 { font-size: 48px; }
+      .product-grid { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .trust-inner { flex-direction: column; align-items: center; }
+    }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 36px; }
+      .nav-links { display: none; }
+      .demo-input-row { flex-direction: column; }
+      .hero-links { flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <div class="nav-logo"><img src="echolet_logo.svg" alt="Echolet"></div>
+      <div class="nav-links">
+        <a href="#">Product</a>
+        <a href="#">Pricing</a>
+        <a href="#">Docs</a>
+        <a href="#">Blog</a>
+      </div>
+      <div class="nav-right">
+        <a href="#" class="btn btn-ghost">Log in</a>
+        <a href="#" class="btn btn-primary">Get started</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-badge">
+      <svg class="hero-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      Trusted by 500+ businesses
+    </div>
+
+    <h1>AI voice agents<br>for <span class="accent">every call</span></h1>
+
+    <p class="hero-sub">
+      Deploy AI that answers calls 24/7, books appointments, and creates tickets. Sound human. Convert more leads. Never miss a call again.
+    </p>
+
+    <div class="demo-box">
+      <div class="demo-box-title">Try it yourself — get a demo call</div>
+      <div class="demo-box-sub">Enter your number and our AI will call you in 10 seconds</div>
+      <div class="demo-input-row">
+        <input type="tel" class="demo-input" placeholder="+1 (555) 000-0000">
+        <button class="demo-btn">Call me</button>
+      </div>
+      <p class="demo-note">No signup required · We'll never spam you</p>
+    </div>
+
+    <div class="hero-links">
+      <a href="#" class="hero-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        Watch 2-min demo
+      </a>
+      <a href="#" class="hero-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Read the docs
+      </a>
+      <a href="#" class="hero-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        See pricing
+      </a>
+    </div>
+  </section>
+
+  <section class="logos-section">
+    <div class="logos-label">Trusted by teams at</div>
+    <div class="logos-track">
+      <span class="logo-item">Acme Health</span>
+      <span class="logo-item">Sterling Law</span>
+      <span class="logo-item">Pinnacle Dental</span>
+      <span class="logo-item">Atlas Realty</span>
+      <span class="logo-item">Vertex Auto</span>
+      <span class="logo-item">Nova Insurance</span>
+      <span class="logo-item">Summit HVAC</span>
+      <span class="logo-item">Prime Medical</span>
+      <span class="logo-item">Acme Health</span>
+      <span class="logo-item">Sterling Law</span>
+      <span class="logo-item">Pinnacle Dental</span>
+      <span class="logo-item">Atlas Realty</span>
+      <span class="logo-item">Vertex Auto</span>
+      <span class="logo-item">Nova Insurance</span>
+      <span class="logo-item">Summit HVAC</span>
+      <span class="logo-item">Prime Medical</span>
+    </div>
+  </section>
+
+  <section class="stats-section">
+    <div class="stats-inner">
+      <div class="stat-card">
+        <div class="stat-value">2.4<span>M</span></div>
+        <div class="stat-label">Calls handled</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">98<span>%</span></div>
+        <div class="stat-label">Answer rate</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">47<span>%</span></div>
+        <div class="stat-label">More bookings</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><span>&lt;</span>2<span>min</span></div>
+        <div class="stat-label">Setup time</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="product-section">
+    <div class="product-inner">
+      <div class="product-header">
+        <h2>See it in action</h2>
+        <p>Real product. Real conversations. Real results.</p>
+      </div>
+
+      <div class="product-window">
+        <div class="product-bar">
+          <div class="product-dot red"></div>
+          <div class="product-dot yellow"></div>
+          <div class="product-dot green"></div>
+          <div class="product-tabs">
+            <button class="product-tab active">Dashboard</button>
+            <button class="product-tab">Agents</button>
+            <button class="product-tab">Tickets</button>
+            <button class="product-tab">Analytics</button>
+          </div>
+        </div>
+
+        <div class="product-body">
+          <div class="product-grid">
+            <div class="product-sidebar">
+              <div class="agent-card">
+                <div class="agent-card-header">
+                  <div class="agent-avatar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
+                  <div class="agent-info">
+                    <h4>Sarah</h4>
+                    <p>Front Desk Agent</p>
+                  </div>
+                </div>
+                <div class="agent-stats">
+                  <div class="agent-stat">
+                    <div class="agent-stat-value">156</div>
+                    <div class="agent-stat-label">Calls today</div>
+                  </div>
+                  <div class="agent-stat">
+                    <div class="agent-stat-value">94%</div>
+                    <div class="agent-stat-label">Resolved</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="recent-calls">
+                <h4>Recent Calls</h4>
+                <div class="call-list">
+                  <div class="call-item">
+                    <div class="call-icon success">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </div>
+                    <div class="call-details">
+                      <div class="call-name">John Smith</div>
+                      <div class="call-meta">Appointment booked</div>
+                    </div>
+                    <div class="call-duration">2:34</div>
+                  </div>
+                  <div class="call-item">
+                    <div class="call-icon success">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </div>
+                    <div class="call-details">
+                      <div class="call-name">Maria Garcia</div>
+                      <div class="call-meta">FAQ answered</div>
+                    </div>
+                    <div class="call-duration">1:12</div>
+                  </div>
+                  <div class="call-item">
+                    <div class="call-icon success">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </div>
+                    <div class="call-details">
+                      <div class="call-name">David Chen</div>
+                      <div class="call-meta">Callback scheduled</div>
+                    </div>
+                    <div class="call-duration">3:45</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="product-main">
+              <div class="transcript-header">
+                <h3>Live Conversation</h3>
+                <div class="live-indicator">
+                  <div class="live-dot"></div>
+                  Active call
+                </div>
+              </div>
+
+              <div class="transcript-body">
+                <div class="msg caller">
+                  <div class="msg-avatar">JS</div>
+                  <div class="msg-content">
+                    <div class="msg-name">Caller</div>
+                    <div class="msg-bubble">Hi, I saw your ad and I'm interested in scheduling a consultation. Do you have any availability this week?</div>
+                  </div>
+                </div>
+
+                <div class="msg agent">
+                  <div class="msg-avatar">S</div>
+                  <div class="msg-content">
+                    <div class="msg-name">Sarah (AI)</div>
+                    <div class="msg-bubble">Hello! Thank you for reaching out. I'd be happy to help you schedule a consultation. We have openings on Thursday at 2pm and Friday at 10am. Which would work better for you?</div>
+                  </div>
+                </div>
+
+                <div class="msg caller">
+                  <div class="msg-avatar">JS</div>
+                  <div class="msg-content">
+                    <div class="msg-name">Caller</div>
+                    <div class="msg-bubble">Thursday at 2pm sounds perfect. What information do you need from me?</div>
+                  </div>
+                </div>
+
+                <div class="msg agent">
+                  <div class="msg-avatar">S</div>
+                  <div class="msg-content">
+                    <div class="msg-name">Sarah (AI)</div>
+                    <div class="msg-bubble">Great choice! I just need your full name, email address, and a brief description of what you'd like to discuss during the consultation. I'll send you a calendar invite right after.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features-section">
+    <div class="features-inner">
+      <div class="features-header">
+        <h2>Built for businesses that can't miss calls</h2>
+        <p>Everything you need to handle every call professionally</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" x2="12" y1="19" y2="22"/>
+            </svg>
+          </div>
+          <h3>Human-like voice</h3>
+          <p>Natural conversations with realistic voices that callers can't tell apart from humans. No robotic responses.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h3>Your knowledge base</h3>
+          <p>Train on your FAQs, services, pricing, and policies. AI answers questions exactly how you would.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+              <line x1="16" x2="16" y1="2" y2="6"/>
+              <line x1="8" x2="8" y1="2" y2="6"/>
+              <line x1="3" x2="21" y1="10" y2="10"/>
+            </svg>
+          </div>
+          <h3>Instant booking</h3>
+          <p>Integrates with Google Calendar, Calendly, and more. Books appointments without human intervention.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" x2="8" y1="13" y2="13"/>
+              <line x1="16" x2="8" y1="17" y2="17"/>
+            </svg>
+          </div>
+          <h3>Smart tickets</h3>
+          <p>Every call becomes an organized ticket with summary, caller info, and recommended actions.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+            </svg>
+          </div>
+          <h3>24/7 availability</h3>
+          <p>Never miss after-hours, weekend, or holiday calls. Your AI agent is always ready to answer.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <h3>Real-time analytics</h3>
+          <p>Track call volume, common questions, conversion rates, and agent performance in one dashboard.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="trust-section">
+    <div class="trust-inner">
+      <div class="trust-badge">
+        <div class="trust-badge-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+          </svg>
+        </div>
+        <div>
+          <div class="trust-badge-text">SOC 2 Type II</div>
+          <div class="trust-badge-sub">Certified</div>
+        </div>
+      </div>
+
+      <div class="trust-badge">
+        <div class="trust-badge-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <div>
+          <div class="trust-badge-text">HIPAA</div>
+          <div class="trust-badge-sub">Compliant</div>
+        </div>
+      </div>
+
+      <div class="trust-badge">
+        <div class="trust-badge-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M2 12h20"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="trust-badge-text">GDPR</div>
+          <div class="trust-badge-sub">Compliant</div>
+        </div>
+      </div>
+
+      <div class="trust-badge">
+        <div class="trust-badge-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <div>
+          <div class="trust-badge-text">99.9%</div>
+          <div class="trust-badge-sub">Uptime SLA</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <div class="cta-inner">
+      <h2>Ready to answer every call?</h2>
+      <p>Start your free trial today. No credit card required.</p>
+      <div class="cta-buttons">
+        <a href="#" class="btn btn-accent btn-lg">Start free trial</a>
+        <a href="#" class="btn btn-outline btn-lg">Talk to sales</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-logo"><img src="echolet_logo.svg" alt="Echolet"></div>
+      <div class="footer-links">
+        <a href="#">Product</a>
+        <a href="#">Pricing</a>
+        <a href="#">Docs</a>
+        <a href="#">Blog</a>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+      </div>
+      <div class="footer-copy">© 2025 Echolet</div>
+    </div>
+  </footer>
+
+</body>
+</html>
