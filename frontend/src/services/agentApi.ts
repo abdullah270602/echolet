@@ -1,93 +1,55 @@
-import type { Agent } from '../types/agent';
+/**
+ * Agent API Service
+ *
+ * Handles all API communication for agent configurations.
+ * Updated to work with nested JSONB config structure.
+ */
+
+import type {
+  Agent,
+  AgentConfigData,
+  AgentStatus,
+  VoiceOption,
+  SpeakingStyleOption,
+  TicketField,
+} from '../types/agent';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-// Backend API response types
+// =============================================================================
+// API RESPONSE TYPES
+// =============================================================================
+
 interface AgentApiResponse {
   id: number;
   user_id: string;
-  name: string;
-  business_name: string;
-  voice_id: string;
-  greeting_message: string;
-  tone: string;
-  custom_instructions: string | null;
-  knowledge_base_text: string | null;
-  max_duration_seconds: number;
+  config: AgentConfigData;
   status: string;
   phone: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
 
-// Voice option from API
-export interface VoiceOption {
-  id: string;
-  name: string;
-  gender: string;
-  description: string;
+// =============================================================================
+// REQUEST TYPES
+// =============================================================================
+
+interface CreateAgentRequest {
+  config: AgentConfigData;
+  status?: AgentStatus;
+  phone?: string;
 }
 
-// Tone option from API
-export interface ToneOption {
-  id: string;
-  name: string;
-  description: string;
+interface UpdateAgentRequest {
+  config?: AgentConfigData;
+  status?: AgentStatus;
+  phone?: string;
 }
 
-// Agent config from API
-export interface AgentConfig {
-  max_agents_per_user: number;
-  default_voice_id: string;
-  default_tone: string;
-  default_greeting_message: string;
-}
+// =============================================================================
+// API ERROR CLASS
+// =============================================================================
 
-// Create request payload
-interface CreateAgentPayload {
-  name: string;
-  business_name: string;
-  voice_id?: string;
-  greeting_message?: string;
-  tone?: string;
-  custom_instructions?: string | null;
-  knowledge_base_text?: string | null;
-  max_duration_seconds?: number;
-}
-
-// Update request payload (all optional)
-interface UpdateAgentPayload {
-  name?: string;
-  business_name?: string;
-  voice_id?: string;
-  greeting_message?: string;
-  tone?: string;
-  custom_instructions?: string | null;
-  knowledge_base_text?: string | null;
-  max_duration_seconds?: number;
-  status?: string;
-}
-
-// Map backend response to frontend Agent type
-function mapApiResponseToAgent(response: AgentApiResponse): Agent {
-  return {
-    id: response.id.toString(),
-    name: response.name,
-    businessName: response.business_name,
-    description: response.custom_instructions?.slice(0, 100) || undefined,
-    greetingMessage: response.greeting_message,
-    voiceId: response.voice_id,
-    tone: response.tone,
-    customInstructions: response.custom_instructions || undefined,
-    knowledgeText: response.knowledge_base_text || undefined,
-    status: response.status as 'active' | 'inactive' | 'paused',
-    phone: response.phone || undefined,
-    createdAt: response.created_at || undefined,
-    updatedAt: response.updated_at || undefined,
-  };
-}
-
-// Generic API error
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -99,7 +61,22 @@ export class ApiError extends Error {
   }
 }
 
-// Helper to make authenticated API requests
+// =============================================================================
+// API HELPERS
+// =============================================================================
+
+function mapApiResponseToAgent(response: AgentApiResponse): Agent {
+  return {
+    id: response.id,
+    user_id: response.user_id,
+    config: response.config,
+    status: response.status as AgentStatus,
+    phone: response.phone || undefined,
+    created_at: response.created_at || undefined,
+    updated_at: response.updated_at || undefined,
+  };
+}
+
 async function apiRequest<T>(
   endpoint: string,
   getToken: () => Promise<string | null>,
@@ -152,47 +129,81 @@ async function apiRequest<T>(
   return response.json();
 }
 
-// Fetch agent configuration (no auth required)
-export async function fetchAgentConfig(): Promise<AgentConfig> {
-  const response = await fetch(`${API_BASE_URL}/config`);
+async function publicApiRequest<T>(endpoint: string): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`);
   if (!response.ok) {
-    throw new ApiError('Failed to fetch config', response.status);
+    throw new ApiError('Request failed', response.status);
   }
   return response.json();
 }
 
-// Fetch available voices (no auth required)
-export async function fetchVoices(): Promise<VoiceOption[]> {
-  const response = await fetch(`${API_BASE_URL}/voices`);
-  if (!response.ok) {
-    throw new ApiError('Failed to fetch voices', response.status);
-  }
-  return response.json();
+// =============================================================================
+// CONFIGURATION ENDPOINTS (No auth required)
+// =============================================================================
+
+/**
+ * Get default agent configuration template.
+ */
+export async function fetchDefaultConfig(): Promise<AgentConfigData> {
+  return publicApiRequest<AgentConfigData>('/defaults');
 }
 
-// Fetch available tones (no auth required)
-export async function fetchTones(): Promise<ToneOption[]> {
-  const response = await fetch(`${API_BASE_URL}/tones`);
-  if (!response.ok) {
-    throw new ApiError('Failed to fetch tones', response.status);
-  }
-  return response.json();
+/**
+ * Get list of available voice options.
+ * Optionally filter by provider.
+ */
+export async function fetchVoices(provider?: string): Promise<VoiceOption[]> {
+  const endpoint = provider ? `/voices?provider=${provider}` : '/voices';
+  return publicApiRequest<VoiceOption[]>(endpoint);
 }
 
-// Fetch all agents for current user
+/**
+ * Get voice options for a specific provider.
+ */
+export async function fetchVoicesByProvider(provider: string): Promise<VoiceOption[]> {
+  return publicApiRequest<VoiceOption[]>(`/voices/${provider}`);
+}
+
+/**
+ * Get list of available speaking styles.
+ */
+export async function fetchSpeakingStyles(): Promise<SpeakingStyleOption[]> {
+  return publicApiRequest<SpeakingStyleOption[]>('/speaking-styles');
+}
+
+/**
+ * Get list of default ticket/output fields.
+ */
+export async function fetchOutputFields(): Promise<TicketField[]> {
+  return publicApiRequest<TicketField[]>('/output-fields');
+}
+
+/**
+ * Get list of suggested custom tags.
+ */
+export async function fetchSuggestedTags(): Promise<string[]> {
+  return publicApiRequest<string[]>('/suggested-tags');
+}
+
+// =============================================================================
+// AGENT CRUD ENDPOINTS (Auth required)
+// =============================================================================
+
+/**
+ * Fetch all agents for the current user.
+ */
 export async function fetchAgents(
   getToken: () => Promise<string | null>
 ): Promise<Agent[]> {
-  const data = await apiRequest<AgentApiResponse[]>(
-    '/agents',
-    getToken
-  );
+  const data = await apiRequest<AgentApiResponse[]>('/agents', getToken);
   return data.map(mapApiResponseToAgent);
 }
 
-// Fetch single agent by ID
+/**
+ * Fetch a single agent by ID.
+ */
 export async function fetchAgent(
-  agentId: string,
+  agentId: number,
   getToken: () => Promise<string | null>
 ): Promise<Agent> {
   const data = await apiRequest<AgentApiResponse>(
@@ -202,11 +213,20 @@ export async function fetchAgent(
   return mapApiResponseToAgent(data);
 }
 
-// Create a new agent
+/**
+ * Create a new agent.
+ */
 export async function createAgent(
-  payload: CreateAgentPayload,
-  getToken: () => Promise<string | null>
+  config: AgentConfigData,
+  getToken: () => Promise<string | null>,
+  options?: { status?: AgentStatus; phone?: string }
 ): Promise<Agent> {
+  const payload: CreateAgentRequest = {
+    config,
+    status: options?.status || 'inactive',
+    phone: options?.phone,
+  };
+
   const data = await apiRequest<AgentApiResponse>(
     '/agents',
     getToken,
@@ -218,10 +238,13 @@ export async function createAgent(
   return mapApiResponseToAgent(data);
 }
 
-// Update an existing agent
+/**
+ * Update an existing agent.
+ * Supports partial updates.
+ */
 export async function updateAgent(
-  agentId: string,
-  payload: UpdateAgentPayload,
+  agentId: number,
+  updates: UpdateAgentRequest,
   getToken: () => Promise<string | null>
 ): Promise<Agent> {
   const data = await apiRequest<AgentApiResponse>(
@@ -229,15 +252,39 @@ export async function updateAgent(
     getToken,
     {
       method: 'PATCH',
-      body: JSON.stringify(payload),
+      body: JSON.stringify(updates),
     }
   );
   return mapApiResponseToAgent(data);
 }
 
-// Delete an agent
+/**
+ * Update only the agent configuration.
+ */
+export async function updateAgentConfig(
+  agentId: number,
+  config: AgentConfigData,
+  getToken: () => Promise<string | null>
+): Promise<Agent> {
+  return updateAgent(agentId, { config }, getToken);
+}
+
+/**
+ * Update only the agent status.
+ */
+export async function updateAgentStatus(
+  agentId: number,
+  status: AgentStatus,
+  getToken: () => Promise<string | null>
+): Promise<Agent> {
+  return updateAgent(agentId, { status }, getToken);
+}
+
+/**
+ * Delete an agent (soft delete).
+ */
 export async function deleteAgent(
-  agentId: string,
+  agentId: number,
   getToken: () => Promise<string | null>
 ): Promise<void> {
   await apiRequest<void>(

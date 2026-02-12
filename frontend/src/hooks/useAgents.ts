@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import type { Agent } from '../types/agent';
-import type { AgentFormData } from '../schemas/agentSchema';
+import type { Agent, AgentConfigData } from '../types/agent';
 import {
   fetchAgents,
   createAgent,
-  updateAgent,
+  updateAgentConfig,
   deleteAgent,
   ApiError,
 } from '../services/agentApi';
@@ -15,8 +14,8 @@ interface UseAgentsReturn {
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-  saveAgent: (data: AgentFormData, agentId?: string) => Promise<Agent>;
-  removeAgent: (agentId: string) => Promise<void>;
+  saveAgent: (config: AgentConfigData, agentId?: number) => Promise<Agent>;
+  removeAgent: (agentId: number) => Promise<void>;
   isSaving: boolean;
 }
 
@@ -50,31 +49,20 @@ export function useAgents(): UseAgentsReturn {
   }, [fetchData]);
 
   const saveAgent = useCallback(
-    async (data: AgentFormData, agentId?: string): Promise<Agent> => {
+    async (config: AgentConfigData, agentId?: number): Promise<Agent> => {
       setIsSaving(true);
       try {
-        // Map frontend form data to backend payload
-        const payload = {
-          name: data.name,
-          business_name: data.businessName,
-          voice_id: data.voiceId,
-          greeting_message: data.greetingMessage,
-          tone: data.tone,
-          custom_instructions: data.customInstructions || null,
-          knowledge_base_text: data.knowledgeText || null,
-        };
-
         let savedAgent: Agent;
 
         if (agentId) {
           // Update existing agent
-          savedAgent = await updateAgent(agentId, payload, getToken);
+          savedAgent = await updateAgentConfig(agentId, config, getToken);
           setAgents((prev) =>
             prev.map((a) => (a.id === agentId ? savedAgent : a))
           );
         } else {
           // Create new agent
-          savedAgent = await createAgent(payload, getToken);
+          savedAgent = await createAgent(config, getToken);
           setAgents((prev) => [...prev, savedAgent]);
         }
 
@@ -87,7 +75,7 @@ export function useAgents(): UseAgentsReturn {
   );
 
   const removeAgent = useCallback(
-    async (agentId: string): Promise<void> => {
+    async (agentId: number): Promise<void> => {
       await deleteAgent(agentId, getToken);
       setAgents((prev) => prev.filter((a) => a.id !== agentId));
     },

@@ -42,15 +42,15 @@ def get_clean_url(url: str) -> str:
     return parsed.geturl()
 
 
-async def fetch_transcript(room_name: str) -> Optional[list[dict[str, Any]]]:
+async def fetch_call_data(room_name: str) -> Optional[dict[str, Any]]:
     """
-    Fetch transcript for a call session by room name.
+    Fetch transcript and agent output config for a call session.
 
     Args:
         room_name: The UUID room name (session identifier)
 
     Returns:
-        List of transcript messages or None if not found
+        Dict with 'transcript' and 'output_config', or None if not found
     """
     if not DATABASE_URL:
         logger.error("DATABASE_URL not configured")
@@ -65,23 +65,49 @@ async def fetch_transcript(room_name: str) -> Optional[list[dict[str, Any]]]:
         try:
             row = await conn.fetchrow(
                 """
-                SELECT transcript
-                FROM call_sessions
-                WHERE room_name = $1
+                SELECT
+                    cs.transcript,
+                    ac.config->'output' as output_config
+                FROM call_sessions cs
+                LEFT JOIN agent_configs ac ON cs.agent_id = ac.id
+                WHERE cs.room_name = $1
                 """,
                 room_name,
             )
 
-            if row and row["transcript"]:
-                return json.loads(row["transcript"]) if isinstance(row["transcript"], str) else row["transcript"]
-            return None
+            if row is None:
+                return None
+
+            transcript = None
+            if row["transcript"]:
+                transcript = json.loads(row["transcript"]) if isinstance(row["transcript"], str) else row["transcript"]
+
+            output_config = row["output_config"] or {}
+            if isinstance(output_config, str):
+                output_config = json.loads(output_config)
+
+            return {
+                "transcript": transcript,
+                "output_config": output_config,
+            }
 
         finally:
             await conn.close()
 
     except Exception as e:
-        logger.error(f"Failed to fetch transcript for {room_name}: {e}")
+        logger.error(f"Failed to fetch call data for {room_name}: {e}")
         return None
+
+
+# Legacy function for backward compatibility
+async def fetch_transcript(room_name: str) -> Optional[list[dict[str, Any]]]:
+    """
+    Fetch transcript for a call session by room name.
+
+    DEPRECATED: Use fetch_call_data() instead to also get output config.
+    """
+    result = await fetch_call_data(room_name)
+    return result["transcript"] if result else None
 
 
 async def update_analysis(

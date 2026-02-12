@@ -10,7 +10,9 @@ interface AgentCardProps {
 }
 
 export function AgentCard({ agent, onEdit, onDelete }: AgentCardProps) {
-  const { name, status, phone, description } = agent;
+  const { status, phone, config } = agent;
+  const name = config.agent.name;
+  const businessName = config.agent.business_name;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -106,9 +108,9 @@ export function AgentCard({ agent, onEdit, onDelete }: AgentCardProps) {
         </div>
       </div>
 
-      {/* Description */}
-      {description && (
-        <p className="text-sm text-white/60 mb-4 line-clamp-2">{description}</p>
+      {/* Business Name */}
+      {businessName && (
+        <p className="text-sm text-white/60 mb-4 line-clamp-2">{businessName}</p>
       )}
 
       {/* Phone */}

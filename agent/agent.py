@@ -29,7 +29,7 @@ from prompts import (
     FALLBACK_INSTRUCTIONS,
     FALLBACK_GREETING,
     DynamicPrompts,
-    build_prompts,
+    build_prompts_from_config,
 )
 from database import get_session_config, get_user_remaining_seconds, save_call_log
 from usage import monitor_usage
@@ -45,6 +45,31 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def create_tts(voice_config: dict):
+    """
+    Create TTS instance based on provider selection from config.
+
+    Args:
+        voice_config: Voice configuration dict with provider, voice_id, etc.
+
+    Returns:
+        TTS instance for the selected provider
+    """
+    provider = voice_config.get("provider", "inworld")
+    voice_id = voice_config.get("voice_id", TTS_VOICE)
+
+    logger.info(f"Creating TTS: provider={provider}, voice={voice_id}")
+
+    if provider == "inworld":
+        return inworld.TTS(model=TTS_MODEL, voice=voice_id)
+    elif provider == "deepgram":
+        return deepgram.TTS(model=voice_id)
+    else:
+        logger.warning(f"Unknown TTS provider '{provider}', falling back to inworld")
+        return inworld.TTS(model=TTS_MODEL, voice=TTS_VOICE)
+
 
 # Initialize the AgentServer
 server = AgentServer()
@@ -72,15 +97,8 @@ async def agent_session(ctx: agents.JobContext) -> None:
 
         if session_config:
             logger.debug(f"Loaded config: {session_config.name}")
-            prompts = build_prompts(
-                name=session_config.name,
-                business_name=session_config.business_name,
-                tone=session_config.tone,
-                custom_instructions=session_config.custom_instructions,
-                knowledge_base_text=session_config.knowledge_base_text,
-                greeting_message=session_config.greeting_message,
-            )
-            voice_id = session_config.voice_id
+            prompts = build_prompts_from_config(session_config)
+            voice_config = session_config.voice
             user_id = session_config.user_id
         else:
             logger.error(f"No config for room: {room_name}, using fallback")
@@ -88,7 +106,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
                 system_instructions=FALLBACK_INSTRUCTIONS,
                 greeting_instructions=FALLBACK_GREETING,
             )
-            voice_id = TTS_VOICE
+            voice_config = {"provider": "inworld", "voice_id": TTS_VOICE}
             user_id = None
 
         # Create dynamic agent with transcript logging and cleanup capabilities
@@ -119,7 +137,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
                 base_url=LLM_BASE_URL,
                 model=LLM_MODEL,
             ),
-            tts=inworld.TTS(model=TTS_MODEL, voice=voice_id),
+            tts=create_tts(voice_config),
             vad=silero.VAD.load(),
             turn_detection=MultilingualModel(),
         )

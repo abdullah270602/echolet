@@ -6,25 +6,31 @@ This module provides prompt building functionality with clean separation between
 - User content (business-specific - name, knowledge base, custom instructions)
 
 Usage:
+    from prompts import build_prompts_from_config, DynamicPrompts
+    from database import SessionConfig
+
+    # New recommended approach using SessionConfig
+    prompts = build_prompts_from_config(session_config)
+
+    # prompts.system_instructions contains the full prompt
+    # prompts.greeting_instructions contains the greeting directive
+
+Legacy Usage (for backward compatibility):
     from prompts import build_prompts, DynamicPrompts
 
     prompts = build_prompts(
         name="Sarah",
         business_name="Acme Corp",
         tone="professional",
-        custom_instructions="Always offer callbacks",
-        knowledge_base_text="Our hours are 9-5...",
-        greeting_message="Hi! Thanks for calling Acme Corp!",
+        ...
     )
-
-    # prompts.system_instructions contains the full prompt
-    # prompts.greeting_instructions contains the greeting directive
 """
 
 from .builder import (
     DynamicPrompts,
-    build_prompts,
-    TONE_DESCRIPTIONS,
+    build_prompts_from_config,
+    build_prompts,  # Legacy
+    SPEAKING_STYLE_DESCRIPTIONS,
     FALLBACK_INSTRUCTIONS,
     FALLBACK_GREETING,
     ASSISTANT_INSTRUCTIONS,
@@ -42,10 +48,12 @@ from .system import (
 )
 
 __all__ = [
-    # Main builder
-    "build_prompts",
+    # Main builder (new)
+    "build_prompts_from_config",
     "DynamicPrompts",
-    "TONE_DESCRIPTIONS",
+    "SPEAKING_STYLE_DESCRIPTIONS",
+    # Legacy builder
+    "build_prompts",
     # Fallbacks
     "FALLBACK_INSTRUCTIONS",
     "FALLBACK_GREETING",

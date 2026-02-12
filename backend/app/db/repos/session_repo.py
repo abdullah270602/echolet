@@ -178,10 +178,11 @@ async def get_user_call_history(
     Returns:
         List of dicts with CallSession data plus agent_name and is_agent_deleted
     """
+    # Extract agent name from JSONB config column: config['agent']['name']
     stmt = (
         select(
             CallSession,
-            AgentConfig.name.label('agent_name'),
+            AgentConfig.config['agent']['name'].astext.label('agent_name'),
             AgentConfig.deleted_at.label('agent_deleted_at'),
         )
         .outerjoin(AgentConfig, CallSession.agent_id == AgentConfig.id)

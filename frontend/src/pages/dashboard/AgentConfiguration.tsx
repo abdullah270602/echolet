@@ -6,10 +6,11 @@ import { AgentCard } from '../../components/dashboard/AgentCard';
 import { AgentFormModal } from '../../components/agent-form';
 import { ConfirmDialog } from '../../components/ui';
 import { useAgents } from '../../hooks/useAgents';
-import { useAgentConfig } from '../../hooks/useAgentConfig';
 import { ApiError } from '../../services/agentApi';
-import type { Agent } from '../../types/agent';
-import type { AgentFormData } from '../../schemas/agentSchema';
+import type { Agent, AgentConfigData } from '../../types/agent';
+
+// Max agents per user (could come from backend config in the future)
+const MAX_AGENTS: number = 3;
 
 export function AgentConfiguration() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,10 +18,6 @@ export function AgentConfiguration() {
   const [deletingAgent, setDeletingAgent] = useState<Agent | undefined>(undefined);
   const [isDeleting, setIsDeleting] = useState(false);
   const { agents, isLoading, error, saveAgent, removeAgent, refetch } = useAgents();
-  const { config } = useAgentConfig();
-
-  // Get agent limit from config (default to 3 if not loaded yet)
-  const maxAgents = config?.max_agents_per_user ?? 3;
 
   const handleCreateNew = () => {
     setEditingAgent(undefined);
@@ -37,9 +34,9 @@ export function AgentConfiguration() {
     setEditingAgent(undefined);
   };
 
-  const handleSaveAgent = async (data: AgentFormData, _files: File[]) => {
+  const handleSaveAgent = async (config: AgentConfigData) => {
     try {
-      await saveAgent(data, editingAgent?.id);
+      await saveAgent(config, editingAgent?.id);
       // Toast is handled in AgentFormModal
     } catch (err) {
       if (err instanceof ApiError) {
@@ -125,7 +122,7 @@ export function AgentConfiguration() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleCreateNew}
-          disabled={agents.length >= maxAgents}
+          disabled={agents.length >= MAX_AGENTS}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-purple-500 text-white text-sm font-medium shadow-glow-sm hover:shadow-glow-md transition-shadow disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-glow-sm"
         >
           <Plus className="w-4 h-4" />
@@ -134,10 +131,10 @@ export function AgentConfiguration() {
       </div>
 
       {/* Agent limit notice */}
-      {agents.length >= maxAgents && (
+      {agents.length >= MAX_AGENTS && (
         <div className="mb-6 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
           <p className="text-amber-400 text-sm">
-            You have reached the maximum limit of {maxAgents} agent{maxAgents !== 1 ? 's' : ''}. Edit your existing agents or contact support for more.
+            You have reached the maximum limit of {MAX_AGENTS} agent{MAX_AGENTS !== 1 ? 's' : ''}. Edit your existing agents or contact support for more.
           </p>
         </div>
       )}
@@ -190,7 +187,7 @@ export function AgentConfiguration() {
         onClose={handleCancelDelete}
         onConfirm={handleConfirmDelete}
         title="Delete Agent"
-        message={`Are you sure you want to delete "${deletingAgent?.name || 'this agent'}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${deletingAgent?.config?.agent?.name || 'this agent'}"? This action cannot be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         isLoading={isDeleting}

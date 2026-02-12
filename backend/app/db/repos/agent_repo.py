@@ -1,12 +1,14 @@
+"""
+Repository layer for agent configuration database operations.
+"""
 import uuid
 from datetime import datetime, UTC
-from typing import Optional
+from typing import Optional, Any
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.agent_config import AgentConfig
-from app.schemas.agent import AgentCreateRequest, AgentUpdateRequest
 
 
 async def get_by_id(
@@ -75,7 +77,9 @@ async def get_user_agent_count(
 async def create(
     session: AsyncSession,
     user_id: uuid.UUID,
-    data: AgentCreateRequest,
+    config: dict[str, Any],
+    status: str = "inactive",
+    phone: Optional[str] = None,
 ) -> AgentConfig:
     """
     Create a new agent configuration.
@@ -83,20 +87,18 @@ async def create(
     Args:
         session: Database session
         user_id: The user's identifier
-        data: Agent creation data
+        config: The agent configuration data (JSONB)
+        status: Agent status (default: inactive)
+        phone: Optional phone number
 
     Returns:
         The created AgentConfig
     """
     agent = AgentConfig(
         user_id=user_id,
-        name=data.name,
-        business_name=data.business_name,
-        voice_id=data.voice_id,
-        greeting_message=data.greeting_message,
-        tone=data.tone,
-        custom_instructions=data.custom_instructions,
-        knowledge_base_text=data.knowledge_base_text,
+        config=config,
+        status=status,
+        phone=phone,
     )
     session.add(agent)
     await session.commit()
@@ -107,7 +109,9 @@ async def create(
 async def update(
     session: AsyncSession,
     agent: AgentConfig,
-    data: AgentUpdateRequest,
+    config: Optional[dict[str, Any]] = None,
+    status: Optional[str] = None,
+    phone: Optional[str] = None,
 ) -> AgentConfig:
     """
     Update an existing agent configuration.
@@ -115,15 +119,19 @@ async def update(
     Args:
         session: Database session
         agent: The agent to update
-        data: Update data (only non-None fields are updated)
+        config: New config data (replaces entire config if provided)
+        status: New status (if provided)
+        phone: New phone (if provided)
 
     Returns:
         The updated AgentConfig
     """
-    update_data = data.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        if value is not None:
-            setattr(agent, field, value)
+    if config is not None:
+        agent.config = config
+    if status is not None:
+        agent.status = status
+    if phone is not None:
+        agent.phone = phone
 
     await session.commit()
     await session.refresh(agent)

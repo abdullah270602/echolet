@@ -86,9 +86,9 @@ export function AgentSandbox() {
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all"
           >
             <div className="text-left">
-              <span className="block">{selectedAgent?.name || 'Select an agent'}</span>
+              <span className="block">{selectedAgent?.config.agent.name || 'Select an agent'}</span>
               {selectedAgent && (
-                <span className="block text-sm text-white/50">{selectedAgent.businessName}</span>
+                <span className="block text-sm text-white/50">{selectedAgent.config.agent.business_name}</span>
               )}
             </div>
             <ChevronDown
@@ -113,8 +113,8 @@ export function AgentSandbox() {
                     selectedAgent?.id === agent.id ? 'bg-white/10' : ''
                   }`}
                 >
-                  <div className="font-medium text-white">{agent.name}</div>
-                  <div className="text-sm text-white/50">{agent.businessName}</div>
+                  <div className="font-medium text-white">{agent.config.agent.name}</div>
+                  <div className="text-sm text-white/50">{agent.config.agent.business_name}</div>
                 </button>
               ))}
             </motion.div>
@@ -123,7 +123,7 @@ export function AgentSandbox() {
       </div>
 
       {/* Voice Room */}
-      {selectedAgent && <VoiceRoom agentId={parseInt(selectedAgent.id)} />}
+      {selectedAgent && <VoiceRoom agentId={selectedAgent.id} />}
     </div>
   );
 }

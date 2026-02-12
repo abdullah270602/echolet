@@ -19,24 +19,68 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SessionConfig:
-    """Configuration data loaded from CallSession + AgentConfig."""
+    """
+    Configuration data loaded from CallSession + AgentConfig.
+
+    The config field contains the full JSONB configuration from agent_configs.config.
+    Property accessors provide convenient typed access to nested values.
+    """
 
     session_id: int
     agent_id: int
     user_id: str
+    config: dict[str, Any]  # The entire agent_configs.config JSONB
 
-    # Agent Identity
-    name: str
-    business_name: str
-    voice_id: str
-    greeting_message: str
+    # Convenience accessors for common fields
+    @property
+    def name(self) -> str:
+        """Agent name from config.agent.name"""
+        return self.config.get("agent", {}).get("name", "Assistant")
 
-    # Agent Behavior
-    tone: str
-    custom_instructions: Optional[str]
+    @property
+    def business_name(self) -> str:
+        """Business name from config.agent.business_name"""
+        return self.config.get("agent", {}).get("business_name", "")
 
-    # Knowledge
-    knowledge_base_text: Optional[str]
+    @property
+    def greeting_message(self) -> str:
+        """Greeting message from config.agent.greeting_message"""
+        return self.config.get("agent", {}).get("greeting_message", "Hello! How can I help you today?")
+
+    @property
+    def voice(self) -> dict[str, Any]:
+        """Voice configuration from config.voice"""
+        return self.config.get("voice", {})
+
+    @property
+    def services(self) -> list[dict[str, Any]]:
+        """Services list from config.services"""
+        return self.config.get("services", [])
+
+    @property
+    def knowledge_base(self) -> dict[str, Any]:
+        """Knowledge base configuration from config.knowledge_base"""
+        return self.config.get("knowledge_base", {})
+
+    @property
+    def guardrails(self) -> dict[str, Any]:
+        """Guardrails configuration from config.guardrails"""
+        return self.config.get("guardrails", {})
+
+    @property
+    def conversation(self) -> dict[str, Any]:
+        """Conversation configuration from config.conversation"""
+        return self.config.get("conversation", {})
+
+    @property
+    def output(self) -> dict[str, Any]:
+        """Output configuration from config.output"""
+        return self.config.get("output", {})
+
+    @property
+    def custom_instructions(self) -> Optional[str]:
+        """Custom instructions from config.custom_instructions"""
+        return self.config.get("custom_instructions")
 
 
 def get_database_url() -> str:
@@ -82,13 +126,7 @@ async def get_session_config(room_name: str) -> Optional[SessionConfig]:
                     cs.id as session_id,
                     cs.agent_id,
                     cs.user_id,
-                    ac.name,
-                    ac.business_name,
-                    ac.voice_id,
-                    ac.greeting_message,
-                    ac.tone,
-                    ac.custom_instructions,
-                    ac.knowledge_base_text
+                    ac.config
                 FROM call_sessions cs
                 JOIN agent_configs ac ON cs.agent_id = ac.id
                 WHERE cs.room_name = $1
@@ -100,17 +138,14 @@ async def get_session_config(room_name: str) -> Optional[SessionConfig]:
                 logger.warning(f"No session found for room_name: {room_name}")
                 return None
 
+            # Parse the JSONB config
+            config_data = row["config"] or {}
+
             return SessionConfig(
                 session_id=row["session_id"],
                 agent_id=row["agent_id"],
-                user_id=str(row["user_id"]),  # Convert UUID to string
-                name=row["name"],
-                business_name=row["business_name"],
-                voice_id=row["voice_id"],
-                greeting_message=row["greeting_message"],
-                tone=row["tone"],
-                custom_instructions=row["custom_instructions"],
-                knowledge_base_text=row["knowledge_base_text"],
+                user_id=str(row["user_id"]),
+                config=config_data,
             )
         finally:
             await conn.close()

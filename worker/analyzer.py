@@ -1,7 +1,8 @@
 """
 LLM Transcript Analyzer
 
-Uses OpenRouter (Gemini) to analyze call transcripts and extract:
+Uses OpenRouter (Gemini) to analyze call transcripts and extract
+configurable fields based on the agent's output configuration:
 - Summary: What happened in the call
 - Category: Type of call (Appointment, Inquiry, Complaint, etc.)
 - Urgency: Priority level (High, Medium, Low)
@@ -12,12 +13,12 @@ Uses OpenRouter (Gemini) to analyze call transcripts and extract:
 
 import json
 import logging
-from typing import Any
+from typing import Any, Optional
 
 import httpx
 
 from config import OPENROUTER_API_KEY, LLM_BASE_URL, LLM_MODEL
-from prompt import ANALYSIS_SYSTEM_PROMPT
+from prompt import build_analysis_prompt, get_enabled_field_keys
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +33,11 @@ def format_transcript(transcript: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def get_default_analysis() -> dict[str, Any]:
+def get_default_analysis(output_config: Optional[dict[str, Any]] = None) -> dict[str, Any]:
     """Return default analysis when processing fails."""
-    return {
+    enabled_keys = get_enabled_field_keys(output_config)
+
+    defaults = {
         "summary": "Analysis pending.",
         "category": "Other",
         "urgency": "Medium",
@@ -43,6 +46,18 @@ def get_default_analysis() -> dict[str, Any]:
         "action_items": [],
     }
 
+    # Only return fields that are enabled
+    result = {}
+    for field_id, json_key in enabled_keys.items():
+        if json_key in defaults:
+            result[json_key] = defaults[json_key]
+
+    # Always include summary
+    if "summary" not in result:
+        result["summary"] = defaults["summary"]
+
+    return result
+
 
 # Valid values for validation
 VALID_CATEGORIES = {"Appointment", "Inquiry", "Complaint", "Spam", "Urgent Service", "Other"}
@@ -50,29 +65,38 @@ VALID_URGENCIES = {"High", "Medium", "Low"}
 VALID_SENTIMENTS = {"Positive", "Neutral", "Frustrated", "Angry"}
 
 
-async def analyze_transcript(transcript: list[dict[str, Any]]) -> dict[str, Any]:
+async def analyze_transcript(
+    transcript: list[dict[str, Any]],
+    output_config: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
     """
     Analyze a call transcript using the LLM.
 
     Args:
         transcript: List of message dicts with role/content
+        output_config: Optional output configuration from agent_configs.config.output
+                      Controls which fields are extracted
 
     Returns:
-        Dict with summary, category, urgency, sentiment, action_required, action_items
+        Dict with analysis fields based on output config (defaults to all fields)
     """
+    enabled_keys = get_enabled_field_keys(output_config)
+
     if not transcript:
-        result = get_default_analysis()
+        result = get_default_analysis(output_config)
         result["summary"] = "Empty call - no conversation recorded."
         return result
 
     if not OPENROUTER_API_KEY:
         logger.error("OPENROUTER_API_KEY not configured")
-        result = get_default_analysis()
+        result = get_default_analysis(output_config)
         result["summary"] = "Analysis unavailable - API key not configured."
         return result
 
+    # Build dynamic prompt based on enabled fields
+    analysis_prompt = build_analysis_prompt(output_config)
     formatted_transcript = format_transcript(transcript)
-    full_prompt = ANALYSIS_SYSTEM_PROMPT + formatted_transcript
+    full_prompt = analysis_prompt + formatted_transcript
 
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
@@ -103,21 +127,34 @@ async def analyze_transcript(transcript: list[dict[str, Any]]) -> dict[str, Any]
             elif "```" in content:
                 content = content.split("```")[1].split("```")[0]
 
-            result = json.loads(content.strip())
+            llm_result = json.loads(content.strip())
 
-            # Validate and sanitize each field
-            category = result.get("category", "Other")
-            urgency = result.get("urgency", "Medium")
-            sentiment = result.get("sentiment", "Neutral")
+            # Build result with only enabled fields, validated
+            result = {}
 
-            return {
-                "summary": str(result.get("summary", "No summary available."))[:1000],
-                "category": category if category in VALID_CATEGORIES else "Other",
-                "urgency": urgency if urgency in VALID_URGENCIES else "Medium",
-                "sentiment": sentiment if sentiment in VALID_SENTIMENTS else "Neutral",
-                "action_required": bool(result.get("action_required", False)),
-                "action_items": [str(item) for item in result.get("action_items", [])][:10],
-            }
+            # Summary is always included
+            result["summary"] = str(llm_result.get("summary", "No summary available."))[:1000]
+
+            # Validate and include only enabled fields
+            if "intent" in enabled_keys:
+                category = llm_result.get("category", "Other")
+                result["category"] = category if category in VALID_CATEGORIES else "Other"
+
+            if "priority" in enabled_keys:
+                urgency = llm_result.get("urgency", "Medium")
+                result["urgency"] = urgency if urgency in VALID_URGENCIES else "Medium"
+
+            if "sentiment" in enabled_keys:
+                sentiment = llm_result.get("sentiment", "Neutral")
+                result["sentiment"] = sentiment if sentiment in VALID_SENTIMENTS else "Neutral"
+
+            if "follow_up_required" in enabled_keys:
+                result["action_required"] = bool(llm_result.get("action_required", False))
+
+            if "action_items" in enabled_keys:
+                result["action_items"] = [str(item) for item in llm_result.get("action_items", [])][:10]
+
+            return result
 
     except httpx.HTTPStatusError as e:
         logger.error(f"LLM API error: {e.response.status_code} - {e.response.text}")
@@ -127,6 +164,6 @@ async def analyze_transcript(transcript: list[dict[str, Any]]) -> dict[str, Any]
         logger.error(f"Unexpected error during analysis: {e}")
 
     # Fallback response
-    result = get_default_analysis()
+    result = get_default_analysis(output_config)
     result["summary"] = "Analysis failed - please review transcript manually."
     return result

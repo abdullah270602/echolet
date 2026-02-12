@@ -1,3 +1,6 @@
+"""
+Service layer for agent configuration business logic.
+"""
 import uuid
 
 from fastapi import HTTPException
@@ -5,7 +8,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.agent_config import AgentConfig
 from app.db.repos import agent_repo
-from app.schemas.agent import AgentCreateRequest, AgentUpdateRequest, DEFAULT_CONFIG
+from app.schemas.agent import (
+    AgentCreateRequest,
+    AgentUpdateRequest,
+    AgentConfigData,
+)
+
+
+# Maximum agents per user
+MAX_AGENTS_PER_USER = 3
 
 
 async def list_agents(
@@ -52,6 +63,9 @@ async def get_agent(
     if agent.user_id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to access this agent")
 
+    if agent.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
     return agent
 
 
@@ -66,7 +80,7 @@ async def create_agent(
     Args:
         session: Database session
         user_id: The user's identifier
-        data: Agent creation data
+        data: Agent creation data with nested config
 
     Returns:
         The created AgentConfig
@@ -76,14 +90,22 @@ async def create_agent(
     """
     # Check if user has reached agent limit
     count = await agent_repo.get_user_agent_count(session, user_id)
-    max_agents = DEFAULT_CONFIG.max_agents_per_user
-    if count >= max_agents:
+    if count >= MAX_AGENTS_PER_USER:
         raise HTTPException(
             status_code=400,
-            detail=f"Agent limit reached. Maximum {max_agents} agent(s) allowed.",
+            detail=f"Agent limit reached. Maximum {MAX_AGENTS_PER_USER} agent(s) allowed.",
         )
 
-    return await agent_repo.create(session, user_id, data)
+    # Convert Pydantic model to dict for JSONB storage
+    config_dict = data.config.model_dump()
+
+    return await agent_repo.create(
+        session=session,
+        user_id=user_id,
+        config=config_dict,
+        status=data.status,
+        phone=data.phone,
+    )
 
 
 async def update_agent(
@@ -99,7 +121,7 @@ async def update_agent(
         session: Database session
         user_id: The user's identifier
         agent_id: The agent's ID
-        data: Update data
+        data: Update data (partial - only provided fields are updated)
 
     Returns:
         The updated AgentConfig
@@ -115,7 +137,19 @@ async def update_agent(
     if agent.user_id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to update this agent")
 
-    return await agent_repo.update(session, agent, data)
+    if agent.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Convert config to dict if provided
+    config_dict = data.config.model_dump() if data.config else None
+
+    return await agent_repo.update(
+        session=session,
+        agent=agent,
+        config=config_dict,
+        status=data.status,
+        phone=data.phone,
+    )
 
 
 async def delete_agent(

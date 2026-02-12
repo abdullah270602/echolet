@@ -1,0 +1,124 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ['3.13']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install test dependencies
+        working-directory: tests
+        run: uv sync
+
+      - name: Run unit tests
+        working-directory: tests
+        run: uv run pytest unit -v --cov --cov-report=xml --cov-report=term-missing
+        env:
+          CLERK_JWKS_URL: "https://test.clerk.accounts.dev/.well-known/jwks.json"
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+          LIVEKIT_URL: "wss://test.livekit.cloud"
+          LIVEKIT_API_KEY: "test_key"
+          LIVEKIT_API_SECRET: "test_secret"
+          OPENROUTER_API_KEY: "test_key"
+          SQS_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/123456789/test"
+          AWS_REGION: "us-east-1"
+          DAILY_TALK_LIMIT_SECONDS: "3600"
+
+      - name: Run security tests
+        working-directory: tests
+        run: uv run pytest security -v
+        env:
+          CLERK_JWKS_URL: "https://test.clerk.accounts.dev/.well-known/jwks.json"
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+
+      - name: Run resilience tests
+        working-directory: tests
+        run: uv run pytest resilience -v
+        env:
+          CLERK_JWKS_URL: "https://test.clerk.accounts.dev/.well-known/jwks.json"
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+          OPENROUTER_API_KEY: "test_key"
+          SQS_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/123456789/test"
+
+      - name: Run integration tests
+        working-directory: tests
+        run: uv run pytest integration -v
+        env:
+          CLERK_JWKS_URL: "https://test.clerk.accounts.dev/.well-known/jwks.json"
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+
+      - name: Check coverage threshold (90%)
+        working-directory: tests
+        run: uv run pytest . -v --cov --cov-fail-under=90 --cov-report=xml
+        env:
+          CLERK_JWKS_URL: "https://test.clerk.accounts.dev/.well-known/jwks.json"
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+          LIVEKIT_URL: "wss://test.livekit.cloud"
+          LIVEKIT_API_KEY: "test_key"
+          LIVEKIT_API_SECRET: "test_secret"
+          OPENROUTER_API_KEY: "test_key"
+          SQS_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/123456789/test"
+          AWS_REGION: "us-east-1"
+          DAILY_TALK_LIMIT_SECONDS: "3600"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: tests/coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install Ruff
+        working-directory: tests
+        run: uv add ruff
+
+      - name: Run Ruff linter
+        working-directory: tests
+        run: uv run ruff check ..
+        continue-on-error: true
+
+      - name: Run Ruff formatter check
+        working-directory: tests
+        run: uv run ruff format --check ..
+        continue-on-error: true

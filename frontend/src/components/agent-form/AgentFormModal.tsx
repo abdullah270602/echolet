@@ -1,21 +1,46 @@
-import { useEffect } from 'react';
+/**
+ * Agent Form Modal - 8-tab configuration form
+ *
+ * Tabs:
+ * 1. Agent Setup - Identity and custom instructions
+ * 2. Voice - Provider, voice, and speaking style
+ * 3. Services - Services list
+ * 4. Knowledge - Knowledge base sources
+ * 5. Integrations - STUB
+ * 6. Actions - STUB
+ * 7. Output - Ticket fields and tags
+ * 8. Guardrails - Topics, compliance, hours
+ */
+
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import { Button, Tabs, TabsList, TabsTrigger, TabsContent } from '../ui';
-import { IdentityForm } from './IdentityForm';
-import { BehaviorForm } from './BehaviorForm';
-import { KnowledgeForm } from './KnowledgeForm';
-import { useAgentForm } from '../../hooks/useAgentForm';
-import { useAgentConfig } from '../../hooks/useAgentConfig';
-import type { Agent } from '../../types/agent';
-import type { AgentFormData } from '../../schemas/agentSchema';
+import { AgentSetupForm } from './AgentSetupForm';
+import { VoiceForm } from './VoiceForm';
+import { ServicesForm } from './ServicesForm';
+import { KnowledgeBaseForm } from './KnowledgeBaseForm';
+import { IntegrationsForm } from './IntegrationsForm';
+import { ActionsForm } from './ActionsForm';
+import { TicketOutputForm } from './TicketOutputForm';
+import { GuardrailsForm } from './GuardrailsForm';
+import { agentConfigSchema, getDefaultFormValues, type AgentConfigFormData } from '../../schemas/agentSchema';
+import type { Agent, VoiceOption, SpeakingStyleOption, TicketField } from '../../types/agent';
+import {
+  fetchVoices,
+  fetchSpeakingStyles,
+  fetchOutputFields,
+  fetchSuggestedTags,
+} from '../../services/agentApi';
 
 interface AgentFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   agent?: Agent;
-  onSave: (data: AgentFormData, files: File[]) => Promise<void>;
+  onSave: (config: AgentConfigFormData) => Promise<void>;
 }
 
 export function AgentFormModal({
@@ -24,32 +49,60 @@ export function AgentFormModal({
   agent,
   onSave,
 }: AgentFormModalProps) {
-  const { config, voices, tones, isLoading: isConfigLoading } = useAgentConfig();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+  const [voices, setVoices] = useState<VoiceOption[]>([]);
+  const [speakingStyles, setSpeakingStyles] = useState<SpeakingStyleOption[]>([]);
+  const [defaultOutputFields, setDefaultOutputFields] = useState<TicketField[]>([]);
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
 
-  const {
-    form,
-    files,
-    setFiles,
-    tokenCount,
-    tokenLimit,
-    isSaving,
-    setIsSaving,
-    resetForm,
-    isEditing,
-  } = useAgentForm(agent, config);
+  const isEditing = !!agent;
+
+  const form = useForm<AgentConfigFormData>({
+    resolver: zodResolver(agentConfigSchema),
+    defaultValues: agent?.config || getDefaultFormValues(),
+  });
 
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors, isDirty },
   } = form;
 
-  // Reset form when modal opens/closes or agent changes
+  // Load configuration options
+  useEffect(() => {
+    async function loadConfig() {
+      setIsLoadingConfig(true);
+      try {
+        const [voicesData, stylesData, fieldsData, tagsData] = await Promise.all([
+          fetchVoices(),
+          fetchSpeakingStyles(),
+          fetchOutputFields(),
+          fetchSuggestedTags(),
+        ]);
+        setVoices(voicesData);
+        setSpeakingStyles(stylesData);
+        setDefaultOutputFields(fieldsData);
+        setSuggestedTags(tagsData);
+      } catch (error) {
+        console.error('Failed to load config:', error);
+        toast.error('Failed to load configuration options');
+      } finally {
+        setIsLoadingConfig(false);
+      }
+    }
+    if (isOpen) {
+      loadConfig();
+    }
+  }, [isOpen]);
+
+  // Reset form when modal opens or agent changes
   useEffect(() => {
     if (isOpen) {
-      resetForm();
+      reset(agent?.config || getDefaultFormValues());
     }
-  }, [isOpen, agent, resetForm]);
+  }, [isOpen, agent, reset]);
 
   // Handle escape key
   useEffect(() => {
@@ -58,12 +111,11 @@ export function AgentFormModal({
         handleClose();
       }
     };
-
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen]);
 
-  // Prevent body scroll when modal is open
+  // Prevent body scroll
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -82,10 +134,10 @@ export function AgentFormModal({
     onClose();
   };
 
-  const onSubmit = async (data: AgentFormData) => {
+  const onSubmit = async (data: AgentConfigFormData) => {
     setIsSaving(true);
     try {
-      await onSave(data, files);
+      await onSave(data);
       toast.success(isEditing ? 'Agent updated successfully!' : 'Agent created successfully!');
       onClose();
     } catch (error) {
@@ -119,7 +171,7 @@ export function AgentFormModal({
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] glass-strong rounded-2xl border border-white/10 flex flex-col pointer-events-auto"
+              className="w-full max-w-3xl max-h-[90vh] glass-strong rounded-2xl border border-white/10 flex flex-col pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -137,7 +189,7 @@ export function AgentFormModal({
               </div>
 
               {/* Content */}
-              {isConfigLoading ? (
+              {isLoadingConfig ? (
                 <div className="flex-1 flex items-center justify-center py-12">
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-6 h-6 text-teal-400 animate-spin" />
@@ -147,30 +199,58 @@ export function AgentFormModal({
               ) : (
                 <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
                   <div className="flex-1 overflow-y-auto px-6 py-6">
-                    <Tabs defaultValue="identity">
-                      <TabsList className="mb-6 w-full justify-center">
-                        <TabsTrigger value="identity">Identity</TabsTrigger>
-                        <TabsTrigger value="behavior">Behavior</TabsTrigger>
+                    <Tabs defaultValue="setup">
+                      <TabsList className="mb-6 w-full flex-wrap justify-center gap-1">
+                        <TabsTrigger value="setup">Setup</TabsTrigger>
+                        <TabsTrigger value="voice">Voice</TabsTrigger>
+                        <TabsTrigger value="services">Services</TabsTrigger>
                         <TabsTrigger value="knowledge">Knowledge</TabsTrigger>
+                        <TabsTrigger value="integrations">Integrations</TabsTrigger>
+                        <TabsTrigger value="actions">Actions</TabsTrigger>
+                        <TabsTrigger value="output">Output</TabsTrigger>
+                        <TabsTrigger value="guardrails">Guardrails</TabsTrigger>
                       </TabsList>
 
-                      <TabsContent value="identity">
-                        <IdentityForm control={control} errors={errors} voices={voices} />
+                      <TabsContent value="setup">
+                        <AgentSetupForm control={control} errors={errors} />
                       </TabsContent>
 
-                      <TabsContent value="behavior">
-                        <BehaviorForm control={control} errors={errors} tones={tones} />
+                      <TabsContent value="voice">
+                        <VoiceForm
+                          control={control}
+                          errors={errors}
+                          voices={voices}
+                          speakingStyles={speakingStyles}
+                        />
+                      </TabsContent>
+
+                      <TabsContent value="services">
+                        <ServicesForm control={control} errors={errors} />
                       </TabsContent>
 
                       <TabsContent value="knowledge">
-                        <KnowledgeForm
+                        <KnowledgeBaseForm control={control} errors={errors} />
+                      </TabsContent>
+
+                      <TabsContent value="integrations">
+                        <IntegrationsForm />
+                      </TabsContent>
+
+                      <TabsContent value="actions">
+                        <ActionsForm />
+                      </TabsContent>
+
+                      <TabsContent value="output">
+                        <TicketOutputForm
                           control={control}
                           errors={errors}
-                          files={files}
-                          onFilesChange={setFiles}
-                          tokenCount={tokenCount}
-                          tokenLimit={tokenLimit}
+                          defaultFields={defaultOutputFields}
+                          suggestedTags={suggestedTags}
                         />
+                      </TabsContent>
+
+                      <TabsContent value="guardrails">
+                        <GuardrailsForm control={control} errors={errors} />
                       </TabsContent>
                     </Tabs>
                   </div>

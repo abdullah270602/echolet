@@ -24,7 +24,7 @@ from config import (
     MAX_MESSAGES_PER_POLL,
     VISIBILITY_TIMEOUT_SECONDS,
 )
-from database import fetch_transcript, update_analysis
+from database import fetch_call_data, update_analysis
 from analyzer import analyze_transcript
 
 # Configure logging
@@ -112,34 +112,47 @@ async def process_message(message: dict) -> bool:
 
     logger.info(f"Processing call: {room_name}")
 
-    # Fetch transcript
-    transcript = await fetch_transcript(room_name)
+    # Fetch transcript and output config
+    call_data = await fetch_call_data(room_name)
 
-    if transcript is None:
+    if call_data is None:
+        logger.warning(f"No call data found for {room_name}")
+        return True  # Delete message even if no data (avoid infinite retries)
+
+    transcript = call_data.get("transcript")
+    output_config = call_data.get("output_config")
+
+    if not transcript:
         logger.warning(f"No transcript found for {room_name}")
-        return True  # Delete message even if no transcript (avoid infinite retries)
+        return True
 
-    # Analyze with LLM
-    analysis = await analyze_transcript(transcript)
+    # Analyze with LLM using configured output fields
+    analysis = await analyze_transcript(transcript, output_config)
 
-    logger.info(
-        f"Analysis complete for {room_name}: "
-        f"category={analysis['category']}, "
-        f"urgency={analysis['urgency']}, "
-        f"sentiment={analysis['sentiment']}, "
-        f"action_required={analysis['action_required']}, "
-        f"actions={len(analysis['action_items'])}"
-    )
+    # Log available fields
+    log_parts = [f"Analysis complete for {room_name}:"]
+    if "category" in analysis:
+        log_parts.append(f"category={analysis['category']}")
+    if "urgency" in analysis:
+        log_parts.append(f"urgency={analysis['urgency']}")
+    if "sentiment" in analysis:
+        log_parts.append(f"sentiment={analysis['sentiment']}")
+    if "action_required" in analysis:
+        log_parts.append(f"action_required={analysis['action_required']}")
+    if "action_items" in analysis:
+        log_parts.append(f"actions={len(analysis['action_items'])}")
 
-    # Update database
+    logger.info(", ".join(log_parts))
+
+    # Update database with available fields
     success = await update_analysis(
         room_name=room_name,
-        summary=analysis["summary"],
-        category=analysis["category"],
-        urgency=analysis["urgency"],
-        sentiment=analysis["sentiment"],
-        action_required=analysis["action_required"],
-        action_items=analysis["action_items"],
+        summary=analysis.get("summary", "No summary"),
+        category=analysis.get("category", "Other"),
+        urgency=analysis.get("urgency", "Medium"),
+        sentiment=analysis.get("sentiment", "Neutral"),
+        action_required=analysis.get("action_required", False),
+        action_items=analysis.get("action_items", []),
     )
 
     return success
