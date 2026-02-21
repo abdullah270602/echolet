@@ -23,3 +23,8 @@ frontend/.next/
 
 
 .dev/
+# Test / build artefacts
+.coverage
+coverage.xml
+.pytest_cache/
+*.tsbuildinfo
