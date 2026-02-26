@@ -203,12 +203,44 @@ class TestProcessMessage:
             "receipt_handle": "receipt-abc",
         }
 
-        with patch("worker.fetch_transcript", return_value=sample_transcript), patch(
+        with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}), patch(
             "worker.analyze_transcript", return_value=sample_analysis
         ), patch("worker.update_analysis", return_value=True):
             result = await process_message(message)
 
         assert result is True
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_sp_passes_agent_output_config_to_analyzer(
+        self, sample_transcript, sample_analysis
+    ):
+        """SP: The agent's output config reaches the analyzer."""
+        cfg = {"ticket_fields": [{"id": "call_summary", "type": "text"}]}
+        message = {"body": {"room_name": "room-123"}, "receipt_handle": "r"}
+
+        with patch(
+            "worker.fetch_call_data",
+            return_value={"transcript": sample_transcript, "output_config": cfg},
+        ), patch("worker.analyze_transcript", return_value=sample_analysis) as analyze, patch(
+            "worker.update_analysis", return_value=True
+        ):
+            assert await process_message(message) is True
+
+        analyze.assert_called_once_with(sample_transcript, cfg)
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_sp_empty_transcript_skips_analysis(self):
+        """SP: Call exists but has no transcript -> delete message, no LLM call."""
+        message = {"body": {"room_name": "room-123"}, "receipt_handle": "r"}
+
+        with patch(
+            "worker.fetch_call_data", return_value={"transcript": None, "output_config": {}}
+        ), patch("worker.analyze_transcript") as analyze:
+            assert await process_message(message) is True
+
+        analyze.assert_not_called()
 
     @pytest.mark.unit
     @pytest.mark.asyncio
@@ -233,7 +265,7 @@ class TestProcessMessage:
             "receipt_handle": "receipt-abc",
         }
 
-        with patch("worker.fetch_transcript", return_value=None):
+        with patch("worker.fetch_call_data", return_value=None):
             result = await process_message(message)
 
         # Returns True to delete (avoid infinite retry for missing transcripts)
@@ -250,7 +282,7 @@ class TestProcessMessage:
             "receipt_handle": "receipt-abc",
         }
 
-        with patch("worker.fetch_transcript", return_value=sample_transcript), patch(
+        with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}), patch(
             "worker.analyze_transcript", return_value=sample_analysis
         ), patch("worker.update_analysis", return_value=False):  # DB update fails
             result = await process_message(message)
@@ -332,7 +364,7 @@ class TestDuplicateHandling:
             "receipt_handle": "receipt-abc",
         }
 
-        with patch("worker.fetch_transcript", return_value=sample_transcript), patch(
+        with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}), patch(
             "worker.analyze_transcript", return_value=sample_analysis
         ), patch("worker.update_analysis", return_value=True) as mock_update:
             # Process same message twice

@@ -41,3 +41,8 @@ dependencies = [
 
 [tool.uv]
 dev-dependencies = []
+
+[tool.coverage.run]
+# Measure production code only (agent/ has no suite yet)
+source = ["../backend", "../worker"]
+omit = ["*/.venv/*", "*/alembic/*"]

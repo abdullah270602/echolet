@@ -102,128 +102,42 @@ def mock_db_session() -> AsyncMock:
 
 
 class TestHappyPathCallFlow:
-    """
-    E2E Test: Complete call lifecycle.
-
-    Flow:
-    1. Backend: Create call session
-    2. Agent: Conduct conversation, capture transcript
-    3. Agent: Detect farewell, end call properly
-    4. Agent: Send to SQS for analysis
-    5. Worker: Poll SQS, fetch transcript
-    6. Worker: Analyze with LLM
-    7. Worker: Update session with analysis
-    8. Backend: Retrieve call history
-    """
+    """Agent -> SQS -> worker poll -> real analyzer -> DB update (external I/O mocked)."""
 
     @pytest.mark.e2e
     @pytest.mark.asyncio
-    async def test_full_call_flow_happy_path(
-        self, user_id, agent_id, room_name, sample_transcript, sample_analysis, mock_db_session
-    ):
-        """E2E: Complete call from start to history retrieval."""
-
-        # === STEP 1: Backend creates call session ===
-        from app.db.repos import session_repo
-
-        mock_call_session = MagicMock()
-        mock_call_session.id = 1
-        mock_call_session.room_name = room_name
-        mock_call_session.user_id = user_id
-        mock_call_session.agent_id = agent_id
-        mock_call_session.status = "pending"
-
-        with patch.object(session_repo, "create", return_value=mock_call_session):
-            # Simulate session creation
-            created_session = await session_repo.create(mock_db_session, user_id, agent_id)
-            assert created_session.status == "pending"
-            assert created_session.room_name == room_name
-
-        # === STEP 2: Agent conversation ends naturally ===
-        # (Call ending is now handled by LLM via prompts, not code validation)
-        last_user_message = sample_transcript[-1]["content"]  # "Bye!"
-        assert "bye" in last_user_message.lower()
-
-        # === STEP 3: Agent sends to SQS ===
+    async def test_full_call_flow_happy_path(self, room_name, sample_transcript, sample_analysis):
         from sqs import send_to_analysis_queue
-
-        with patch("sqs.SQS_QUEUE_URL", "https://sqs.test/queue"), \
-             patch("sqs.boto3.client") as mock_boto:
-            mock_client = MagicMock()
-            mock_client.send_message.return_value = {"MessageId": "msg-123"}
-            mock_boto.return_value = mock_client
-
-            result = await send_to_analysis_queue(room_name)
-            assert result is True
-
-        # === STEP 5: Worker polls and processes message ===
         from worker import poll_sqs, process_message
 
-        mock_sqs_client = MagicMock()
-        mock_sqs_client.receive_message.return_value = {
-            "Messages": [{
-                "MessageId": "msg-123",
-                "ReceiptHandle": "receipt-123",
-                "Body": json.dumps({"room_name": room_name}),
-            }]
+        # Agent enqueues the room for analysis
+        with patch("sqs.SQS_QUEUE_URL", "https://sqs.test/queue"),              patch("sqs.boto3.client") as mock_boto:
+            mock_boto.return_value.send_message.return_value = {"MessageId": "msg-123"}
+            assert await send_to_analysis_queue(room_name) is True
+            sent = mock_boto.return_value.send_message.call_args.kwargs
+            assert json.loads(sent["MessageBody"])["room_name"] == room_name
+
+        # Worker polls exactly what the agent sent
+        sqs_client = MagicMock()
+        sqs_client.receive_message.return_value = {
+            "Messages": [{"MessageId": "msg-123", "ReceiptHandle": "r-1", "Body": sent["MessageBody"]}]
         }
-
         with patch("worker.SQS_QUEUE_URL", "https://sqs.test/queue"):
-            messages = poll_sqs(mock_sqs_client)
-            assert len(messages) == 1
-            # poll_sqs returns {"body": {...}, "receipt_handle": ...}
-            assert messages[0]["body"]["room_name"] == room_name
+            messages = poll_sqs(sqs_client)
+        assert messages[0]["body"]["room_name"] == room_name
 
-        # === STEP 6: Worker fetches transcript and analyzes ===
-        from analyzer import analyze_transcript
+        # Worker analyses with the real analyzer (LLM HTTP mocked) and persists the result
+        llm_response = MagicMock(status_code=200)
+        llm_response.json.return_value = {"choices": [{"message": {"content": json.dumps(sample_analysis)}}]}
+        with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}),              patch("analyzer.OPENROUTER_API_KEY", "test_key"),              patch("httpx.AsyncClient") as mock_http,              patch("worker.update_analysis", return_value=True) as update:
+            mock_http.return_value.__aenter__.return_value.post = AsyncMock(return_value=llm_response)
+            assert await process_message(messages[0]) is True
 
-        with patch("analyzer.OPENROUTER_API_KEY", "test_key"), \
-             patch("httpx.AsyncClient") as mock_http:
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_response.json.return_value = {
-                "choices": [{"message": {"content": json.dumps(sample_analysis)}}]
-            }
-            mock_http.return_value.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
-
-            analysis = await analyze_transcript(sample_transcript)
-
-            assert analysis["category"] == "Appointment"
-            assert analysis["sentiment"] == "Positive"
-            assert analysis["action_required"] is True
-
-        # === STEP 7: Worker updates session with analysis ===
-        mock_call_session.transcript = sample_transcript
-        mock_call_session.summary = analysis["summary"]
-        mock_call_session.category = analysis["category"]
-        mock_call_session.status = "completed"
-
-        with patch.object(session_repo, "update_call_log", return_value=mock_call_session):
-            updated = await session_repo.update_call_log(
-                mock_db_session,
-                room_name,
-                transcript=sample_transcript,
-                duration_seconds=35,
-                summary=analysis["summary"],
-            )
-            assert updated.status == "completed"
-
-        # === STEP 8: Backend retrieves call history ===
-        mock_history = [{
-            "id": 1,
-            "room_name": room_name,
-            "agent_name": "Test Agent",
-            "summary": analysis["summary"],
-            "category": "Appointment",
-            "is_agent_deleted": False,
-        }]
-
-        with patch.object(session_repo, "get_user_call_history", return_value=mock_history):
-            history = await session_repo.get_user_call_history(mock_db_session, user_id)
-
-            assert len(history) == 1
-            assert history[0]["category"] == "Appointment"
-            assert "appointment" in history[0]["summary"].lower()
+        kwargs = update.call_args.kwargs
+        assert kwargs["room_name"] == room_name
+        assert kwargs["category"] == "Appointment"
+        assert kwargs["action_required"] is True
+        assert kwargs["action_items"] == sample_analysis["action_items"]
 
 
 # =============================================================================
@@ -299,28 +213,6 @@ class TestAbnormalDisconnectFlow:
             # Call drops here
         ]
 
-        # === Transcript does NOT have farewell ===
-        # (Call ending validation removed - LLM handles this via prompts)
-        last_message = partial_transcript[-1]["content"]
-        assert "bye" not in last_message.lower()  # No farewell detected
-
-        # === Session saved with "failed" status ===
-        from app.db.repos import session_repo
-
-        mock_session = MagicMock()
-        mock_session.status = "failed"
-        mock_session.transcript = partial_transcript
-
-        with patch.object(session_repo, "update_call_log", return_value=mock_session):
-            result = await session_repo.update_call_log(
-                mock_db_session,
-                room_name,
-                transcript=partial_transcript,
-                duration_seconds=5,
-                status="failed",
-            )
-            assert result.status == "failed"
-
         # === Analysis still runs on partial data ===
         from analyzer import analyze_transcript
 
@@ -342,142 +234,6 @@ class TestAbnormalDisconnectFlow:
 
             analysis = await analyze_transcript(partial_transcript)
             assert analysis["category"] == "Other"
-
-
-# =============================================================================
-# E2E TEST: WEBHOOK USER SYNC
-# =============================================================================
-
-
-class TestWebhookUserSync:
-    """
-    E2E Test: New user created via Clerk webhook.
-
-    Flow:
-    1. Clerk sends user.created webhook
-    2. Backend verifies Svix signature
-    3. User upserted to database
-    4. Default agent seeded (if applicable)
-    """
-
-    @pytest.mark.e2e
-    @pytest.mark.asyncio
-    async def test_webhook_creates_user(self, clerk_id, mock_db_session):
-        """E2E: Webhook creates new user in database."""
-        from app.db.repos import user_repo
-
-        mock_user = MagicMock()
-        mock_user.id = uuid.uuid4()
-        mock_user.clerk_id = clerk_id
-        mock_user.email = "newuser@example.com"
-
-        # Simulate webhook payload
-        webhook_payload = {
-            "type": "user.created",
-            "data": {
-                "id": clerk_id,
-                "email_addresses": [{"email_address": "newuser@example.com"}],
-            },
-        }
-
-        # User repo handles upsert
-        with patch.object(user_repo, "upsert_user", return_value=mock_user):
-            user = await user_repo.upsert_user(
-                mock_db_session,
-                clerk_id=clerk_id,
-                email="newuser@example.com",
-            )
-
-            assert user.clerk_id == clerk_id
-            assert user.email == "newuser@example.com"
-
-    @pytest.mark.e2e
-    @pytest.mark.asyncio
-    async def test_webhook_updates_existing_user(self, clerk_id, mock_db_session):
-        """E2E: Webhook updates existing user email."""
-        from app.db.repos import user_repo
-
-        mock_user = MagicMock()
-        mock_user.id = uuid.uuid4()
-        mock_user.clerk_id = clerk_id
-        mock_user.email = "updated@example.com"  # Email changed
-
-        with patch.object(user_repo, "upsert_user", return_value=mock_user):
-            user = await user_repo.upsert_user(
-                mock_db_session,
-                clerk_id=clerk_id,
-                email="updated@example.com",
-            )
-
-            assert user.email == "updated@example.com"
-
-
-# =============================================================================
-# E2E TEST: CONCURRENT OPERATIONS
-# =============================================================================
-
-
-class TestConcurrentOperations:
-    """
-    E2E Test: Multiple simultaneous operations.
-
-    Verifies the system handles concurrent requests correctly.
-    """
-
-    @pytest.mark.e2e
-    @pytest.mark.asyncio
-    async def test_concurrent_calls_isolated(self, user_id):
-        """E2E: Multiple concurrent calls remain isolated."""
-        import asyncio
-
-        # Simulate 3 concurrent calls
-        room_names = [str(uuid.uuid4()) for _ in range(3)]
-        transcripts = []
-
-        async def simulate_call(room_name: str, call_num: int):
-            await asyncio.sleep(0.01)  # Simulate network latency
-            transcript = [
-                {"role": "agent", "content": f"Call {call_num} greeting"},
-                {"role": "user", "content": f"Call {call_num} message"},
-            ]
-            transcripts.append({"room": room_name, "transcript": transcript})
-            return room_name
-
-        # Run concurrently
-        results = await asyncio.gather(*[
-            simulate_call(room, i) for i, room in enumerate(room_names)
-        ])
-
-        # All calls completed
-        assert len(results) == 3
-        assert len(transcripts) == 3
-
-        # Each transcript is unique
-        messages = [t["transcript"][1]["content"] for t in transcripts]
-        assert len(set(messages)) == 3  # All unique
-
-    @pytest.mark.e2e
-    @pytest.mark.asyncio
-    async def test_concurrent_usage_updates_atomic(self, user_id):
-        """E2E: Concurrent usage updates don't lose data."""
-        import asyncio
-
-        # Simulate atomic counter
-        usage_counter = {"value": 0}
-        lock = asyncio.Lock()
-
-        async def record_usage(seconds: int):
-            async with lock:  # Simulates DB-level atomicity
-                usage_counter["value"] += seconds
-                await asyncio.sleep(0.001)
-            return seconds
-
-        # 10 concurrent updates of 10 seconds each
-        tasks = [record_usage(10) for _ in range(10)]
-        await asyncio.gather(*tasks)
-
-        # All updates applied (no lost updates)
-        assert usage_counter["value"] == 100  # 10 * 10
 
 
 # =============================================================================

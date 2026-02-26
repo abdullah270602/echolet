@@ -40,42 +40,16 @@ def mock_session() -> AsyncMock:
 
 
 @pytest.fixture
-def mock_agent(user_id):
+def mock_agent(user_id, make_agent_config):
     """Mock AgentConfig object."""
     agent = MagicMock()
     agent.id = 1
     agent.user_id = user_id
-    agent.name = "Test Agent"
-    agent.business_name = "Test Business"
-    agent.voice_id = "Ashley"
-    agent.greeting_message = "Hello!"
-    agent.tone = "professional"
-    agent.custom_instructions = None
-    agent.knowledge_base_text = None
+    agent.config = make_agent_config()
+    agent.status = "inactive"
+    agent.phone = None
     agent.deleted_at = None
     return agent
-
-
-@pytest.fixture
-def mock_create_request():
-    """Mock AgentCreateRequest."""
-    request = MagicMock()
-    request.name = "New Agent"
-    request.business_name = "New Business"
-    request.voice_id = "Ashley"
-    request.greeting_message = "Welcome!"
-    request.tone = "friendly"
-    request.custom_instructions = "Be helpful"
-    request.knowledge_base_text = "FAQ here"
-    return request
-
-
-@pytest.fixture
-def mock_update_request():
-    """Mock AgentUpdateRequest."""
-    request = MagicMock()
-    request.model_dump.return_value = {"name": "Updated Agent", "tone": "casual"}
-    return request
 
 
 # =============================================================================
@@ -202,29 +176,24 @@ class TestCreate:
 
     @pytest.mark.unit
     @pytest.mark.asyncio
-    async def test_sp_creates_agent(self, mock_session, user_id, mock_create_request):
-        """SP: Creates agent with all fields."""
+    async def test_sp_creates_agent(self, mock_session, user_id, make_agent_config):
+        """SP: Creates agent with config, status and phone."""
         from app.db.repos import agent_repo
 
+        config = make_agent_config()
         with patch("app.db.repos.agent_repo.AgentConfig") as MockAgentConfig:
             mock_instance = MagicMock()
             MockAgentConfig.return_value = mock_instance
 
-            result = await agent_repo.create(mock_session, user_id, mock_create_request)
+            result = await agent_repo.create(mock_session, user_id, config, status="active", phone="+1555")
 
             MockAgentConfig.assert_called_once_with(
-                user_id=user_id,
-                name=mock_create_request.name,
-                business_name=mock_create_request.business_name,
-                voice_id=mock_create_request.voice_id,
-                greeting_message=mock_create_request.greeting_message,
-                tone=mock_create_request.tone,
-                custom_instructions=mock_create_request.custom_instructions,
-                knowledge_base_text=mock_create_request.knowledge_base_text,
+                user_id=user_id, config=config, status="active", phone="+1555"
             )
             mock_session.add.assert_called_once_with(mock_instance)
             mock_session.commit.assert_called_once()
             mock_session.refresh.assert_called_once_with(mock_instance)
+            assert result is mock_instance
 
 
 # =============================================================================
@@ -237,31 +206,31 @@ class TestUpdate:
 
     @pytest.mark.unit
     @pytest.mark.asyncio
-    async def test_sp_updates_agent_fields(self, mock_session, mock_agent, mock_update_request):
-        """SP: Updates only provided fields."""
+    async def test_sp_updates_provided_fields(self, mock_session, mock_agent, make_agent_config):
+        """SP: Replaces config/status/phone when provided."""
         from app.db.repos import agent_repo
 
-        result = await agent_repo.update(mock_session, mock_agent, mock_update_request)
+        new_config = make_agent_config(custom_instructions="New")
+        await agent_repo.update(mock_session, mock_agent, config=new_config, status="active", phone="+1555")
 
-        assert mock_agent.name == "Updated Agent"
-        assert mock_agent.tone == "casual"
+        assert mock_agent.config == new_config
+        assert mock_agent.status == "active"
+        assert mock_agent.phone == "+1555"
         mock_session.commit.assert_called_once()
         mock_session.refresh.assert_called_once_with(mock_agent)
 
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_sp_skips_none_values(self, mock_session, mock_agent):
-        """SP: Skips None values in update."""
+        """SP: None arguments leave existing values untouched."""
         from app.db.repos import agent_repo
 
-        mock_request = MagicMock()
-        mock_request.model_dump.return_value = {"name": "Updated", "tone": None}
+        original_config = mock_agent.config
+        await agent_repo.update(mock_session, mock_agent, status="paused")
 
-        original_tone = mock_agent.tone
-        await agent_repo.update(mock_session, mock_agent, mock_request)
-
-        # tone should remain unchanged (was None in update)
-        assert mock_agent.tone == original_tone
+        assert mock_agent.status == "paused"
+        assert mock_agent.config is original_config
+        assert mock_agent.phone is None
 
 
 # =============================================================================

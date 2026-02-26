@@ -54,28 +54,21 @@ def mock_agent(user_a_id: uuid.UUID) -> MagicMock:
     agent = MagicMock()
     agent.id = 1
     agent.user_id = user_a_id
-    agent.name = "Test Agent"
-    agent.business_name = "Test Business"
+    agent.config = {"agent": {"name": "Test Agent", "business_name": "Test Business"}}
     agent.deleted_at = None
     return agent
 
 
 @pytest.fixture
-def agent_create_data() -> AgentCreateRequest:
+def agent_create_data(make_agent_config) -> AgentCreateRequest:
     """Valid agent creation request."""
-    return AgentCreateRequest(
-        name="New Agent",
-        business_name="New Business",
-        voice_id="Ashley",
-        greeting_message="Hello!",
-        tone="professional",
-    )
+    return AgentCreateRequest(config=make_agent_config())
 
 
 @pytest.fixture
 def agent_update_data() -> AgentUpdateRequest:
     """Valid agent update request."""
-    return AgentUpdateRequest(name="Updated Agent")
+    return AgentUpdateRequest(status="paused")
 
 
 # =============================================================================

@@ -148,7 +148,7 @@ class TestMessageProcessing:
             "receipt_handle": "receipt-123",
         }
 
-        with patch("worker.fetch_transcript", return_value=sample_transcript), \
+        with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}), \
              patch("worker.analyze_transcript", return_value=sample_analysis), \
              patch("worker.update_analysis", return_value=True):
 
@@ -182,7 +182,7 @@ class TestMessageProcessing:
             "receipt_handle": "receipt-123",
         }
 
-        with patch("worker.fetch_transcript", return_value=None):
+        with patch("worker.fetch_call_data", return_value=None):
             result = await process_message(message)
 
             assert result is True  # No transcript, skip
@@ -198,7 +198,7 @@ class TestMessageProcessing:
             "receipt_handle": "receipt-123",
         }
 
-        with patch("worker.fetch_transcript", return_value=sample_transcript), \
+        with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}), \
              patch("worker.analyze_transcript", return_value=sample_analysis), \
              patch("worker.update_analysis", return_value=False):
 
@@ -224,7 +224,7 @@ class TestTranscriptFetching:
         with patch("database.DATABASE_URL", "postgresql://test"), \
              patch("database.asyncpg.connect") as mock_connect:
             mock_conn = AsyncMock()
-            mock_conn.fetchrow.return_value = {"transcript": json.dumps(sample_transcript)}
+            mock_conn.fetchrow.return_value = {"transcript": json.dumps(sample_transcript), "output_config": None}
             mock_conn.close = AsyncMock()
             mock_connect.return_value = mock_conn
 
@@ -442,7 +442,7 @@ class TestFullPipeline:
         # Step 2: Process message
         message = messages[0]
 
-        with patch("worker.fetch_transcript", return_value=sample_transcript), \
+        with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}), \
              patch("worker.analyze_transcript", return_value=sample_analysis), \
              patch("worker.update_analysis", return_value=True):
 
@@ -475,7 +475,7 @@ class TestFullPipeline:
         message = messages[0]
 
         # Simulate DB update failure
-        with patch("worker.fetch_transcript", return_value=sample_transcript), \
+        with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}), \
              patch("worker.analyze_transcript", return_value=sample_analysis), \
              patch("worker.update_analysis", return_value=False):
 

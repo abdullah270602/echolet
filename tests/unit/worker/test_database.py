@@ -137,7 +137,7 @@ class TestFetchTranscript:
         with patch("database.DATABASE_URL", "postgresql://test"), \
              patch("database.asyncpg.connect") as mock_connect:
             mock_conn = AsyncMock()
-            mock_conn.fetchrow.return_value = {"transcript": json.dumps(transcript)}
+            mock_conn.fetchrow.return_value = {"transcript": json.dumps(transcript), "output_config": None}
             mock_conn.close = AsyncMock()
             mock_connect.return_value = mock_conn
 
@@ -158,7 +158,7 @@ class TestFetchTranscript:
              patch("database.asyncpg.connect") as mock_connect:
             mock_conn = AsyncMock()
             # Transcript already as dict (PostgreSQL JSONB)
-            mock_conn.fetchrow.return_value = {"transcript": transcript}
+            mock_conn.fetchrow.return_value = {"transcript": transcript, "output_config": None}
             mock_conn.close = AsyncMock()
             mock_connect.return_value = mock_conn
 
@@ -192,7 +192,7 @@ class TestFetchTranscript:
         with patch("database.DATABASE_URL", "postgresql://test"), \
              patch("database.asyncpg.connect") as mock_connect:
             mock_conn = AsyncMock()
-            mock_conn.fetchrow.return_value = {"transcript": None}
+            mock_conn.fetchrow.return_value = {"transcript": None, "output_config": None}
             mock_conn.close = AsyncMock()
             mock_connect.return_value = mock_conn
 
@@ -351,3 +351,50 @@ class TestUpdateAnalysis:
             # Verify execute was called with JSON-serialized action_items
             call_args = mock_conn.execute.call_args[0]
             assert json.dumps(action_items) in str(call_args)
+
+
+# =============================================================================
+# FETCH CALL DATA TESTS (transcript + agent output config)
+# =============================================================================
+
+
+class TestFetchCallData:
+    """Tests for fetch_call_data (reads agent_configs.config->'output')."""
+
+    @staticmethod
+    async def _fetch(row):
+        from database import fetch_call_data
+
+        with patch("database.DATABASE_URL", "postgresql://test"), \
+             patch("database.asyncpg.connect") as mock_connect:
+            mock_conn = AsyncMock()
+            mock_conn.fetchrow.return_value = row
+            mock_connect.return_value = mock_conn
+            return await fetch_call_data("room-123")
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_sp_output_config_dict_passthrough(self):
+        cfg = {"ticket_fields": [{"id": "x", "type": "string"}], "custom_tags": ["vip"]}
+        result = await self._fetch({"transcript": [{"role": "user", "content": "hi"}], "output_config": cfg})
+        assert result == {"transcript": [{"role": "user", "content": "hi"}], "output_config": cfg}
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_sp_output_config_json_string_decoded(self):
+        cfg = {"custom_tags": ["vip"]}
+        result = await self._fetch({"transcript": None, "output_config": json.dumps(cfg)})
+        assert result["output_config"] == cfg
+        assert result["transcript"] is None
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_sp_missing_agent_gives_empty_output_config(self):
+        """LEFT JOIN with deleted/absent agent yields NULL config -> {}."""
+        result = await self._fetch({"transcript": None, "output_config": None})
+        assert result["output_config"] == {}
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_sp_unknown_room_returns_none(self):
+        assert await self._fetch(None) is None

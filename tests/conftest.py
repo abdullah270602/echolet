@@ -73,19 +73,43 @@ def sample_user(user_id: uuid.UUID, clerk_id: str) -> dict[str, Any]:
     }
 
 
+def build_agent_config(**overrides: Any) -> dict[str, Any]:
+    """Valid AgentConfigData payload (JSONB shape); top-level keys can be overridden."""
+    config: dict[str, Any] = {
+        "agent": {
+            "name": "Test Agent",
+            "business_name": "Test Business",
+            "greeting_message": "Hello! How can I help you today?",
+        },
+        "voice": {"provider": "inworld", "voice_id": "Ashley"},
+        "knowledge_base": {
+            "sources": [{"type": "text", "name": "hours", "content": "Business hours are 9am-5pm."}]
+        },
+        "output": {
+            "ticket_fields": [
+                {"id": "call_summary", "label": "Call Summary", "type": "text", "required": True}
+            ],
+            "custom_tags": ["new_patient"],
+        },
+        "custom_instructions": "Be helpful and concise.",
+    }
+    config.update(overrides)
+    return config
+
+
+@pytest.fixture
+def make_agent_config():
+    """Factory for a valid agent config dict: make_agent_config(custom_instructions="x")."""
+    return build_agent_config
+
+
 @pytest.fixture
 def sample_agent_config(user_id: uuid.UUID, agent_id: int) -> dict[str, Any]:
-    """Sample agent configuration."""
+    """Sample agent row (columns + JSONB config)."""
     return {
         "id": agent_id,
         "user_id": user_id,
-        "name": "Test Agent",
-        "business_name": "Test Business",
-        "voice_id": "Ashley",
-        "greeting_message": "Hello! How can I help you today?",
-        "tone": "professional",
-        "custom_instructions": "Be helpful and concise.",
-        "knowledge_base_text": "Business hours are 9am-5pm.",
+        "config": build_agent_config(),
         "status": "active",
         "phone": None,
         "deleted_at": None,
@@ -370,16 +394,13 @@ def create_mock_agent_response(
     business_name: str = "Test Business",
 ) -> dict[str, Any]:
     """Create a mock agent response dict."""
+    config = build_agent_config()
+    config["agent"].update(name=name, business_name=business_name)
     return {
         "id": agent_id,
         "user_id": user_id,
-        "name": name,
-        "business_name": business_name,
-        "voice_id": "Ashley",
-        "greeting_message": "Hello!",
-        "tone": "professional",
-        "custom_instructions": None,
-        "knowledge_base_text": None,
+        "config": config,
         "status": "active",
+        "phone": None,
         "deleted_at": None,
     }

@@ -47,288 +47,194 @@ def mock_user(user_id, clerk_id):
 
 
 @pytest.fixture
-def mock_agent(user_id):
-    """Mock agent object."""
+def mock_agent(user_id, make_agent_config):
+    """Mock agent row owned by user_id."""
     agent = MagicMock()
     agent.id = 1
     agent.user_id = user_id
-    agent.name = "Test Agent"
-    agent.business_name = "Test Business"
-    agent.voice_id = "Ashley"
-    agent.greeting_message = "Hello!"
-    agent.tone = "professional"
-    agent.custom_instructions = None
-    agent.knowledge_base_text = None
+    agent.config = make_agent_config()
     agent.status = "active"
     agent.phone = None
     agent.deleted_at = None
-    agent.created_at = datetime.now(timezone.utc)
-    agent.updated_at = datetime.now(timezone.utc)
     return agent
 
 
 @pytest.fixture
 def mock_db_session():
     """Mock database session."""
-    session = AsyncMock()
-    return session
+    return AsyncMock()
 
 
 # =============================================================================
-# AGENT LIST ENDPOINT TESTS
+# AGENT SERVICE FLOWS (real service logic, repository mocked)
 # =============================================================================
 
 
-class TestAgentListEndpoint:
-    """Integration tests for GET /agents endpoint."""
-
+class TestAgentCreateFlow:
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_list_agents_returns_user_agents(self, mock_user, mock_agent):
-        """Integration: List agents returns only user's agents."""
+    async def test_create_agent_persists_config_as_dict(self, mock_user, mock_agent, mock_db_session, make_agent_config):
         from app.services import agent_service
-
-        with patch.object(agent_service, "list_agents", return_value=[mock_agent]):
-            agents = await agent_service.list_agents(AsyncMock(), mock_user.id)
-
-            assert len(agents) == 1
-            assert agents[0].name == "Test Agent"
-            assert agents[0].user_id == mock_user.id
-
-    @pytest.mark.integration
-    @pytest.mark.asyncio
-    async def test_list_agents_empty_for_new_user(self, mock_user):
-        """Integration: New user has no agents."""
-        from app.services import agent_service
-
-        with patch.object(agent_service, "list_agents", return_value=[]):
-            agents = await agent_service.list_agents(AsyncMock(), mock_user.id)
-
-            assert agents == []
-
-
-# =============================================================================
-# AGENT CREATE ENDPOINT TESTS
-# =============================================================================
-
-
-class TestAgentCreateEndpoint:
-    """Integration tests for POST /agents endpoint."""
-
-    @pytest.mark.integration
-    @pytest.mark.asyncio
-    async def test_create_agent_success(self, mock_user, mock_agent, mock_db_session):
-        """Integration: Create agent with valid data."""
-        from app.services import agent_service
+        from app.db.repos import agent_repo
         from app.schemas.agent import AgentCreateRequest
 
-        create_data = AgentCreateRequest(
-            name="New Agent",
-            business_name="New Business",
-            voice_id="Ashley",
-            greeting_message="Welcome!",
-            tone="friendly",
-        )
+        data = AgentCreateRequest(config=make_agent_config(), status="active", phone="+15550001")
 
-        with patch.object(agent_service, "create_agent", return_value=mock_agent):
-            result = await agent_service.create_agent(mock_db_session, mock_user.id, create_data)
+        with patch.object(agent_repo, "get_user_agent_count", return_value=0), \
+             patch.object(agent_repo, "create", return_value=mock_agent) as create:
+            result = await agent_service.create_agent(mock_db_session, mock_user.id, data)
 
-            assert result.id == 1
-            assert result.user_id == mock_user.id
+        assert result is mock_agent
+        kwargs = create.call_args.kwargs
+        assert kwargs["user_id"] == mock_user.id
+        assert kwargs["status"] == "active"
+        assert kwargs["phone"] == "+15550001"
+        # JSONB-ready plain dict with schema defaults filled in
+        assert isinstance(kwargs["config"], dict)
+        assert kwargs["config"]["agent"]["name"] == "Test Agent"
+        assert kwargs["config"]["voice"]["language"] == "en-US"
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_create_agent_at_limit_fails(self, mock_user, mock_db_session):
-        """Integration: Create agent fails when at limit (3)."""
+    async def test_create_agent_at_limit_fails(self, mock_user, mock_db_session, make_agent_config):
         from app.services import agent_service
+        from app.db.repos import agent_repo
         from app.schemas.agent import AgentCreateRequest
 
-        create_data = AgentCreateRequest(
-            name="Fourth Agent",
-            business_name="Business",
-            voice_id="Ashley",
-            greeting_message="Hi!",
-            tone="professional",
-        )
+        data = AgentCreateRequest(config=make_agent_config())
 
-        with patch.object(agent_service, "create_agent", side_effect=HTTPException(status_code=400, detail="Agent limit reached")):
+        with patch.object(agent_repo, "get_user_agent_count", return_value=agent_service.MAX_AGENTS_PER_USER), \
+             patch.object(agent_repo, "create") as create:
             with pytest.raises(HTTPException) as exc_info:
-                await agent_service.create_agent(mock_db_session, mock_user.id, create_data)
+                await agent_service.create_agent(mock_db_session, mock_user.id, data)
 
-            assert exc_info.value.status_code == 400
-            assert "limit" in exc_info.value.detail.lower()
-
-
-# =============================================================================
-# AGENT GET ENDPOINT TESTS
-# =============================================================================
-
-
-class TestAgentGetEndpoint:
-    """Integration tests for GET /agents/{id} endpoint."""
+        assert exc_info.value.status_code == 400
+        assert "limit" in exc_info.value.detail.lower()
+        create.assert_not_called()
 
     @pytest.mark.integration
-    @pytest.mark.asyncio
-    async def test_get_agent_success(self, mock_user, mock_agent, mock_db_session):
-        """Integration: Get own agent succeeds."""
-        from app.services import agent_service
+    def test_create_request_requires_config_and_identity(self, make_agent_config):
+        from pydantic import ValidationError
+        from app.schemas.agent import AgentCreateRequest
 
-        with patch.object(agent_service, "get_agent", return_value=mock_agent):
+        with pytest.raises(ValidationError):
+            AgentCreateRequest()
+        with pytest.raises(ValidationError):
+            AgentCreateRequest(config=make_agent_config(agent={"name": "no business"}))
+
+
+class TestAgentGetFlow:
+    @pytest.mark.integration
+    @pytest.mark.asyncio
+    async def test_get_own_agent(self, mock_user, mock_agent, mock_db_session):
+        from app.services import agent_service
+        from app.db.repos import agent_repo
+
+        with patch.object(agent_repo, "get_by_id", return_value=mock_agent):
             result = await agent_service.get_agent(mock_db_session, mock_user.id, 1)
 
-            assert result.id == 1
-            assert result.name == "Test Agent"
+        assert result.config["agent"]["name"] == "Test Agent"
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_get_other_user_agent_fails(self, mock_db_session):
-        """Integration: Get another user's agent returns 404."""
+    async def test_get_other_user_agent_forbidden(self, mock_agent, mock_db_session):
         from app.services import agent_service
+        from app.db.repos import agent_repo
 
-        other_user_id = uuid.uuid4()
-
-        with patch.object(agent_service, "get_agent", side_effect=HTTPException(status_code=404, detail="Agent not found")):
+        with patch.object(agent_repo, "get_by_id", return_value=mock_agent):
             with pytest.raises(HTTPException) as exc_info:
-                await agent_service.get_agent(mock_db_session, other_user_id, 1)
+                await agent_service.get_agent(mock_db_session, uuid.uuid4(), 1)
 
-            assert exc_info.value.status_code == 404
+        assert exc_info.value.status_code == 403
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_get_nonexistent_agent_fails(self, mock_user, mock_db_session):
-        """Integration: Get nonexistent agent returns 404."""
+    async def test_get_nonexistent_agent_404(self, mock_user, mock_db_session):
         from app.services import agent_service
+        from app.db.repos import agent_repo
 
-        with patch.object(agent_service, "get_agent", side_effect=HTTPException(status_code=404, detail="Agent not found")):
+        with patch.object(agent_repo, "get_by_id", return_value=None):
             with pytest.raises(HTTPException) as exc_info:
                 await agent_service.get_agent(mock_db_session, mock_user.id, 999)
 
-            assert exc_info.value.status_code == 404
+        assert exc_info.value.status_code == 404
 
 
-# =============================================================================
-# AGENT UPDATE ENDPOINT TESTS
-# =============================================================================
-
-
-class TestAgentUpdateEndpoint:
-    """Integration tests for PUT /agents/{id} endpoint."""
-
+class TestAgentUpdateFlow:
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_update_agent_success(self, mock_user, mock_agent, mock_db_session):
-        """Integration: Update own agent succeeds."""
+    async def test_update_replaces_config_and_status(self, mock_user, mock_agent, mock_db_session, make_agent_config):
         from app.services import agent_service
+        from app.db.repos import agent_repo
         from app.schemas.agent import AgentUpdateRequest
 
-        update_data = AgentUpdateRequest(name="Updated Agent")
-        mock_agent.name = "Updated Agent"
+        cfg = make_agent_config(agent={"name": "Updated", "business_name": "Biz"})
+        with patch.object(agent_repo, "get_by_id", return_value=mock_agent), \
+             patch.object(agent_repo, "update", return_value=mock_agent) as update:
+            await agent_service.update_agent(
+                mock_db_session, mock_user.id, 1, AgentUpdateRequest(config=cfg, status="paused")
+            )
 
-        with patch.object(agent_service, "update_agent", return_value=mock_agent):
-            result = await agent_service.update_agent(mock_db_session, mock_user.id, 1, update_data)
-
-            assert result.name == "Updated Agent"
+        kwargs = update.call_args.kwargs
+        assert kwargs["config"]["agent"]["name"] == "Updated"
+        assert kwargs["status"] == "paused"
+        assert kwargs["phone"] is None
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_update_other_user_agent_fails(self, mock_db_session):
-        """Integration: Update another user's agent fails."""
+    async def test_status_only_update_leaves_config_untouched(self, mock_user, mock_agent, mock_db_session):
         from app.services import agent_service
+        from app.db.repos import agent_repo
         from app.schemas.agent import AgentUpdateRequest
 
-        other_user_id = uuid.uuid4()
-        update_data = AgentUpdateRequest(name="Hacked")
+        with patch.object(agent_repo, "get_by_id", return_value=mock_agent), \
+             patch.object(agent_repo, "update", return_value=mock_agent) as update:
+            await agent_service.update_agent(mock_db_session, mock_user.id, 1, AgentUpdateRequest(status="active"))
 
-        with patch.object(agent_service, "update_agent", side_effect=HTTPException(status_code=404, detail="Agent not found")):
-            with pytest.raises(HTTPException) as exc_info:
-                await agent_service.update_agent(mock_db_session, other_user_id, 1, update_data)
-
-            assert exc_info.value.status_code == 404
-
-
-# =============================================================================
-# AGENT DELETE ENDPOINT TESTS
-# =============================================================================
-
-
-class TestAgentDeleteEndpoint:
-    """Integration tests for DELETE /agents/{id} endpoint."""
+        assert update.call_args.kwargs["config"] is None
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_delete_agent_success(self, mock_user, mock_agent, mock_db_session):
-        """Integration: Delete own agent succeeds (soft delete)."""
+    async def test_update_other_user_agent_forbidden(self, mock_agent, mock_db_session):
         from app.services import agent_service
+        from app.db.repos import agent_repo
+        from app.schemas.agent import AgentUpdateRequest
 
-        mock_agent.deleted_at = datetime.now(timezone.utc)
-
-        with patch.object(agent_service, "delete_agent", return_value=mock_agent):
-            result = await agent_service.delete_agent(mock_db_session, mock_user.id, 1)
-
-            assert result.deleted_at is not None
-
-    @pytest.mark.integration
-    @pytest.mark.asyncio
-    async def test_delete_other_user_agent_fails(self, mock_db_session):
-        """Integration: Delete another user's agent fails."""
-        from app.services import agent_service
-
-        other_user_id = uuid.uuid4()
-
-        with patch.object(agent_service, "delete_agent", side_effect=HTTPException(status_code=404, detail="Agent not found")):
+        with patch.object(agent_repo, "get_by_id", return_value=mock_agent), \
+             patch.object(agent_repo, "update") as update:
             with pytest.raises(HTTPException) as exc_info:
-                await agent_service.delete_agent(mock_db_session, other_user_id, 1)
+                await agent_service.update_agent(mock_db_session, uuid.uuid4(), 1, AgentUpdateRequest(status="active"))
 
-            assert exc_info.value.status_code == 404
-
-
-# =============================================================================
-# SESSION ENDPOINTS TESTS
-# =============================================================================
+        assert exc_info.value.status_code == 403
+        update.assert_not_called()
 
 
-class TestSessionEndpoints:
-    """Integration tests for session-related endpoints."""
+class TestAgentDeleteFlow:
+    @pytest.mark.integration
+    @pytest.mark.asyncio
+    async def test_delete_own_agent_soft_deletes(self, mock_user, mock_agent, mock_db_session):
+        from app.services import agent_service
+        from app.db.repos import agent_repo
+
+        with patch.object(agent_repo, "get_by_id", return_value=mock_agent), \
+             patch.object(agent_repo, "soft_delete") as soft_delete:
+            await agent_service.delete_agent(mock_db_session, mock_user.id, 1)
+
+        soft_delete.assert_called_once_with(mock_db_session, mock_agent)
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_create_session_success(self, mock_user, mock_db_session):
-        """Integration: Create session for valid agent."""
-        from app.db.repos import session_repo
+    async def test_delete_other_user_agent_forbidden(self, mock_agent, mock_db_session):
+        from app.services import agent_service
+        from app.db.repos import agent_repo
 
-        mock_session = MagicMock()
-        mock_session.id = 1
-        mock_session.room_name = str(uuid.uuid4())
-        mock_session.status = "pending"
+        with patch.object(agent_repo, "get_by_id", return_value=mock_agent), \
+             patch.object(agent_repo, "soft_delete") as soft_delete:
+            with pytest.raises(HTTPException) as exc_info:
+                await agent_service.delete_agent(mock_db_session, uuid.uuid4(), 1)
 
-        with patch.object(session_repo, "create", return_value=mock_session):
-            result = await session_repo.create(mock_db_session, mock_user.id, agent_id=1)
-
-            assert result.status == "pending"
-            assert result.room_name is not None
-
-    @pytest.mark.integration
-    @pytest.mark.asyncio
-    async def test_get_call_history_success(self, mock_user, mock_db_session):
-        """Integration: Get call history returns completed calls."""
-        from app.db.repos import session_repo
-
-        mock_history = [
-            {
-                "id": 1,
-                "room_name": str(uuid.uuid4()),
-                "status": "completed",
-                "summary": "Test call",
-                "agent_name": "Test Agent",
-                "is_agent_deleted": False,
-            }
-        ]
-
-        with patch.object(session_repo, "get_user_call_history", return_value=mock_history):
-            result = await session_repo.get_user_call_history(mock_db_session, mock_user.id)
-
-            assert len(result) == 1
-            assert result[0]["status"] == "completed"
+        assert exc_info.value.status_code == 403
+        soft_delete.assert_not_called()
 
 
 # =============================================================================
