@@ -6,8 +6,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.repos import user_repo, agent_repo
-from app.agent_templates.default import DEFAULT_AGENT_TEMPLATE
-from app.schemas.agent import AgentCreateRequest
+from app.agent_templates.default import DEFAULT_AGENT_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +41,12 @@ async def handle_user_created(session: AsyncSession, data: dict[str, Any]) -> No
         return
 
     # 3. Seed default agent with internal user ID
-    agent_data = AgentCreateRequest(**DEFAULT_AGENT_TEMPLATE)
-    agent = await agent_repo.create(session, user_id=user.id, data=agent_data)
+    agent = await agent_repo.create(
+        session,
+        user_id=user.id,
+        config=DEFAULT_AGENT_CONFIG.model_dump(),
+        status="active",
+    )
     logger.info(f"Default agent seeded for {clerk_id}: agent_id={agent.id}")
 
 
