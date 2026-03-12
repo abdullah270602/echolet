@@ -32,23 +32,3 @@ async def check_user_limit(session: AsyncSession, user_id: uuid.UUID) -> dict:
     }
 
 
-async def record_usage(session: AsyncSession, user_id: uuid.UUID, seconds: int) -> dict:
-    """
-    Record talk time usage for a user.
-
-    Args:
-        session: Database session
-        user_id: The user's identifier
-        seconds: Number of seconds to record
-
-    Returns:
-        dict with updated usage status
-    """
-    new_total = await usage_repo.increment_usage(session, user_id, seconds)
-    remaining_seconds = max(0, DAILY_TALK_LIMIT_SECONDS - new_total)
-
-    return {
-        "remaining_seconds": remaining_seconds,
-        "used_seconds": new_total,
-        "limit_seconds": DAILY_TALK_LIMIT_SECONDS,
-    }

@@ -34,28 +34,6 @@ export function VoiceRoom({ agentId }: VoiceRoomProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLimitReached, setIsLimitReached] = useState(false);
-  const sessionStartRef = useRef<number | null>(null);
-
-  const reportUsage = useCallback(
-    async (talkSeconds: number) => {
-      try {
-        const authToken = await getToken();
-        if (!authToken) return;
-
-        await fetch(`${API_BASE_URL}/livekit/usage`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({ talk_seconds: talkSeconds }),
-        });
-      } catch (err) {
-        console.error("Failed to report usage:", err);
-      }
-    },
-    [getToken]
-  );
 
   const connect = useCallback(async () => {
     setIsConnecting(true);
@@ -94,7 +72,6 @@ export function VoiceRoom({ agentId }: VoiceRoomProps) {
 
       const data: TokenResponse = await response.json();
       setConnectionDetails(data);
-      sessionStartRef.current = Date.now();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connection failed");
     } finally {
@@ -102,17 +79,10 @@ export function VoiceRoom({ agentId }: VoiceRoomProps) {
     }
   }, [getToken, agentId]);
 
+  // Talk time is recorded server-side by the voice agent when the call ends.
   const disconnect = useCallback(() => {
-    // Report usage when disconnecting
-    if (sessionStartRef.current) {
-      const sessionDuration = Math.floor(
-        (Date.now() - sessionStartRef.current) / 1000
-      );
-      reportUsage(sessionDuration);
-      sessionStartRef.current = null;
-    }
     setConnectionDetails(null);
-  }, [reportUsage]);
+  }, []);
 
   if (!connectionDetails) {
     return (

@@ -1,58 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.livekit import TokenRequest, TokenResponse
-from app.schemas.usage import UsageRecordRequest, UsageStatus
-from app.services.livekit_service import create_access_token
+from app.schemas.usage import UsageStatus
 from app.services import usage_service
-from app.config import LIVEKIT_API_KEY, LIVEKIT_API_SECRET
 from app.auth import get_current_user_with_db
 from app.db.database import get_async_session
 
 router = APIRouter()
 
-
-@router.post("/token", response_model=TokenResponse)
-async def get_token(
-    request: TokenRequest,
-    current_user: dict = Depends(get_current_user_with_db),
-    session: AsyncSession = Depends(get_async_session),
-) -> TokenResponse:
-    """
-    Generate a LiveKit access token for voice-only room access.
-    Requires Clerk authentication.
-
-    The user's Clerk ID is used as the participant identity.
-    - room_name: Room to join (auto-generated if not provided)
-    - name: Display name for the participant
-
-    Returns 403 if daily talk limit has been reached.
-    """
-    if not LIVEKIT_API_KEY or not LIVEKIT_API_SECRET:
-        raise HTTPException(
-            status_code=500,
-            detail="LiveKit API credentials not configured",
-        )
-
-    # Use internal user ID for database operations
-    user_id = current_user["id"]
-
-    # Check usage limit
-    usage = await usage_service.check_user_limit(session, user_id)
-    if not usage["allowed"]:
-        raise HTTPException(
-            status_code=403,
-            detail="Daily talk limit reached. Please try again tomorrow.",
-        )
-
-    # Use string representation of UUID for LiveKit identity
-    result = create_access_token(
-        room_name=request.room_name,
-        identity=str(user_id),
-        name=request.name,
-    )
-
-    return TokenResponse(**result, remaining_seconds=usage["remaining_seconds"])
+# Tokens are minted only by POST /api/session/start (tied to an owned agent and a
+# call_sessions row) and POST /api/demo/session. Talk time is recorded by the
+# voice agent when a call ends, never reported by the browser.
 
 
 @router.get("/usage", response_model=UsageStatus)
@@ -60,29 +18,10 @@ async def get_usage(
     current_user: dict = Depends(get_current_user_with_db),
     session: AsyncSession = Depends(get_async_session),
 ) -> UsageStatus:
-    """
-    Get current usage status for the authenticated user.
-    Returns used_seconds, remaining_seconds, and limit_seconds.
-    """
-    user_id = current_user["id"]
-    result = await usage_service.check_user_limit(session, user_id)
+    """Today's talk-time usage for the authenticated user."""
+    result = await usage_service.check_user_limit(session, current_user["id"])
     return UsageStatus(
         remaining_seconds=result["remaining_seconds"],
         used_seconds=result["used_seconds"],
         limit_seconds=result["limit_seconds"],
     )
-
-
-@router.post("/usage", response_model=UsageStatus)
-async def record_usage(
-    request: UsageRecordRequest,
-    current_user: dict = Depends(get_current_user_with_db),
-    session: AsyncSession = Depends(get_async_session),
-) -> UsageStatus:
-    """
-    Record talk time usage for the current user.
-    Called by the agent when a session ends.
-    """
-    user_id = current_user["id"]
-    result = await usage_service.record_usage(session, user_id, request.talk_seconds)
-    return UsageStatus(**result)

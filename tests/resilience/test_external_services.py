@@ -282,25 +282,6 @@ class TestAgentSQSFailures:
 class TestConcurrentAccess:
     """Tests for concurrent request handling."""
 
-    @pytest.mark.resilience
-    @pytest.mark.asyncio
-    async def test_concurrent_usage_updates(self, user_id):
-        """BREAK-P4-B1: Concurrent usage updates should be atomic."""
-        import asyncio
-
-        # Simulate 10 concurrent usage recordings
-        async def record_usage(seconds: int):
-            # Mock the database operation
-            await asyncio.sleep(0.01)  # Simulate DB latency
-            return seconds
-
-        # Run 10 concurrent updates
-        tasks = [record_usage(10) for _ in range(10)]
-        results = await asyncio.gather(*tasks)
-
-        # All should complete without error
-        assert len(results) == 10
-        assert all(r == 10 for r in results)
 
     @pytest.mark.resilience
     @pytest.mark.asyncio

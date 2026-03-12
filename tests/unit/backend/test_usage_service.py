@@ -106,47 +106,6 @@ class TestUsageLimitEnforcement:
 # =============================================================================
 
 
-class TestUsageRecording:
-    """Tests for recording usage."""
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_sp_record_usage(self, mock_session, user_id):
-        """SP-USAGE-005: Recording usage returns updated values."""
-        with patch.object(
-            usage_service.usage_repo, "increment_usage", return_value=100
-        ), patch.object(usage_service, "DAILY_TALK_LIMIT_SECONDS", 3600):
-            result = await usage_service.record_usage(mock_session, user_id, 100)
-
-            assert result["used_seconds"] == 100
-            assert result["remaining_seconds"] == 3500
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_sp_record_usage_accumulates(self, mock_session, user_id):
-        """SP-USAGE-005: Recording usage adds to existing total."""
-        # User already has 3500, adding 100 more = 3600
-        with patch.object(
-            usage_service.usage_repo, "increment_usage", return_value=3600
-        ), patch.object(usage_service, "DAILY_TALK_LIMIT_SECONDS", 3600):
-            result = await usage_service.record_usage(mock_session, user_id, 100)
-
-            assert result["used_seconds"] == 3600
-            assert result["remaining_seconds"] == 0
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_sp_record_usage_exceeds_limit(self, mock_session, user_id):
-        """SP-USAGE-006: Recording can exceed limit (no cap on recording)."""
-        # User at 3500, adding 500 = 4000 (over limit)
-        with patch.object(
-            usage_service.usage_repo, "increment_usage", return_value=4000
-        ), patch.object(usage_service, "DAILY_TALK_LIMIT_SECONDS", 3600):
-            result = await usage_service.record_usage(mock_session, user_id, 500)
-
-            # Recording succeeds, remaining clamps to 0
-            assert result["used_seconds"] == 4000
-            assert result["remaining_seconds"] == 0
 
 
 # =============================================================================
@@ -169,35 +128,7 @@ class TestEdgeCases:
             assert result["allowed"] is True
             assert result["remaining_seconds"] == 1
 
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_edge_zero_usage_recorded(self, mock_session, user_id):
-        """EDGE: Recording 0 seconds should work (no-op)."""
-        with patch.object(
-            usage_service.usage_repo, "increment_usage", return_value=0
-        ) as mock_increment, patch.object(
-            usage_service, "DAILY_TALK_LIMIT_SECONDS", 3600
-        ):
-            result = await usage_service.record_usage(mock_session, user_id, 0)
 
-            # Should still call the repo (let DB handle atomicity)
-            mock_increment.assert_called_once_with(mock_session, user_id, 0)
-            assert result["used_seconds"] == 0
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_edge_large_usage_recorded(self, mock_session, user_id):
-        """EDGE: Recording very large usage value."""
-        large_usage = 86400  # 24 hours in seconds
-        with patch.object(
-            usage_service.usage_repo, "increment_usage", return_value=large_usage
-        ), patch.object(usage_service, "DAILY_TALK_LIMIT_SECONDS", 3600):
-            result = await usage_service.record_usage(
-                mock_session, user_id, large_usage
-            )
-
-            assert result["used_seconds"] == large_usage
-            assert result["remaining_seconds"] == 0  # Clamped to 0
 
 
 # =============================================================================
