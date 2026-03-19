@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { Control, Controller, FieldErrors, useFieldArray, useWatch } from 'react-hook-form';
+import { Control, Controller, FieldErrors, useController, useFieldArray, useWatch } from 'react-hook-form';
 import { Plus, X } from 'lucide-react';
 import { Button, Input, Switch } from '../ui';
 import type { AgentConfigFormData } from '../../schemas/agentSchema';
@@ -28,10 +28,10 @@ export function TicketOutputForm({
     name: 'output.ticket_fields',
   });
 
-  const { append: appendTag, remove: removeTag } = useFieldArray({
-    control,
-    name: 'output.custom_tags' as any,
-  });
+  const { field: tagsField } = useController({ control, name: 'output.custom_tags' });
+  const appendTag = (v: string) => tagsField.onChange([...(tagsField.value ?? []), v]);
+  const removeTag = (i: number) =>
+    tagsField.onChange((tagsField.value ?? []).filter((_, idx) => idx !== i));
 
   const currentTags = useWatch({ control, name: 'output.custom_tags' }) || [];
 
@@ -43,14 +43,14 @@ export function TicketOutputForm({
   const addTag = () => {
     const trimmed = newTag.trim().toLowerCase().replace(/\s+/g, '_');
     if (trimmed && !currentTags.includes(trimmed)) {
-      appendTag(trimmed as any);
+      appendTag(trimmed);
       setNewTag('');
     }
   };
 
   const handleSuggestedTag = (tag: string) => {
     if (!currentTags.includes(tag)) {
-      appendTag(tag as any);
+      appendTag(tag);
     }
   };
 

@@ -21,7 +21,7 @@ import {
   BellOff,
   Bot,
 } from 'lucide-react';
-import type { CallHistoryItem, CallSentiment } from '../../types/callHistory';
+import type { CallHistoryItem, CallSentiment, CallCategory, CallUrgency } from '../../types/callHistory';
 import {
   formatDuration,
   formatRelativeTime,
@@ -108,9 +108,9 @@ function ServiceTag({ label }: { label: string }) {
 /**
  * Category Badge Component
  */
-function CategoryBadge({ category }: { category: string | null }) {
+function CategoryBadge({ category }: { category: CallCategory | null }) {
   if (!category) return null;
-  const classes = getCategoryClasses(category as any);
+  const classes = getCategoryClasses(category);
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border ${classes}`}>
       <Tag className="w-3 h-3" />
@@ -122,9 +122,9 @@ function CategoryBadge({ category }: { category: string | null }) {
 /**
  * Urgency Badge Component
  */
-function UrgencyBadge({ urgency }: { urgency: string | null }) {
+function UrgencyBadge({ urgency }: { urgency: CallUrgency | null }) {
   if (!urgency) return null;
-  const classes = getUrgencyClasses(urgency as any);
+  const classes = getUrgencyClasses(urgency);
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border ${classes}`}>
       <AlertCircle className="w-3 h-3" />

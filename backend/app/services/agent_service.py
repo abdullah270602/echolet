@@ -11,7 +11,6 @@ from app.db.repos import agent_repo
 from app.schemas.agent import (
     AgentCreateRequest,
     AgentUpdateRequest,
-    AgentConfigData,
 )
 
 

@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { Control, Controller, FieldErrors, useFieldArray, useWatch } from 'react-hook-form';
+import { Control, Controller, FieldErrors, useController, useWatch } from 'react-hook-form';
 import { Plus, X, Clock } from 'lucide-react';
 import { Button, Input, Switch, Select } from '../ui';
 import type { AgentConfigFormData } from '../../schemas/agentSchema';
@@ -28,18 +28,18 @@ export function GuardrailsForm({ control }: GuardrailsFormProps) {
   const [newAllowedTopic, setNewAllowedTopic] = useState('');
   const [newDisallowedTopic, setNewDisallowedTopic] = useState('');
 
-  const { append: appendAllowed, remove: removeAllowed } = useFieldArray({
-    control,
-    name: 'guardrails.allowed_topics' as any,
-  });
-
-  const { append: appendDisallowed, remove: removeDisallowed } = useFieldArray({
-    control,
-    name: 'guardrails.disallowed_topics' as any,
-  });
+  // Flat string arrays: useFieldArray only types object arrays, so use controllers.
+  const { field: allowedField } = useController({ control, name: 'guardrails.allowed_topics' });
+  const { field: disallowedField } = useController({ control, name: 'guardrails.disallowed_topics' });
+  const appendAllowed = (v: string) => allowedField.onChange([...(allowedField.value ?? []), v]);
+  const removeAllowed = (i: number) =>
+    allowedField.onChange((allowedField.value ?? []).filter((_, idx) => idx !== i));
+  const appendDisallowed = (v: string) =>
+    disallowedField.onChange([...(disallowedField.value ?? []), v]);
+  const removeDisallowed = (i: number) =>
+    disallowedField.onChange((disallowedField.value ?? []).filter((_, idx) => idx !== i));
 
   // Schedule fields will be used when schedule configuration is implemented
-  // const { fields: scheduleFields, update: updateSchedule } = useFieldArray({ control, name: 'guardrails.business_hours.schedule' as any });
 
   const businessHoursEnabled = useWatch({
     control,
@@ -52,7 +52,7 @@ export function GuardrailsForm({ control }: GuardrailsFormProps) {
   const addAllowedTopic = () => {
     const trimmed = newAllowedTopic.trim();
     if (trimmed && !allowedTopics.includes(trimmed)) {
-      appendAllowed(trimmed as any);
+      appendAllowed(trimmed);
       setNewAllowedTopic('');
     }
   };
@@ -60,7 +60,7 @@ export function GuardrailsForm({ control }: GuardrailsFormProps) {
   const addDisallowedTopic = () => {
     const trimmed = newDisallowedTopic.trim();
     if (trimmed && !disallowedTopics.includes(trimmed)) {
-      appendDisallowed(trimmed as any);
+      appendDisallowed(trimmed);
       setNewDisallowedTopic('');
     }
   };

@@ -12,7 +12,7 @@
  * 8. Guardrails - Topics, compliance, hours
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -104,6 +104,13 @@ export function AgentFormModal({
     }
   }, [isOpen, agent, reset]);
 
+  const handleClose = useCallback(() => {
+    if (isDirty && !window.confirm('You have unsaved changes. Are you sure you want to close?')) {
+      return;
+    }
+    onClose();
+  }, [isDirty, onClose]);
+
   // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -113,7 +120,7 @@ export function AgentFormModal({
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen]);
+  }, [isOpen, handleClose]);
 
   // Prevent body scroll
   useEffect(() => {
@@ -126,13 +133,6 @@ export function AgentFormModal({
       document.body.style.overflow = '';
     };
   }, [isOpen]);
-
-  const handleClose = () => {
-    if (isDirty && !window.confirm('You have unsaved changes. Are you sure you want to close?')) {
-      return;
-    }
-    onClose();
-  };
 
   const onSubmit = async (data: AgentConfigFormData) => {
     setIsSaving(true);

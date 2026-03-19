@@ -15,6 +15,12 @@ interface FileDropzoneProps {
   className?: string;
 }
 
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
 export function FileDropzone({
   accept = ['.pdf', '.txt'],
   onFilesChange,
@@ -27,12 +33,6 @@ export function FileDropzone({
   className = '',
 }: FileDropzoneProps) {
   const [isDragActive, setIsDragActive] = useState(false);
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -53,20 +53,20 @@ export function FileDropzone({
     setIsDragActive(false);
   }, []);
 
-  const validateFile = (file: File): string | null => {
-    const extension = '.' + file.name.split('.').pop()?.toLowerCase();
-    if (!accept.includes(extension)) {
-      return `File type ${extension} is not supported`;
-    }
-    if (file.size > maxSize) {
-      return `File size exceeds ${formatFileSize(maxSize)}`;
-    }
-    return null;
-  };
-
   const handleFiles = useCallback(
     (newFiles: FileList | null) => {
       if (!newFiles) return;
+
+      const validateFile = (file: File): string | null => {
+        const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+        if (!accept.includes(extension)) {
+          return `File type ${extension} is not supported`;
+        }
+        if (file.size > maxSize) {
+          return `File size exceeds ${formatFileSize(maxSize)}`;
+        }
+        return null;
+      };
 
       const validFiles: File[] = [];
       const remainingSlots = maxFiles - files.length;
