@@ -22,8 +22,10 @@ services:
       - BASIC_AUTH_USER=${BASIC_AUTH_USER:-admin}
       - BASIC_AUTH_HASH=${BASIC_AUTH_HASH}
     depends_on:
-      - frontend
-      - backend
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_healthy
     networks:
       - echolet_internal
 
@@ -57,14 +59,18 @@ services:
       - "8000"
     environment:
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - SQS_QUEUE_URL=${SQS_QUEUE_URL}
       - LIVEKIT_URL=${LIVEKIT_URL}
       - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
       - CLERK_JWKS_URL=${CLERK_JWKS_URL}
       - CLERK_WEBHOOK_SIGNING_SECRET=${CLERK_WEBHOOK_SIGNING_SECRET}
-      - DAILY_TALK_LIMIT_SECONDS=${DAILY_TALK_LIMIT_SECONDS}
+      - DAILY_TALK_LIMIT_SECONDS=${DAILY_TALK_LIMIT_SECONDS:-3600}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
       - echolet_internal
 
