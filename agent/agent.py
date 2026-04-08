@@ -25,16 +25,18 @@ from config import (
     TTS_MODEL,
     TTS_VOICE,
 )
-from prompts import (
-    FALLBACK_INSTRUCTIONS,
-    FALLBACK_GREETING,
-    DynamicPrompts,
-    build_prompts_from_config,
-)
-from database import get_session_config, get_user_remaining_seconds, save_call_log
+from prompts import FAREWELL_MESSAGE, build_prompts_from_config
+from database import SessionConfig, get_session_config, get_user_remaining_seconds, save_call_log
 from usage import monitor_usage
 from transcript import create_dynamic_assistant, create_user_transcript_handler
 from sqs import send_to_analysis_queue
+from demo import (
+    DEMO_FAREWELL,
+    is_demo_room,
+    parse_demo_metadata,
+    skip_analysis_queue,
+    skip_save_call_log,
+)
 
 # Load environment variables
 load_dotenv(override=True)
@@ -85,49 +87,58 @@ async def agent_session(ctx: agents.JobContext) -> None:
     session_start_time = time.time()
     transcript_messages: list[dict] = []
     call_status = "completed"
-    cleanup_done = {"value": False}  # Track if end_call tool handled cleanup
+    cleanup_done = {"value": False}  # Set by the end_call tool once it has saved the log
+    demo = is_demo_room(room_name)
+    save_fn = skip_save_call_log if demo else save_call_log
+    queue_fn = skip_analysis_queue if demo else send_to_analysis_queue
 
-    logger.info(f"Session started: {room_name}")
+    logger.info(f"Session started: {room_name} (demo={demo})")
 
     try:
         await ctx.connect()
+        participant = await ctx.wait_for_participant()
 
-        # Load session configuration
-        session_config = await get_session_config(room_name)
-
-        if session_config:
-            logger.debug(f"Loaded config: {session_config.name}")
-            prompts = build_prompts_from_config(session_config)
-            voice_config = session_config.voice
-            user_id = session_config.user_id
+        # Resolve config and the hard time cap for this call.
+        if demo:
+            parsed = parse_demo_metadata(participant.metadata)
+            session_config, time_cap = None, None
+            if parsed:
+                demo_config, time_cap = parsed
+                session_config = SessionConfig(session_id=0, agent_id=0, user_id="", config=demo_config)
+            farewell = DEMO_FAREWELL
         else:
-            logger.error(f"No config for room: {room_name}, using fallback")
-            prompts = DynamicPrompts(
-                system_instructions=FALLBACK_INSTRUCTIONS,
-                greeting_instructions=FALLBACK_GREETING,
-            )
-            voice_config = {"provider": "inworld", "voice_id": TTS_VOICE}
-            user_id = None
+            session_config = await get_session_config(room_name)
+            time_cap = None
+            if session_config and session_config.user_id:
+                time_cap = await get_user_remaining_seconds(session_config.user_id)
+                logger.info(f"User {session_config.user_id} has {time_cap}s remaining today")
+            farewell = FAREWELL_MESSAGE
 
-        # Create dynamic agent with transcript logging and cleanup capabilities
+        # Every legitimate room is created by the backend with a session row (or a
+        # signed demo token). Anything else gets no agent, so there is never an
+        # unmetered conversation.
+        if session_config is None:
+            logger.error(f"No config for room {room_name}; leaving without answering")
+            cleanup_done["value"] = True  # nothing to persist
+            ctx.shutdown(reason="unknown room")
+            return
+        if time_cap is not None and time_cap <= 0:
+            logger.info(f"No talk time left for room {room_name}; leaving")
+            cleanup_done["value"] = True
+            ctx.shutdown(reason="usage limit reached")
+            return
+
+        prompts = build_prompts_from_config(session_config)
+
         DynamicAssistant = create_dynamic_assistant(
             instructions=prompts.system_instructions,
             transcript_log=transcript_messages,
             room_name=room_name,
             session_start_time=session_start_time,
-            save_call_log_fn=save_call_log,
-            send_to_queue_fn=send_to_analysis_queue,
+            save_call_log_fn=save_fn,
+            send_to_queue_fn=queue_fn,
             cleanup_done=cleanup_done,
         )
-
-        # Wait for participant
-        participant = await ctx.wait_for_participant()
-
-        # Get user's remaining talk time from database (global daily limit)
-        remaining_seconds = None
-        if user_id:
-            remaining_seconds = await get_user_remaining_seconds(user_id)
-            logger.info(f"User {user_id} has {remaining_seconds}s remaining today")
 
         # Create the agent session
         session = AgentSession(
@@ -137,7 +148,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
                 base_url=LLM_BASE_URL,
                 model=LLM_MODEL,
             ),
-            tts=create_tts(voice_config),
+            tts=create_tts(session_config.voice),
             vad=silero.VAD.load(),
             turn_detection=MultilingualModel(),
         )
@@ -162,11 +173,11 @@ async def agent_session(ctx: agents.JobContext) -> None:
             ),
         )
 
-        # Start usage monitoring (if we have a remaining limit)
+        # Enforce the time cap (daily allowance, or the demo call length)
         usage_task: asyncio.Task | None = None
-        if remaining_seconds is not None and remaining_seconds > 0:
+        if time_cap is not None:
             usage_task = asyncio.create_task(
-                monitor_usage(session, ctx, remaining_seconds, session_start_time)
+                monitor_usage(session, ctx, time_cap, session_start_time, farewell)
             )
 
         # Send greeting
@@ -193,17 +204,17 @@ async def agent_session(ctx: agents.JobContext) -> None:
         # This on_close just cleans up the usage monitor
 
     except Exception as e:
-        logger.error(f"Session error: {e}")
+        logger.exception(f"Session error: {e}")
         call_status = "failed"
         raise
 
     finally:
         # Always save call log if end_call tool didn't handle it
         if not cleanup_done["value"]:
-            logger.info(f"Cleanup: saving call log")
+            logger.info("Cleanup: saving call log")
             duration = int(time.time() - session_start_time)
             try:
-                await save_call_log(
+                await save_fn(
                     room_name=room_name,
                     transcript=transcript_messages,
                     duration_seconds=duration,
@@ -213,7 +224,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
 
                 # Send to analysis queue
                 try:
-                    await send_to_analysis_queue(room_name)
+                    await queue_fn(room_name)
                     logger.debug(f"Sent to analysis queue: {room_name}")
                 except Exception as sqs_error:
                     logger.error(f"SQS send error: {sqs_error}")

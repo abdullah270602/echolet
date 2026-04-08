@@ -27,3 +27,8 @@ ALLOWED_ORIGINS = [
     if o.strip()
 ]
 
+# Public landing-page demo (no sign-in). Set DEMO_ENABLED=false to turn it off.
+DEMO_ENABLED = os.getenv("DEMO_ENABLED", "true").lower() == "true"
+DEMO_MAX_SECONDS = int(os.getenv("DEMO_MAX_SECONDS", "120"))
+DEMO_SESSIONS_PER_IP_PER_HOUR = int(os.getenv("DEMO_SESSIONS_PER_IP_PER_HOUR", "3"))
+DEMO_SESSIONS_PER_DAY = int(os.getenv("DEMO_SESSIONS_PER_DAY", "200"))
