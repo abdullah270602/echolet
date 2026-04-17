@@ -28,6 +28,16 @@
   --color-electric-pink: #ec4899;
   --color-electric-amber: #fbbf24;
 
+  /* Landing page (paper / ink) */
+  --color-paper: #eef1ec;
+  --color-ink: #101814;
+  --color-muted: #46534b;
+  --color-rule: #c3cdc5;
+  --color-accent: #0f6b4f;
+  --color-accent-dark: #0a4f3a;
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Hanken Grotesk', system-ui, sans-serif;
+
   /* Typography */
   --font-family-sans: 'Inter', system-ui, sans-serif;
 
@@ -501,4 +511,24 @@
 .app-container .auth-buttons {
   display: flex;
   gap: 0.75rem;
+}
+
+/* ==========================================
+   LANDING PAGE
+   ========================================== */
+.landing :focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.landing .demo-bars {
+  --lk-fg: var(--color-ink);
+  --lk-va-bar-width: 10px;
+  --lk-va-bar-gap: 8px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing *, .landing *::before, .landing *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
