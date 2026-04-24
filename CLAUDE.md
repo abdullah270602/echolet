@@ -51,9 +51,9 @@ uv run worker.py     # Run worker (polls SQS continuously)
 
 ### Data Flow
 1. Frontend authenticates via Clerk and creates/configures agents via backend API
-2. When user initiates a call, frontend requests a LiveKit token from backend
-3. Backend creates a LiveKit room with the agent config ID embedded in the room name
-4. Agent receives the room connection, extracts config from room name, fetches full config from database
+2. When user initiates a call, frontend calls `POST /api/session/start` with an agent id
+3. Backend checks ownership + daily limit, creates a `call_sessions` row (room_name = UUID) and mints a token for that room
+4. Agent joins the room, looks up the session by room name and loads the agent's JSONB config (unknown rooms get no agent)
 5. Agent runs the voice session with dynamic prompts, voice settings, and usage limits
 6. Call transcript and duration are saved to database when session ends
 7. Agent sends room_name to SQS queue for async analysis
@@ -61,13 +61,14 @@ uv run worker.py     # Run worker (polls SQS continuously)
 9. Worker updates call_session with summary, sentiment, and action_items
 
 ### Key Integration Points
-- **LiveKit**: Rooms connect frontend and agent. Room names encode the agent config ID for lookup.
+- **LiveKit**: Rooms connect frontend and agent. Room name = `call_sessions.room_name`; `demo-*` rooms are public landing-page demos whose config and time cap come from signed token metadata (`backend/app/services/demo_service.py`, `agent/demo.py`).
+- **Usage**: talk time is written only by the agent (`agent/database.py: save_call_log`). Never add a client-reported usage endpoint.
 - **Database**: Shared PostgreSQL database accessed by backend, agent, and worker for config and session data.
 - **SQS**: Decouples call completion from analysis. Agent sends to queue, worker processes async.
 - **Authentication**: Backend uses Clerk JWT verification; agent trusts participant metadata from backend.
 
 ### Backend Structure
-- `app/routes/`: API endpoints (agents, livekit tokens, session)
+- `app/routes/`: API endpoints (agents, session, livekit usage, demo, clerk webhooks)
 - `app/services/`: Business logic layer
 - `app/db/repos/`: Database repository pattern for queries
 - `app/db/models/`: SQLAlchemy ORM models
@@ -75,7 +76,8 @@ uv run worker.py     # Run worker (polls SQS continuously)
 
 ### Agent Structure
 - `agent.py`: Main entry point with LiveKit session handler
-- `prompts.py`: Dynamic prompt building from agent configuration
+- `prompts/`: Dynamic prompt building from the agent's JSONB config
+- `demo.py`: Demo-room detection and token-metadata parsing
 - `database.py`: Direct async PostgreSQL queries for config lookup
 - `transcript.py`: Handlers for capturing conversation transcript
 - `usage.py`: Per-user daily usage limit enforcement
@@ -99,3 +101,7 @@ Required in `.env` at repository root:
 - `SQS_QUEUE_URL`: AWS SQS queue URL for call analysis
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`: AWS credentials
 - `AWS_REGION`: AWS region (default: eu-north-1)
+- `ALLOWED_ORIGINS`, `DEMO_*`, `CLERK_WEBHOOK_SIGNING_SECRET`: see `.env.example`
+
+## Tests
+`cd tests && uv run pytest` (coverage: `--cov`). Backend, agent and worker share module names (`config`, `database`), so agent modules are loaded by file path in tests.
