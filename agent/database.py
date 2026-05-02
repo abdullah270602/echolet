@@ -4,11 +4,14 @@ Provides async queries to fetch session and agent configuration.
 """
 
 import ssl
+import asyncio
 import json
 import logging
 from typing import Optional, Any
 from dataclasses import dataclass
 from datetime import datetime, timezone
+
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import asyncpg
 
@@ -83,16 +86,55 @@ class SessionConfig:
         return self.config.get("custom_instructions")
 
 
-def get_database_url() -> str:
-    """Convert DATABASE_URL to asyncpg-compatible format."""
-    if DATABASE_URL is None:
-        raise ValueError("DATABASE_URL environment variable is not set")
-
-    url = DATABASE_URL
-    # asyncpg expects postgres:// instead of postgresql://
+def _normalize_url(url: str) -> tuple[str, Optional[ssl.SSLContext]]:
+    """Return an asyncpg-compatible URL and a verifying SSL context (or None)."""
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgres://", 1)
-    return url
+    parts = urlsplit(url)
+    query = parse_qsl(parts.query, keep_blank_values=True)
+    sslmode = next((v for k, v in query if k == "sslmode"), None)
+    # asyncpg rejects libpq-only params; sslmode is replaced by an explicit context
+    kept = [(k, v) for k, v in query if k not in ("sslmode", "channel_binding")]
+    url = urlunsplit(parts._replace(query=urlencode(kept)))
+    ctx = ssl.create_default_context() if sslmode in ("require", "verify-ca", "verify-full") else None
+    return url, ctx
+
+
+def get_database_url() -> str:
+    """Convert DATABASE_URL to asyncpg-compatible format (sslmode stripped)."""
+    if DATABASE_URL is None:
+        raise ValueError("DATABASE_URL environment variable is not set")
+    return _normalize_url(DATABASE_URL)[0]
+
+
+_pool: Optional[asyncpg.Pool] = None
+_pool_lock = asyncio.Lock()
+
+
+async def _get_pool() -> asyncpg.Pool:
+    """Lazily create one pool per process."""
+    global _pool
+    if _pool is None:
+        async with _pool_lock:
+            if _pool is None:
+                if DATABASE_URL is None:
+                    raise ValueError("DATABASE_URL environment variable is not set")
+                url, ctx = _normalize_url(DATABASE_URL)
+                # statement_cache_size=0: Neon's -pooler endpoint is PgBouncer in
+                # transaction mode, which breaks asyncpg's prepared-statement cache.
+                _pool = await asyncpg.create_pool(
+                    url, ssl=ctx, min_size=1, max_size=5, command_timeout=30,
+                    statement_cache_size=0,
+                )
+    return _pool
+
+
+async def close_pool() -> None:
+    """Close the shared pool (no shutdown hook calls this yet)."""
+    global _pool
+    if _pool is not None:
+        pool, _pool = _pool, None
+        await pool.close()
 
 
 async def get_session_config(room_name: str) -> Optional[SessionConfig]:
@@ -106,18 +148,8 @@ async def get_session_config(room_name: str) -> Optional[SessionConfig]:
         SessionConfig if found, None otherwise
     """
     try:
-        url = get_database_url()
-
-        # Handle SSL for cloud databases (e.g., Supabase, Neon)
-        ssl_context = None
-        if "sslmode=require" in url:
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-            # Remove sslmode from URL since we're handling it separately
-            url = url.replace("?sslmode=require", "").replace("&sslmode=require", "")
-
-        conn = await asyncpg.connect(url, ssl=ssl_context)
+        pool = await _get_pool()
+        conn = await pool.acquire()
 
         try:
             row = await conn.fetchrow(
@@ -148,7 +180,7 @@ async def get_session_config(room_name: str) -> Optional[SessionConfig]:
                 config=config_data,
             )
         finally:
-            await conn.close()
+            await pool.release(conn)
 
     except Exception as e:
         logger.error(f"Database error fetching session config: {e}")
@@ -166,17 +198,8 @@ async def get_user_remaining_seconds(user_id: str) -> Optional[int]:
         Remaining seconds for today, or None if error
     """
     try:
-        url = get_database_url()
-
-        # Handle SSL for cloud databases
-        ssl_context = None
-        if "sslmode=require" in url:
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-            url = url.replace("?sslmode=require", "").replace("&sslmode=require", "")
-
-        conn = await asyncpg.connect(url, ssl=ssl_context)
+        pool = await _get_pool()
+        conn = await pool.acquire()
 
         try:
             today = datetime.now(timezone.utc).date()
@@ -201,7 +224,7 @@ async def get_user_remaining_seconds(user_id: str) -> Optional[int]:
             return remaining
 
         finally:
-            await conn.close()
+            await pool.release(conn)
 
     except Exception as e:
         logger.error(f"Database error fetching user remaining seconds: {e}")
@@ -231,17 +254,8 @@ async def save_call_log(
         True if saved successfully, False otherwise
     """
     try:
-        url = get_database_url()
-
-        # Handle SSL for cloud databases
-        ssl_context = None
-        if "sslmode=require" in url:
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-            url = url.replace("?sslmode=require", "").replace("&sslmode=require", "")
-
-        conn = await asyncpg.connect(url, ssl=ssl_context)
+        pool = await _get_pool()
+        conn = await pool.acquire()
 
         try:
             # Convert transcript to JSON string for asyncpg
@@ -296,7 +310,7 @@ async def save_call_log(
             return True
 
         finally:
-            await conn.close()
+            await pool.release(conn)
 
     except Exception as e:
         logger.error(f"Database error saving call log: {e}")
