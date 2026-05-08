@@ -16,7 +16,9 @@ export function LandingPage() {
               transcript, and leaves a ticket with a summary and what needs doing next.
             </p>
             <p className="mt-4 max-w-prose text-muted">
-              You can talk to a demo agent right now, no account needed.
+              {import.meta.env.VITE_LIVE_DEMO !== 'false'
+                ? 'You can talk to a demo agent right now, no account needed.'
+                : 'Below is an example call with a demo clinic. Sign in to talk to your own agent.'}
             </p>
           </div>
           <LiveDemo />

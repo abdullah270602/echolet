@@ -57,7 +57,7 @@ export function HowItWorks() {
 
 export function SampleTicket() {
   return (
-    <section className="border-t border-rule">
+    <section id="sample-ticket" className="border-t border-rule">
       <div className="mx-auto grid max-w-5xl gap-8 px-4 py-16 sm:px-6 md:grid-cols-[1fr_1.4fr] md:gap-16">
         <div>
           <h2 className="font-display text-3xl font-bold leading-tight text-ink">

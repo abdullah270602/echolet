@@ -1,10 +1,16 @@
 import { lazy, Suspense, useCallback, useState } from 'react';
 import { createDemoSession, DemoError, type DemoSession } from '../../services/demoApi';
+import { CallReplay } from './CallReplay';
+
+// Set VITE_LIVE_DEMO=false to build a landing page that only offers the scripted
+// replay, e.g. when the backend/agent is not deployed.
+const LIVE_DEMO = import.meta.env.VITE_LIVE_DEMO !== 'false';
 
 const LiveDemoRoom = lazy(() => import('./LiveDemoRoom'));
 
 type Phase =
   | { name: 'idle' }
+  | { name: 'replay' }
   | { name: 'connecting'; step: 'mic' | 'server' }
   | { name: 'live'; session: DemoSession }
   | { name: 'ended' }
@@ -15,7 +21,9 @@ const linkBtn = 'min-h-11 font-medium text-ink underline underline-offset-4 hove
 const h = 'font-display text-2xl font-semibold text-ink';
 
 export function LiveDemo() {
-  const [phase, setPhase] = useState<Phase>({ name: 'idle' });
+  const [phase, setPhase] = useState<Phase>(LIVE_DEMO ? { name: 'idle' } : { name: 'replay' });
+  const replay = useCallback(() => setPhase({ name: 'replay' }), []);
+  const back = useCallback(() => setPhase({ name: 'idle' }), []);
 
   const start = useCallback(async () => {
     setPhase({ name: 'connecting', step: 'mic' });
@@ -65,10 +73,17 @@ export function LiveDemo() {
             <button onClick={start} className={btn}>
               Start a call
             </button>
-            <a href="#how-it-works" className={linkBtn + ' inline-flex items-center'}>
-              See how it works
-            </a>
+            <button onClick={replay} className={linkBtn}>
+              Watch an example call
+            </button>
           </div>
+        </div>
+      )}
+
+      {phase.name === 'replay' && (
+        <div>
+          <h2 className={h + ' mb-4'}>An example call</h2>
+          <CallReplay onClose={LIVE_DEMO ? back : undefined} />
         </div>
       )}
 
@@ -115,9 +130,9 @@ export function LiveDemo() {
             <button onClick={start} className={btn}>
               Try again
             </button>
-            <a href="#how-it-works" className={linkBtn + ' inline-flex items-center'}>
-              See how it works
-            </a>
+            <button onClick={replay} className={linkBtn}>
+              Watch an example call instead
+            </button>
           </div>
         </div>
       )}

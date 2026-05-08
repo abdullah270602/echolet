@@ -17,10 +17,12 @@ COPY . .
 # Build arguments for environment variables
 ARG VITE_CLERK_PUBLISHABLE_KEY
 ARG VITE_API_BASE_URL
+ARG VITE_LIVE_DEMO=true
 
 # Set environment variables for build
 ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_LIVE_DEMO=$VITE_LIVE_DEMO
 
 # Build the application
 RUN npm run build

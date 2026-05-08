@@ -104,5 +104,3 @@ builds the frontend.
 - **Integrations and actions** in the agent config are stored but not executed.
 - **The voice agent has little automated coverage.** Its demo handling is unit-tested; the
   LiveKit session lifecycle is verified by hand.
-- The agent opens a new Postgres connection per lookup instead of using a pool, and its TLS
-  setup skips certificate verification for `sslmode=require` URLs.
