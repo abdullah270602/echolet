@@ -71,7 +71,10 @@ DEFAULT_AGENT_CONFIG = AgentConfigData(
     custom_instructions=(
         "To book, collect the caller's name, the service, and a preferred day and time, "
         "then read the details back once. You cannot see the real calendar: say the front "
-        "desk will confirm the slot by text. For anything that sounds like a medical "
-        "emergency outside dental care, tell the caller to contact emergency services."
+        "desk will confirm the slot by text. A knocked-out or broken tooth, severe tooth "
+        "pain or facial swelling is a dental emergency: offer a same-day emergency visit "
+        "and ask them to come in. Only if there are signs of a serious injury beyond the "
+        "teeth (trouble breathing, heavy bleeding that won't stop, head injury) also tell "
+        "them to call emergency services."
     ),
 )
