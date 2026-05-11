@@ -94,6 +94,29 @@ test drives the real queue → worker → analyzer path with only I/O mocked. CI
 (`.github/workflows/test.yml`) runs the Python suite with a coverage gate and lints and
 builds the frontend.
 
+## Agent evals
+
+`agent/evals/` holds behavioural evals for the voice agent, built on LiveKit Agents'
+test framework. Each one runs the production agent (real prompt builder, real `end_call`
+tool, real Gemini via OpenRouter) in text mode against the demo clinic config, then
+checks the reply with hard rules (quotes $120, no markdown in speech, no price it wasn't
+given, `end_call` called or not) and an LLM judge for wording that can vary.
+
+```bash
+cd agent && uv sync && uv run pytest     # needs OPENROUTER_API_KEY; ~40s, a few cents
+```
+
+They cover answers from the knowledge base, not inventing prices or calendar access,
+medical-advice and prompt-injection guardrails, booking flow, and when the agent may hang
+up. They run nightly and on demand in CI (`.github/workflows/evals.yml`), not on every push.
+
+They found two real bugs on their first run:
+
+- Gemini called `end_call` mid-booking when a caller asked to confirm a time. `end_call`
+  now refuses unless the caller's latest words are a goodbye (`agent/call_ending.py`).
+- The starter agent sometimes sent a caller with a knocked-out tooth to the ER instead
+  of offering the clinic's same-day emergency visit. Fixed in the template.
+
 ## Known limitations
 
 - **No telephony yet.** Calls run over WebRTC from the browser. The agent already handles SIP

@@ -14,6 +14,8 @@ from livekit.agents import Agent, ModelSettings, function_tool
 from livekit.agents.voice import RunContext
 from pydantic import Field
 
+from call_ending import caller_said_goodbye
+
 logger = logging.getLogger(__name__)
 
 # LiveKit API credentials for room management
@@ -105,11 +107,17 @@ def create_dynamic_assistant(
             """
             logger.info(f"end_call called, already_said_goodbye={already_said_goodbye}")
 
-            # Only safety check: minimum conversation length
+            # Safety checks: never hang up on a caller who is still talking business.
             user_messages = [m for m in self._transcript_log if m.get("role") == "user"]
             if len(user_messages) < 2:
                 logger.warning(f"end_call too early: only {len(user_messages)} user message(s)")
                 return "Conversation too short. Ask if there's anything else you can help with first."
+            if not caller_said_goodbye(user_messages[-1].get("content", "")):
+                logger.warning("end_call refused: caller's last turn was not a goodbye")
+                return (
+                    "Call NOT ended: the caller has not said goodbye. Do not say goodbye. "
+                    "Answer what they just said and keep helping."
+                )
 
             # Log the end
             self._transcript_log.append({
