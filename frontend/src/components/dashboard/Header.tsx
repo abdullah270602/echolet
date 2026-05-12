@@ -1,5 +1,4 @@
 import { useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Menu } from 'lucide-react';
 import { useDashboard } from '../../context/DashboardContext';
 
@@ -18,26 +17,23 @@ export function Header() {
   const title = pageTitles[location.pathname] || 'Dashboard';
 
   return (
-    <header className="h-16 border-b border-white/10 bg-midnight-900/50 backdrop-blur-sm flex items-center px-6">
+    <header className="h-16 border-b border-rule bg-paper flex items-center px-6">
       {/* Mobile menu button */}
       <button
         onClick={toggleSidebar}
-        className="md:hidden p-2 -ml-2 mr-4 text-white/60 hover:text-white transition-colors"
+        className="md:hidden p-2 -ml-2 mr-4 text-muted hover:text-ink transition-colors"
         aria-label="Toggle sidebar"
       >
         <Menu className="w-5 h-5" />
       </button>
 
       {/* Page title */}
-      <motion.h1
+      <h1
         key={location.pathname}
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-        className="text-lg font-semibold text-white"
+        className="font-display text-xl font-bold text-ink"
       >
         {title}
-      </motion.h1>
+      </h1>
     </header>
   );
 }

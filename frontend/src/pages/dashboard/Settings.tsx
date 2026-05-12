@@ -1,26 +1,21 @@
-import { motion } from 'framer-motion';
 import { Cog, Clock } from 'lucide-react';
 
 export function Settings() {
   return (
     <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[calc(100vh-12rem)]">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center"
-      >
-        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-teal-500/10 to-purple-500/10 flex items-center justify-center border border-white/10">
-          <Cog className="w-10 h-10 text-teal-400/60" />
+      <div className="text-center border-2 border-ink bg-white p-8 sm:p-10 max-w-md w-full">
+        <div className="w-16 h-16 mx-auto mb-6 bg-paper flex items-center justify-center border border-rule">
+          <Cog className="w-8 h-8 text-accent" />
         </div>
-        <h2 className="text-2xl font-semibold text-white mb-2">Settings</h2>
-        <p className="text-white/50 mb-6 max-w-md">
+        <h2 className="font-display text-2xl font-bold text-ink mb-2">Settings</h2>
+        <p className="text-muted mb-6">
           Configure your account preferences, notifications, and integration settings.
         </p>
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/40 text-sm">
-          <Clock className="w-4 h-4" />
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-paper border border-rule text-muted text-sm font-medium">
+          <Clock className="w-4 h-4 text-accent" />
           Coming Soon
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

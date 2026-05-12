@@ -92,7 +92,7 @@ export function VoiceForm({ control, errors, voices, speakingStyles }: VoiceForm
           />
         )}
       />
-      <p className="text-xs text-white/40 -mt-4">How your agent should sound during calls</p>
+      <p className="text-xs text-muted -mt-4">How your agent should sound during calls</p>
 
       {/* Language */}
       <Controller

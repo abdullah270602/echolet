@@ -59,8 +59,8 @@ export function TicketOutputForm({
       {/* Ticket Fields Section */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-sm font-medium text-white/80">Output Fields</h3>
-          <p className="text-xs text-white/40 mt-1">
+          <h3 className="font-display text-base font-semibold text-ink">Output Fields</h3>
+          <p className="text-xs text-muted mt-1">
             Choose which information to extract from calls
           </p>
         </div>
@@ -69,7 +69,7 @@ export function TicketOutputForm({
           {ticketFields.map((field, index) => (
             <div
               key={field.id}
-              className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
+              className="flex items-center justify-between p-3 bg-paper/50 border border-rule"
             >
               <div className="flex items-center gap-3">
                 <Controller
@@ -84,13 +84,13 @@ export function TicketOutputForm({
                   )}
                 />
                 <div>
-                  <span className="text-sm text-white/80">{field.label}</span>
+                  <span className="text-sm font-medium text-ink">{field.label}</span>
                   {field.required && (
-                    <span className="ml-2 text-xs text-white/40">(Required)</span>
+                    <span className="ml-2 text-xs text-muted">(Required)</span>
                   )}
                 </div>
               </div>
-              <span className="text-xs text-white/30 capitalize">{field.type}</span>
+              <span className="text-xs text-muted capitalize">{field.type}</span>
             </div>
           ))}
         </div>
@@ -99,8 +99,8 @@ export function TicketOutputForm({
       {/* Custom Tags Section */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-sm font-medium text-white/80">Custom Tags</h3>
-          <p className="text-xs text-white/40 mt-1">
+          <h3 className="font-display text-base font-semibold text-ink">Custom Tags</h3>
+          <p className="text-xs text-muted mt-1">
             Tags for categorizing and filtering calls
           </p>
         </div>
@@ -110,13 +110,13 @@ export function TicketOutputForm({
           {currentTags.map((tag: string, index: number) => (
             <span
               key={index}
-              className="inline-flex items-center gap-1 px-3 py-1 bg-teal-400/20 text-teal-400 rounded-full text-sm"
+              className="inline-flex items-center gap-1 px-3 py-1 bg-paper border border-accent text-accent font-medium text-sm"
             >
               {tag}
               <button
                 type="button"
                 onClick={() => removeTag(index)}
-                className="hover:text-teal-200"
+                className="hover:text-accent-dark"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -144,7 +144,7 @@ export function TicketOutputForm({
 
         {/* Suggested Tags */}
         <div>
-          <p className="text-xs text-white/40 mb-2">Suggested tags:</p>
+          <p className="text-xs text-muted mb-2">Suggested tags:</p>
           <div className="flex flex-wrap gap-2">
             {suggestedTags
               .filter((tag) => !currentTags.includes(tag))
@@ -153,7 +153,7 @@ export function TicketOutputForm({
                   key={tag}
                   type="button"
                   onClick={() => handleSuggestedTag(tag)}
-                  className="px-3 py-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/80 rounded-full text-xs transition-colors"
+                  className="px-3 py-1 bg-paper hover:bg-white border border-rule text-muted hover:text-ink text-xs font-medium transition-colors"
                 >
                   + {tag}
                 </button>

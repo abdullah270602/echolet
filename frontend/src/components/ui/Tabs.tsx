@@ -55,8 +55,8 @@ export function TabsList({ children, className = '' }: TabsListProps) {
   return (
     <div
       className={`
-        inline-flex items-center gap-1 p-1 rounded-xl
-        glass border border-white/10
+        inline-flex items-center gap-1 p-1
+        bg-paper border border-rule
         ${className}
       `}
     >
@@ -89,23 +89,16 @@ export function TabsTrigger({
       disabled={disabled}
       onClick={() => onValueChange(value)}
       className={`
-        relative px-4 py-2 rounded-lg text-sm font-medium
-        transition-colors duration-200
+        relative px-3.5 py-2 text-sm font-medium
+        transition-colors
         disabled:opacity-50 disabled:cursor-not-allowed
         ${isSelected
-          ? 'text-teal-400'
-          : 'text-white/50 hover:text-white/70'
+          ? 'bg-white text-ink font-semibold border border-ink'
+          : 'text-muted hover:text-ink border border-transparent'
         }
         ${className}
       `}
     >
-      {isSelected && (
-        <motion.div
-          layoutId="tab-indicator"
-          className="absolute inset-0 bg-teal-500/20 rounded-lg"
-          transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
-        />
-      )}
       <span className="relative z-10">{children}</span>
     </button>
   );

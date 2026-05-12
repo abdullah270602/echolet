@@ -70,20 +70,20 @@ export function GuardrailsForm({ control }: GuardrailsFormProps) {
       {/* Topic Restrictions */}
       <div className="space-y-6">
         <div>
-          <h3 className="text-sm font-medium text-white/80">Topic Guardrails</h3>
-          <p className="text-xs text-white/40 mt-1">
+          <h3 className="font-display text-base font-semibold text-ink">Topic Guardrails</h3>
+          <p className="text-xs text-muted mt-1">
             Control what topics your agent can and cannot discuss
           </p>
         </div>
 
         {/* Allowed Topics */}
         <div className="space-y-3">
-          <label className="text-xs text-white/60">Allowed Topics (optional)</label>
+          <label className="text-xs font-medium text-muted">Allowed Topics (optional)</label>
           <div className="flex flex-wrap gap-2 min-h-[32px]">
             {allowedTopics.map((topic: string, index: number) => (
               <span
                 key={index}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-green-400/20 text-green-400 rounded-full text-sm"
+                className="inline-flex items-center gap-1 px-3 py-1 bg-paper border border-accent text-accent font-medium text-sm"
               >
                 {topic}
                 <button type="button" onClick={() => removeAllowed(index)}>
@@ -112,12 +112,12 @@ export function GuardrailsForm({ control }: GuardrailsFormProps) {
 
         {/* Disallowed Topics */}
         <div className="space-y-3">
-          <label className="text-xs text-white/60">Disallowed Topics</label>
+          <label className="text-xs font-medium text-muted">Disallowed Topics</label>
           <div className="flex flex-wrap gap-2 min-h-[32px]">
             {disallowedTopics.map((topic: string, index: number) => (
               <span
                 key={index}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-red-400/20 text-red-400 rounded-full text-sm"
+                className="inline-flex items-center gap-1 px-3 py-1 bg-red-50 border border-red-300 text-red-700 font-medium text-sm"
               >
                 {topic}
                 <button type="button" onClick={() => removeDisallowed(index)}>
@@ -142,7 +142,7 @@ export function GuardrailsForm({ control }: GuardrailsFormProps) {
               <Plus className="w-4 h-4" />
             </Button>
           </div>
-          <p className="text-xs text-white/30">
+          <p className="text-xs text-muted">
             When asked about disallowed topics, your agent will try to redirect
             naturally, then politely decline if the caller persists.
           </p>
@@ -152,17 +152,17 @@ export function GuardrailsForm({ control }: GuardrailsFormProps) {
       {/* Compliance Settings */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-sm font-medium text-white/80">Compliance</h3>
-          <p className="text-xs text-white/40 mt-1">
+          <h3 className="font-display text-base font-semibold text-ink">Compliance</h3>
+          <p className="text-xs text-muted mt-1">
             Enable compliance modes for regulated industries
           </p>
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-paper/50 border border-rule">
             <div>
-              <span className="text-sm text-white/80">HIPAA Mode</span>
-              <p className="text-xs text-white/40">For healthcare providers</p>
+              <span className="text-sm font-medium text-ink">HIPAA Mode</span>
+              <p className="text-xs text-muted">For healthcare providers</p>
             </div>
             <Controller
               name="guardrails.compliance.hipaa_mode"
@@ -173,10 +173,10 @@ export function GuardrailsForm({ control }: GuardrailsFormProps) {
             />
           </div>
 
-          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-paper/50 border border-rule">
             <div>
-              <span className="text-sm text-white/80">GDPR Mode</span>
-              <p className="text-xs text-white/40">For EU data protection</p>
+              <span className="text-sm font-medium text-ink">GDPR Mode</span>
+              <p className="text-xs text-muted">For EU data protection</p>
             </div>
             <Controller
               name="guardrails.compliance.gdpr_mode"
@@ -187,10 +187,10 @@ export function GuardrailsForm({ control }: GuardrailsFormProps) {
             />
           </div>
 
-          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-paper/50 border border-rule">
             <div>
-              <span className="text-sm text-white/80">Call Recording Disclaimer</span>
-              <p className="text-xs text-white/40">Notify callers about recording</p>
+              <span className="text-sm font-medium text-ink">Call Recording Disclaimer</span>
+              <p className="text-xs text-muted">Notify callers about recording</p>
             </div>
             <Controller
               name="guardrails.compliance.call_recording_disclaimer"
@@ -207,8 +207,8 @@ export function GuardrailsForm({ control }: GuardrailsFormProps) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-medium text-white/80">Business Hours</h3>
-            <p className="text-xs text-white/40 mt-1">
+            <h3 className="font-display text-base font-semibold text-ink">Business Hours</h3>
+            <p className="text-xs text-muted mt-1">
               Configure when your business is open
             </p>
           </div>
@@ -222,7 +222,7 @@ export function GuardrailsForm({ control }: GuardrailsFormProps) {
         </div>
 
         {businessHoursEnabled && (
-          <div className="space-y-4 p-4 bg-white/5 rounded-lg border border-white/10">
+          <div className="space-y-4 p-4 bg-paper/50 border border-rule">
             {/* Timezone */}
             <Controller
               name="conversation.business_hours.timezone"
@@ -256,7 +256,7 @@ export function GuardrailsForm({ control }: GuardrailsFormProps) {
               )}
             />
 
-            <p className="text-xs text-white/30 flex items-center gap-1">
+            <p className="text-xs text-muted flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Schedule configuration coming soon
             </p>

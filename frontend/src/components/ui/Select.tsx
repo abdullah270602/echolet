@@ -60,25 +60,25 @@ export function Select({
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
           className={`
-            w-full px-4 py-3 rounded-lg text-left
-            bg-white/5 border
-            transition-all duration-200
-            focus:outline-none focus:ring-2 focus:ring-teal-500/20
+            w-full px-4 py-2.5 text-left
+            bg-white border
+            transition-colors
+            focus:outline-none focus:border-ink
             disabled:opacity-50 disabled:cursor-not-allowed
             flex items-center justify-between
             ${error
-              ? 'border-red-500/50'
+              ? 'border-red-600'
               : isOpen
-                ? 'border-teal-500/50'
-                : 'border-white/10 hover:border-white/20'
+                ? 'border-ink'
+                : 'border-rule hover:border-ink'
             }
           `}
         >
-          <span className={selectedOption ? 'text-white' : 'text-white/30'}>
+          <span className={selectedOption ? 'text-ink' : 'text-muted/60'}>
             {selectedOption?.label || placeholder}
           </span>
           <ChevronDown
-            className={`w-4 h-4 text-white/50 transition-transform duration-200 ${
+            className={`w-4 h-4 text-muted transition-transform duration-200 ${
               isOpen ? 'rotate-180' : ''
             }`}
           />
@@ -87,11 +87,11 @@ export function Select({
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.15 }}
-              className="absolute z-50 w-full mt-2 py-1 rounded-lg glass-strong border border-white/10 shadow-xl"
+              className="absolute z-50 w-full mt-1 py-1 bg-white border-2 border-ink max-h-60 overflow-y-auto"
             >
               {options.map((option) => (
                 <button
@@ -103,16 +103,16 @@ export function Select({
                   }}
                   className={`
                     w-full px-4 py-2.5 text-left flex items-center justify-between
-                    transition-colors duration-150
+                    transition-colors
                     ${option.value === value
-                      ? 'bg-teal-500/10 text-teal-400'
-                      : 'text-white/70 hover:bg-white/5 hover:text-white'
+                      ? 'bg-paper text-ink font-semibold'
+                      : 'text-ink hover:bg-paper/60'
                     }
                   `}
                 >
                   <span>{option.label}</span>
                   {option.value === value && (
-                    <Check className="w-4 h-4 text-teal-400" />
+                    <Check className="w-4 h-4 text-accent" />
                   )}
                 </button>
               ))}
@@ -121,7 +121,7 @@ export function Select({
         </AnimatePresence>
       </div>
       {error && (
-        <p className="text-xs text-red-400 mt-1">{error}</p>
+        <p className="text-xs text-red-700 mt-1">{error}</p>
       )}
     </div>
   );

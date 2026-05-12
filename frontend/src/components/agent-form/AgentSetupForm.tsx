@@ -16,8 +16,8 @@ export function AgentSetupForm({ control, errors }: AgentSetupFormProps) {
     <div className="space-y-6">
       {/* Agent Name */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-white/80">
-          Agent Name <span className="text-red-400">*</span>
+        <label className="block text-sm font-semibold text-ink">
+          Agent Name <span className="text-red-700">*</span>
         </label>
         <Controller
           name="agent.name"
@@ -26,20 +26,20 @@ export function AgentSetupForm({ control, errors }: AgentSetupFormProps) {
             <Input
               {...field}
               placeholder="e.g., Sarah"
-              className={errors.agent?.name ? 'border-red-400' : ''}
+              className={errors.agent?.name ? 'border-red-600' : ''}
             />
           )}
         />
         {errors.agent?.name && (
-          <p className="text-sm text-red-400">{errors.agent.name.message}</p>
+          <p className="text-sm text-red-700">{errors.agent.name.message}</p>
         )}
-        <p className="text-xs text-white/40">The name your agent will use to introduce itself</p>
+        <p className="text-xs text-muted">The name your agent will use to introduce itself</p>
       </div>
 
       {/* Business Name */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-white/80">
-          Business Name <span className="text-red-400">*</span>
+        <label className="block text-sm font-semibold text-ink">
+          Business Name <span className="text-red-700">*</span>
         </label>
         <Controller
           name="agent.business_name"
@@ -48,19 +48,19 @@ export function AgentSetupForm({ control, errors }: AgentSetupFormProps) {
             <Input
               {...field}
               placeholder="e.g., Echolet Dental Clinic"
-              className={errors.agent?.business_name ? 'border-red-400' : ''}
+              className={errors.agent?.business_name ? 'border-red-600' : ''}
             />
           )}
         />
         {errors.agent?.business_name && (
-          <p className="text-sm text-red-400">{errors.agent.business_name.message}</p>
+          <p className="text-sm text-red-700">{errors.agent.business_name.message}</p>
         )}
       </div>
 
       {/* Greeting Message */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-white/80">
-          Greeting Message <span className="text-red-400">*</span>
+        <label className="block text-sm font-semibold text-ink">
+          Greeting Message <span className="text-red-700">*</span>
         </label>
         <Controller
           name="agent.greeting_message"
@@ -70,19 +70,19 @@ export function AgentSetupForm({ control, errors }: AgentSetupFormProps) {
               {...field}
               placeholder="e.g., Hi! Thanks for calling Echolet Dental. How can I help you today?"
               rows={3}
-              className={errors.agent?.greeting_message ? 'border-red-400' : ''}
+              className={errors.agent?.greeting_message ? 'border-red-600' : ''}
             />
           )}
         />
         {errors.agent?.greeting_message && (
-          <p className="text-sm text-red-400">{errors.agent.greeting_message.message}</p>
+          <p className="text-sm text-red-700">{errors.agent.greeting_message.message}</p>
         )}
-        <p className="text-xs text-white/40">This is the first thing your agent will say</p>
+        <p className="text-xs text-muted">This is the first thing your agent will say</p>
       </div>
 
       {/* Custom Instructions */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-white/80">
+        <label className="block text-sm font-semibold text-ink">
           Custom Instructions
         </label>
         <Controller
@@ -97,7 +97,7 @@ export function AgentSetupForm({ control, errors }: AgentSetupFormProps) {
             />
           )}
         />
-        <p className="text-xs text-white/40">Additional instructions for how your agent should behave</p>
+        <p className="text-xs text-muted">Additional instructions for how your agent should behave</p>
       </div>
     </div>
   );

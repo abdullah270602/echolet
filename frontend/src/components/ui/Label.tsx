@@ -9,11 +9,11 @@ export const Label = forwardRef<HTMLLabelElement, LabelProps>(
     return (
       <label
         ref={ref}
-        className={`block text-sm font-medium text-white/70 mb-1.5 ${className}`}
+        className={`block text-sm font-semibold text-ink mb-1.5 ${className}`}
         {...props}
       >
         {children}
-        {required && <span className="text-red-400 ml-1">*</span>}
+        {required && <span className="text-red-700 ml-1">*</span>}
       </label>
     );
   }

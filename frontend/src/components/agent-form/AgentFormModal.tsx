@@ -159,32 +159,33 @@ export function AgentFormModal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={handleClose}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-ink/40"
           />
 
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="w-full max-w-3xl max-h-[90vh] glass-strong rounded-2xl border border-white/10 flex flex-col pointer-events-auto"
+              className="w-full max-w-3xl max-h-[90vh] bg-white border-2 border-ink font-body text-ink flex flex-col pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                <h2 className="text-xl font-semibold text-white">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-rule">
+                <h2 className="font-display text-xl font-bold text-ink">
                   {isEditing ? 'Edit Agent' : 'Create Agent'}
                 </h2>
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                  className="p-2 text-muted hover:text-ink hover:bg-paper transition-colors"
+                  aria-label="Close modal"
                 >
-                  <X className="w-5 h-5 text-white/50 hover:text-white" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
@@ -192,15 +193,15 @@ export function AgentFormModal({
               {isLoadingConfig ? (
                 <div className="flex-1 flex items-center justify-center py-12">
                   <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-6 h-6 text-teal-400 animate-spin" />
-                    <p className="text-white/50 text-sm">Loading configuration...</p>
+                    <Loader2 className="w-6 h-6 text-accent animate-spin" />
+                    <p className="text-muted text-sm">Loading configuration...</p>
                   </div>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
                   <div className="flex-1 overflow-y-auto px-6 py-6">
                     <Tabs defaultValue="setup">
-                      <TabsList className="mb-6 w-full flex-wrap justify-center gap-1">
+                      <TabsList className="mb-6 w-full flex-wrap justify-start gap-1">
                         <TabsTrigger value="setup">Setup</TabsTrigger>
                         <TabsTrigger value="voice">Voice</TabsTrigger>
                         <TabsTrigger value="services">Services</TabsTrigger>
@@ -256,7 +257,7 @@ export function AgentFormModal({
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/10">
+                  <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-rule bg-paper/40">
                     <Button
                       type="button"
                       variant="ghost"

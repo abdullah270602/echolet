@@ -3,7 +3,6 @@
  * Displays a list of call history items in a customer support ticket style
  */
 
-import { motion } from 'framer-motion';
 import {
   Clock,
   Phone,
@@ -64,21 +63,21 @@ function getCallDescription(call: CallHistoryItem): string {
 function PriorityBadge({ priority }: { priority: string }) {
   const config = {
     urgent: {
-      bg: 'bg-red-500/20',
-      text: 'text-red-400',
-      border: 'border-red-500/30',
+      bg: 'bg-red-50',
+      text: 'text-red-700',
+      border: 'border-red-300',
       icon: AlertCircle,
     },
     normal: {
-      bg: 'bg-teal-500/20',
-      text: 'text-teal-400',
-      border: 'border-teal-500/30',
+      bg: 'bg-paper',
+      text: 'text-accent',
+      border: 'border-rule',
       icon: CheckCircle,
     },
     low: {
-      bg: 'bg-gray-500/20',
-      text: 'text-gray-400',
-      border: 'border-gray-500/30',
+      bg: 'bg-paper',
+      text: 'text-muted',
+      border: 'border-rule',
       icon: CircleDot,
     },
   };
@@ -86,7 +85,7 @@ function PriorityBadge({ priority }: { priority: string }) {
   const { bg, text, border, icon: Icon } = config[priority as keyof typeof config] || config.normal;
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${bg} ${text} border ${border}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium ${bg} ${text} border ${border}`}>
       <Icon className="w-3 h-3" />
       {priority.charAt(0).toUpperCase() + priority.slice(1)}
     </span>
@@ -98,7 +97,7 @@ function PriorityBadge({ priority }: { priority: string }) {
  */
 function ServiceTag({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-teal-500/20 text-teal-400 border border-teal-500/30">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-paper text-accent border border-rule">
       <Tag className="w-3 h-3" />
       {label}
     </span>
@@ -112,7 +111,7 @@ function CategoryBadge({ category }: { category: CallCategory | null }) {
   if (!category) return null;
   const classes = getCategoryClasses(category);
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border ${classes}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium border ${classes}`}>
       <Tag className="w-3 h-3" />
       {category}
     </span>
@@ -126,7 +125,7 @@ function UrgencyBadge({ urgency }: { urgency: CallUrgency | null }) {
   if (!urgency) return null;
   const classes = getUrgencyClasses(urgency);
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border ${classes}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium border ${classes}`}>
       <AlertCircle className="w-3 h-3" />
       {urgency}
     </span>
@@ -139,15 +138,15 @@ function UrgencyBadge({ urgency }: { urgency: CallUrgency | null }) {
 function getSentimentIcon(sentiment: CallSentiment | null) {
   switch (sentiment) {
     case 'Positive':
-      return <Smile className="w-3.5 h-3.5 text-green-400" />;
+      return <Smile className="w-3.5 h-3.5 text-accent" />;
     case 'Neutral':
-      return <Meh className="w-3.5 h-3.5 text-slate-400" />;
+      return <Meh className="w-3.5 h-3.5 text-muted" />;
     case 'Frustrated':
-      return <Frown className="w-3.5 h-3.5 text-orange-400" />;
+      return <Frown className="w-3.5 h-3.5 text-amber-700" />;
     case 'Angry':
-      return <Angry className="w-3.5 h-3.5 text-red-400" />;
+      return <Angry className="w-3.5 h-3.5 text-red-700" />;
     default:
-      return <Meh className="w-3.5 h-3.5 text-gray-400" />;
+      return <Meh className="w-3.5 h-3.5 text-muted" />;
   }
 }
 
@@ -157,7 +156,6 @@ function getSentimentIcon(sentiment: CallSentiment | null) {
 function TicketCard({
   call,
   onClick,
-  index,
 }: {
   call: CallHistoryItem;
   onClick: () => void;
@@ -166,43 +164,38 @@ function TicketCard({
   const description = getCallDescription(call);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.3 }}
+    <article
       onClick={onClick}
-      className="group p-4 rounded-xl bg-white/5 border border-white/10
-                 hover:bg-white/10 hover:border-teal-500/30
-                 transition-all duration-200 cursor-pointer"
+      className="group p-5 bg-white border-2 border-ink hover:bg-paper/40 transition-colors cursor-pointer"
     >
       {/* Header: Agent Info + Timestamp */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500/30 to-purple-500/30 flex items-center justify-center border border-white/10">
-            <Bot className="w-5 h-5 text-teal-400" />
+          <div className="w-10 h-10 bg-paper flex items-center justify-center border border-rule">
+            <Bot className="w-5 h-5 text-accent" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <p className="text-white font-medium">
+              <p className="font-display font-semibold text-ink">
                 {call.agent_name || 'Unknown Agent'}
               </p>
               {call.is_agent_deleted && (
-                <span className="px-1.5 py-0.5 text-xs rounded bg-white/10 text-white/40 border border-white/10">
+                <span className="px-1.5 py-0.5 text-xs bg-paper text-muted border border-rule">
                   Deleted
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1 text-white/50 text-sm">
+            <div className="flex items-center gap-1 text-muted text-sm">
               <Phone className="w-3 h-3" />
               <span>Session {call.id}</span>
             </div>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-white/70 text-sm">
+          <p className="text-ink text-sm font-medium">
             {formatAbsoluteTime(call.created_at)}
           </p>
-          <p className="text-white/40 text-xs">
+          <p className="text-muted text-xs">
             {formatRelativeTime(call.created_at)}
           </p>
         </div>
@@ -221,7 +214,7 @@ function TicketCard({
           <PriorityBadge priority={call.priority} />
         )}
         {call.duration_seconds && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-white/50">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-muted">
             <Clock className="w-3 h-3" />
             {formatDuration(call.duration_seconds)}
           </span>
@@ -229,29 +222,29 @@ function TicketCard({
       </div>
 
       {/* Description */}
-      <p className="text-white/70 text-sm mb-3 line-clamp-2">
+      <p className="text-muted text-sm mb-3 line-clamp-2">
         {description}
       </p>
 
       {/* AI Analysis Section */}
-      <div className="pt-3 border-t border-white/5">
-        <p className="text-teal-400 text-xs font-medium mb-1.5">AI Analysis</p>
+      <div className="pt-3 border-t border-rule">
+        <p className="text-accent text-xs font-semibold mb-1.5">AI Analysis</p>
         <div className="flex items-center gap-4 text-sm flex-wrap">
           <div className="flex items-center gap-1.5">
             {getSentimentIcon(call.sentiment)}
-            <span className="text-white/50">Sentiment:</span>
-            <span className={`${getSentimentClasses(call.sentiment).split(' ')[1] || 'text-white/70'}`}>
+            <span className="text-muted">Sentiment:</span>
+            <span className={`font-medium ${getSentimentClasses(call.sentiment).split(' ')[1] || 'text-ink'}`}>
               {call.sentiment || 'Pending'}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             {call.action_required ? (
-              <Bell className="w-3.5 h-3.5 text-amber-400" />
+              <Bell className="w-3.5 h-3.5 text-amber-700" />
             ) : (
-              <BellOff className="w-3.5 h-3.5 text-green-400" />
+              <BellOff className="w-3.5 h-3.5 text-accent" />
             )}
-            <span className="text-white/50">Action:</span>
-            <span className={call.action_required ? 'text-amber-400' : 'text-green-400'}>
+            <span className="text-muted">Action:</span>
+            <span className={`font-medium ${call.action_required ? 'text-amber-700' : 'text-accent'}`}>
               {call.action_required === null
                 ? 'Pending'
                 : call.action_required
@@ -261,14 +254,14 @@ function TicketCard({
           </div>
           {call.action_items && call.action_items.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-white/50">Tasks:</span>
-              <span className="text-purple-400">{call.action_items.length}</span>
+              <CheckCircle className="w-3.5 h-3.5 text-accent" />
+              <span className="text-muted">Tasks:</span>
+              <span className="font-medium text-ink">{call.action_items.length}</span>
             </div>
           )}
         </div>
       </div>
-    </motion.div>
+    </article>
   );
 }
 
@@ -278,8 +271,8 @@ function TicketCard({
 function LoadingState() {
   return (
     <div className="flex flex-col items-center justify-center py-16">
-      <Loader2 className="w-8 h-8 text-teal-400 animate-spin mb-4" />
-      <p className="text-white/50 text-sm">Loading call history...</p>
+      <Loader2 className="w-8 h-8 text-accent animate-spin mb-4" />
+      <p className="text-muted text-sm">Loading call history...</p>
     </div>
   );
 }
@@ -295,23 +288,21 @@ function ErrorState({
   onRetry: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16">
-      <div className="p-3 rounded-full bg-red-500/10 mb-4">
-        <AlertCircle className="w-8 h-8 text-red-400" />
+    <div className="flex flex-col items-center justify-center py-16 border-2 border-ink bg-white p-8 text-center">
+      <div className="p-3 bg-red-50 border border-red-200 mb-4">
+        <AlertCircle className="w-8 h-8 text-red-700" />
       </div>
-      <p className="text-white font-medium mb-1">Failed to load call history</p>
-      <p className="text-white/50 text-sm mb-4">{error}</p>
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+      <p className="font-display text-lg font-semibold text-ink mb-1">Failed to load call history</p>
+      <p className="text-muted text-sm mb-4">{error}</p>
+      <button
         onClick={onRetry}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5
-                   text-white/70 text-sm font-medium border border-white/10
-                   hover:bg-white/10 transition-all"
+        className="flex items-center gap-2 min-h-11 px-5 border-2 border-ink bg-white
+                   text-ink text-sm font-medium
+                   hover:bg-ink hover:text-paper transition-colors"
       >
         <RefreshCw className="w-4 h-4" />
         Try Again
-      </motion.button>
+      </button>
     </div>
   );
 }
@@ -321,12 +312,12 @@ function ErrorState({
  */
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-16">
-      <div className="p-3 rounded-full bg-white/5 mb-4">
-        <Phone className="w-8 h-8 text-white/30" />
+    <div className="flex flex-col items-center justify-center py-16 border-2 border-ink bg-white p-8 text-center">
+      <div className="p-3 bg-paper border border-rule mb-4">
+        <Phone className="w-8 h-8 text-muted" />
       </div>
-      <p className="text-white font-medium mb-1">No calls yet</p>
-      <p className="text-white/50 text-sm">
+      <p className="font-display text-lg font-semibold text-ink mb-1">No calls yet</p>
+      <p className="text-muted text-sm">
         Your call history will appear here after your first call.
       </p>
     </div>
@@ -356,7 +347,7 @@ export function TicketList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {calls.map((call, index) => (
         <TicketCard
           key={call.id}

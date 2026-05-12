@@ -113,13 +113,13 @@ export function formatMessageTime(timestamp: number): string {
 export function getPriorityClasses(priority: CallPriority): string {
   switch (priority) {
     case 'urgent':
-      return 'bg-red-500/20 text-red-400 border-red-500/30';
+      return 'bg-red-50 text-red-700 border-red-300';
     case 'normal':
-      return 'bg-teal-500/20 text-teal-400 border-teal-500/30';
+      return 'bg-paper text-accent border-rule';
     case 'low':
-      return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      return 'bg-paper text-muted border-rule';
     default:
-      return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      return 'bg-paper text-muted border-rule';
   }
 }
 
@@ -129,15 +129,15 @@ export function getPriorityClasses(priority: CallPriority): string {
 export function getStatusClasses(status: CallStatus): string {
   switch (status) {
     case 'completed':
-      return 'bg-green-500/20 text-green-400';
+      return 'bg-paper text-accent border border-rule';
     case 'active':
-      return 'bg-teal-500/20 text-teal-400';
+      return 'bg-paper text-accent border border-accent';
     case 'pending':
-      return 'bg-amber-500/20 text-amber-400';
+      return 'bg-amber-50 text-amber-800 border border-amber-300';
     case 'failed':
-      return 'bg-red-500/20 text-red-400';
+      return 'bg-red-50 text-red-700 border border-red-300';
     default:
-      return 'bg-gray-500/20 text-gray-400';
+      return 'bg-paper text-muted border border-rule';
   }
 }
 
@@ -147,18 +147,18 @@ export function getStatusClasses(status: CallStatus): string {
 export function getCategoryClasses(category: CallCategory | null): string {
   switch (category) {
     case 'Appointment':
-      return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      return 'bg-paper text-accent border-rule';
     case 'Inquiry':
-      return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+      return 'bg-paper text-ink border-rule';
     case 'Complaint':
-      return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+      return 'bg-amber-50 text-amber-800 border-amber-300';
     case 'Spam':
-      return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      return 'bg-paper text-muted border-rule';
     case 'Urgent Service':
-      return 'bg-red-500/20 text-red-400 border-red-500/30';
+      return 'bg-red-50 text-red-700 border-red-300';
     case 'Other':
     default:
-      return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+      return 'bg-paper text-muted border-rule';
   }
 }
 
@@ -168,13 +168,13 @@ export function getCategoryClasses(category: CallCategory | null): string {
 export function getUrgencyClasses(urgency: CallUrgency | null): string {
   switch (urgency) {
     case 'High':
-      return 'bg-red-500/20 text-red-400 border-red-500/30';
+      return 'bg-red-50 text-red-700 border-red-300';
     case 'Medium':
-      return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+      return 'bg-amber-50 text-amber-800 border-amber-300';
     case 'Low':
-      return 'bg-green-500/20 text-green-400 border-green-500/30';
+      return 'bg-paper text-accent border-rule';
     default:
-      return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      return 'bg-paper text-muted border-rule';
   }
 }
 
@@ -184,14 +184,14 @@ export function getUrgencyClasses(urgency: CallUrgency | null): string {
 export function getSentimentClasses(sentiment: CallSentiment | null): string {
   switch (sentiment) {
     case 'Positive':
-      return 'bg-green-500/20 text-green-400 border-green-500/30';
+      return 'bg-paper text-accent border-rule';
     case 'Neutral':
-      return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+      return 'bg-paper text-muted border-rule';
     case 'Frustrated':
-      return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+      return 'bg-amber-50 text-amber-800 border-amber-300';
     case 'Angry':
-      return 'bg-red-500/20 text-red-400 border-red-500/30';
+      return 'bg-red-50 text-red-700 border-red-300';
     default:
-      return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      return 'bg-paper text-muted border-rule';
   }
 }

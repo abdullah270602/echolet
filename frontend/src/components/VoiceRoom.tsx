@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import { motion } from "framer-motion";
 import { Mic, Loader2 } from "lucide-react";
 import {
   LiveKitRoom,
@@ -86,66 +85,44 @@ export function VoiceRoom({ agentId }: VoiceRoomProps) {
 
   if (!connectionDetails) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg glass rounded-2xl border border-white/10 p-8 relative overflow-hidden"
-      >
-        {/* Background glow */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative z-10 flex flex-col items-center text-center">
+      <div className="w-full max-w-lg border-2 border-ink bg-white p-8 relative">
+        <div className="flex flex-col items-center text-center">
           {/* Icon */}
-          <motion.div
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-500/20 to-purple-500/20 flex items-center justify-center mb-6 border border-white/10"
-          >
-            <Mic className="w-10 h-10 text-teal-400" />
-          </motion.div>
+          <div className="w-16 h-16 bg-paper flex items-center justify-center mb-6 border border-rule">
+            <Mic className="w-8 h-8 text-accent" />
+          </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-semibold text-white mb-2">
+          <h2 className="font-display text-2xl font-bold text-ink mb-2">
             Voice Assistant Ready
           </h2>
-          <p className="text-white/50 mb-8 max-w-sm">
+          <p className="text-muted mb-8 max-w-sm">
             Speak naturally to test your configuration. The assistant will respond in real-time.
           </p>
 
           {/* Error */}
           {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`mb-6 px-4 py-3 rounded-lg text-sm w-full ${
+            <div
+              role="alert"
+              className={`mb-6 px-4 py-3 text-sm w-full border ${
                 isLimitReached
-                  ? "bg-amber-500/10 border border-amber-500/20 text-amber-400"
-                  : "bg-red-500/10 border border-red-500/20 text-red-400"
+                  ? "bg-amber-50 border-amber-300 text-amber-800"
+                  : "bg-red-50 border-red-300 text-red-700"
               }`}
             >
               {error}
-            </motion.div>
+            </div>
           )}
 
           {/* Connect Button */}
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            animate={
-              !isConnecting && !isLimitReached
-                ? { boxShadow: ["0 0 20px rgba(94, 234, 212, 0.3)", "0 0 30px rgba(94, 234, 212, 0.5)", "0 0 20px rgba(94, 234, 212, 0.3)"] }
-                : {}
-            }
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          <button
             onClick={connect}
             disabled={isConnecting || isLimitReached}
             className={`
-              w-full py-4 px-8 rounded-xl font-semibold text-white transition-all
+              w-full min-h-11 py-3 px-6 font-semibold text-white transition-colors
               ${isLimitReached
-                ? "bg-white/10 cursor-not-allowed text-white/40"
-                : "bg-gradient-to-r from-teal-500 to-purple-500"
+                ? "bg-rule cursor-not-allowed text-muted"
+                : "bg-accent hover:bg-accent-dark"
               }
               disabled:opacity-50 disabled:cursor-not-allowed
             `}
@@ -162,18 +139,14 @@ export function VoiceRoom({ agentId }: VoiceRoomProps) {
                 "Start Conversation"
               )}
             </span>
-          </motion.button>
+          </button>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="w-full max-w-2xl glass rounded-2xl border border-white/10 overflow-hidden"
-    >
+    <div className="w-full max-w-2xl border-2 border-ink bg-white overflow-hidden">
       <LiveKitRoom
         token={connectionDetails.token}
         serverUrl={connectionDetails.livekit_url}
@@ -185,7 +158,7 @@ export function VoiceRoom({ agentId }: VoiceRoomProps) {
         <RoomContent remainingSeconds={connectionDetails.remaining_seconds} />
         <RoomAudioRenderer />
       </LiveKitRoom>
-    </motion.div>
+    </div>
   );
 }
 
@@ -217,60 +190,41 @@ function RoomContent({
   return (
     <div className="p-6 flex flex-col gap-4">
       {/* Timer */}
-      <div className="flex items-center justify-center gap-3 py-2">
-        <motion.span
-          animate={isWarning ? { scale: [1, 1.05, 1] } : {}}
-          transition={{ duration: 0.5, repeat: isWarning ? Infinity : 0 }}
-          className={`text-3xl font-bold tabular-nums ${
-            isWarning ? "text-red-400" : "text-white"
-          }`}
-        >
-          {formatTime(timeLeft)}
-        </motion.span>
-        <span className="text-sm text-white/40 uppercase tracking-wide">
-          Remaining
-        </span>
+      <div className="flex items-center justify-between gap-4 border-b border-rule pb-4">
+        <div className="flex items-center gap-2">
+          <span
+            className={`
+              w-2.5 h-2.5 rounded-full
+              ${state === "listening" ? "bg-accent" : ""}
+              ${state === "thinking" ? "bg-amber-600 animate-pulse" : ""}
+              ${state === "speaking" ? "bg-accent" : ""}
+              ${state === "idle" || state === "connecting" ? "bg-muted" : ""}
+            `}
+          />
+          <span className="font-medium text-ink">{getStateLabel(state)}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span
+            className={`font-display text-xl font-bold tabular-nums ${
+              isWarning ? "text-red-700" : "text-ink"
+            }`}
+          >
+            {formatTime(timeLeft)}
+          </span>
+          <span className="text-xs text-muted uppercase tracking-wide">
+            Remaining
+          </span>
+        </div>
       </div>
 
       {/* Visualizer */}
-      <div className="flex flex-col items-center gap-3 py-4">
-        <div
-          className={`
-            w-48 h-24 rounded-xl flex items-center justify-center
-            bg-white/5 border transition-colors duration-300
-            ${state === "listening" ? "border-electric-blue/30" : ""}
-            ${state === "thinking" ? "border-amber-500/30" : ""}
-            ${state === "speaking" ? "border-green-500/30" : ""}
-            ${state === "idle" || state === "connecting" ? "border-white/10" : ""}
-          `}
-        >
-          <BarVisualizer
-            state={state}
-            trackRef={audioTrack}
-            barCount={5}
-            options={{ minHeight: 8 }}
-          />
-        </div>
-
-        {/* Status Badge */}
-        <div
-          className={`
-            flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium
-            bg-white/5 border border-white/10
-          `}
-        >
-          <span
-            className={`
-              w-2 h-2 rounded-full
-              ${state === "listening" ? "bg-electric-blue" : ""}
-              ${state === "thinking" ? "bg-amber-500 animate-pulse" : ""}
-              ${state === "speaking" ? "bg-green-500" : ""}
-              ${state === "idle" ? "bg-white/30" : ""}
-              ${state === "connecting" ? "bg-white/30 animate-pulse" : ""}
-            `}
-          />
-          <span className="text-white/70">{getStateLabel(state)}</span>
-        </div>
+      <div className="demo-bars my-4 flex h-24 items-center justify-center bg-paper/50 border border-rule">
+        <BarVisualizer
+          state={state}
+          trackRef={audioTrack}
+          barCount={7}
+          options={{ minHeight: 8 }}
+        />
       </div>
 
       {/* Transcript */}
@@ -280,7 +234,7 @@ function RoomContent({
       />
 
       {/* Controls */}
-      <div className="flex items-center justify-center pt-2 border-t border-white/10">
+      <div className="flex items-center justify-center pt-4 border-t border-rule">
         <VoiceAssistantControlBar />
       </div>
     </div>
@@ -368,43 +322,41 @@ function TranscriptView({
   return (
     <div
       ref={scrollRef}
-      className="h-48 overflow-y-auto rounded-xl bg-black/20 p-4 scrollbar-thin"
+      className="h-48 overflow-y-auto bg-paper/50 border border-rule p-4"
     >
       {messages.length === 0 ? (
         <div className="h-full flex items-center justify-center">
-          <p className="text-white/30 text-sm">Start speaking to begin the conversation</p>
+          <p className="text-muted text-sm">Start speaking to begin the conversation</p>
         </div>
       ) : (
         <div className="space-y-3">
           {messages.map((message) => (
-            <motion.div
+            <div
               key={message.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
               className={`flex items-start gap-3 ${
                 message.isAgent ? "" : "flex-row-reverse"
               }`}
             >
               <div
                 className={`
-                  w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold
-                  ${message.isAgent ? "bg-electric-blue text-white" : "bg-green-500 text-white"}
+                  w-7 h-7 flex items-center justify-center text-xs font-semibold border
+                  ${message.isAgent ? "bg-accent border-accent text-white" : "bg-white border-ink text-ink"}
                 `}
               >
                 {message.isAgent ? "A" : "U"}
               </div>
               <div
                 className={`
-                  flex-1 max-w-[80%] rounded-xl px-3 py-2
-                  ${message.isAgent ? "bg-electric-blue/10" : "bg-green-500/10"}
+                  flex-1 max-w-[80%] px-3 py-2 border
+                  ${message.isAgent ? "bg-white border-ink" : "bg-paper border-rule"}
                 `}
               >
-                <span className="text-xs text-white/50 block mb-1">
+                <span className="text-xs font-semibold text-muted block mb-1">
                   {message.isAgent ? "Assistant" : "You"}
                 </span>
-                <p className="text-sm text-white/90">{message.text}</p>
+                <p className="text-sm text-ink">{message.text}</p>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}
