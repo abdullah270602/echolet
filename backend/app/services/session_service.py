@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,7 +10,7 @@ from app.services import usage_service
 
 async def start_session(
     db_session: AsyncSession,
-    user_id: str,
+    user_id: uuid.UUID,
     agent_id: int,
 ) -> dict:
     """
@@ -56,11 +58,11 @@ async def start_session(
     )
 
     # 4. Mint LiveKit token with session room_name (UUID)
+    # Use string representation of UUID for LiveKit identity
     token_result = create_access_token(
         room_name=call_session.room_name,
-        identity=user_id,
+        identity=str(user_id),
         name=None,
-        remaining_seconds=usage["remaining_seconds"],
     )
 
     return {

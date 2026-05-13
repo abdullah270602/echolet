@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
 
 interface ButtonProps {
@@ -21,34 +20,32 @@ export function Button({
   disabled = false,
 }: ButtonProps) {
   const sizeClasses = {
-    sm: 'px-4 py-2 text-sm',
-    md: 'px-6 py-3 text-base',
-    lg: 'px-8 py-4 text-lg',
+    sm: 'min-h-9 px-3 py-1.5 text-sm',
+    md: 'min-h-11 px-6 py-2.5 text-base',
+    lg: 'min-h-12 px-8 py-3 text-lg',
   };
 
   const variantClasses = {
-    glow: 'btn-glow',
-    secondary: 'btn-secondary',
-    ghost: 'bg-transparent hover:bg-white/5 text-white/70 hover:text-white px-4 py-2 rounded-lg transition-all',
+    glow: 'bg-accent text-white font-semibold hover:bg-accent-dark transition-colors',
+    secondary: 'border-2 border-ink bg-white text-ink font-medium hover:bg-ink hover:text-paper transition-colors',
+    ghost: 'bg-transparent border border-rule hover:border-ink hover:bg-paper text-ink font-medium transition-colors',
   };
 
   return (
-    <motion.button
+    <button
       type={type}
-      whileHover={{ scale: disabled ? 1 : 1.02 }}
-      whileTap={{ scale: disabled ? 1 : 0.98 }}
       onClick={onClick}
       disabled={disabled}
       className={`
         ${variantClasses[variant]}
         ${sizeClasses[size]}
-        font-medium cursor-pointer
+        cursor-pointer
         flex items-center justify-center
         disabled:opacity-50 disabled:cursor-not-allowed
         ${className}
       `}
     >
       {children}
-    </motion.button>
+    </button>
   );
 }

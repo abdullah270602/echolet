@@ -84,7 +84,9 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection, target_metadata=target_metadata, include_object=include_object
+    )
 
     with context.begin_transaction():
         context.run_migrations()
@@ -107,6 +109,15 @@ async def run_async_migrations() -> None:
         await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
+
+
+# Tables owned outside the ORM (written by the landing page's Vercel function).
+# Without this, `alembic revision --autogenerate` would propose dropping them.
+UNMANAGED_TABLES = {"waitlist"}
+
+
+def include_object(obj, name, type_, reflected, compare_to):
+    return not (type_ == "table" and name in UNMANAGED_TABLES)
 
 
 def run_migrations_online() -> None:

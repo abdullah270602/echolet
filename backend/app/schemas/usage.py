@@ -6,6 +6,3 @@ class UsageStatus(BaseModel):
     used_seconds: int
     limit_seconds: int
 
-
-class UsageRecordRequest(BaseModel):
-    talk_seconds: int

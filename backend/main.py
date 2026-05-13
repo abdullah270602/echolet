@@ -3,11 +3,16 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
 from app.routes.livekit import router as livekit_router
 from app.routes.agents import router as agents_router
 from app.routes.session import router as session_router
-from app.db.database import init_db, close_db
+from app.routes.clerk import router as clerk_router
+from app.routes.demo import router as demo_router
+from app.config import ALLOWED_ORIGINS
+from app.db.database import engine, init_db, close_db
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,18 +43,26 @@ app = FastAPI(title="Echolet", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 
-app.include_router(livekit_router, prefix="/livekit", tags=["livekit"])
+app.include_router(livekit_router, prefix="/api/livekit", tags=["livekit"])
 app.include_router(agents_router, prefix="/api", tags=["agents"])
 app.include_router(session_router, prefix="/api/session", tags=["session"])
+app.include_router(clerk_router, prefix="/api/clerk", tags=["clerk"])
+app.include_router(demo_router, prefix="/api/demo", tags=["demo"])
 
 
-@app.get("/")
-async def read_root():
-    return {"Echolet": "Online"}
+@app.get("/health")
+async def health():
+    """Liveness + database reachability, for Docker/Caddy health checks."""
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+    except Exception:
+        logger.exception("Health check: database unreachable")
+        return JSONResponse(status_code=503, content={"status": "degraded", "database": "unreachable"})
+    return {"status": "ok", "database": "ok"}

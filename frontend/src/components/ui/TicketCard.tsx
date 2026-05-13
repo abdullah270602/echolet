@@ -68,7 +68,7 @@ export function TicketCard({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`glass p-4 sm:p-6 rounded-2xl border-teal-500/30 ${className}`}
+      className={`glass p-6 rounded-2xl border-teal-500/30 max-w-sm ${className}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">

@@ -10,10 +10,25 @@ LIVEKIT_URL = os.getenv("LIVEKIT_URL")
 # Clerk Authentication
 # Format: https://<your-clerk-frontend-api>.clerk.accounts.dev/.well-known/jwks.json
 CLERK_JWKS_URL = os.getenv("CLERK_JWKS_URL")
+# Clerk Webhook signing secret (from Clerk Dashboard -> Webhooks)
+CLERK_WEBHOOK_SIGNING_SECRET = os.getenv("CLERK_WEBHOOK_SIGNING_SECRET")
 
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Usage Limits
-# Default: 3 minutes (180 seconds) per day
-DAILY_TALK_LIMIT_SECONDS = int(os.getenv("DAILY_TALK_LIMIT_SECONDS", 600))
+# Default: 1 hour (3600 seconds) per day
+DAILY_TALK_LIMIT_SECONDS = int(os.getenv("DAILY_TALK_LIMIT_SECONDS", "3600"))
+
+# CORS: comma-separated list of browser origins allowed to call the API
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+    if o.strip()
+]
+
+# Public landing-page demo (no sign-in). Set DEMO_ENABLED=false to turn it off.
+DEMO_ENABLED = os.getenv("DEMO_ENABLED", "true").lower() == "true"
+DEMO_MAX_SECONDS = int(os.getenv("DEMO_MAX_SECONDS", "120"))
+DEMO_SESSIONS_PER_IP_PER_HOUR = int(os.getenv("DEMO_SESSIONS_PER_IP_PER_HOUR", "3"))
+DEMO_SESSIONS_PER_DAY = int(os.getenv("DEMO_SESSIONS_PER_DAY", "200"))

@@ -1,34 +1,41 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { Toaster } from 'react-hot-toast';
-import './index.css';
-import App from './App';
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import "./index.css";
+import App from "./App.tsx";
+import { LandingPage } from "./pages";
+import { ClerkProvider } from "@clerk/clerk-react";
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+// Without a Clerk key (e.g. the landing-only Vercel deploy) there is no sign-in or
+// dashboard, so serve just the landing page instead of failing to boot.
+const app = PUBLISHABLE_KEY ? (
+  <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
     <App />
-    <Toaster
-      position="bottom-right"
-      toastOptions={{
-        style: {
-          background: 'rgba(22, 22, 31, 0.95)',
-          color: '#fff',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(16px)',
-        },
-        success: {
-          iconTheme: {
-            primary: '#14b8a6',
-            secondary: '#fff',
+  </ClerkProvider>
+) : (
+  <LandingPage />
+);
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <BrowserRouter>
+      {app}
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          style: {
+            background: "#ffffff",
+            color: "var(--color-ink)",
+            border: "2px solid var(--color-ink)",
+            borderRadius: 0,
           },
-        },
-        error: {
-          iconTheme: {
-            primary: '#ef4444',
-            secondary: '#fff',
-          },
-        },
-      }}
-    />
+          success: { iconTheme: { primary: "var(--color-accent)", secondary: "#ffffff" } },
+          error: { iconTheme: { primary: "#b91c1c", secondary: "#ffffff" } },
+        }}
+      />
+    </BrowserRouter>
   </StrictMode>
 );

@@ -1,0 +1,140 @@
+# ================================
+# Echolet Docker Compose
+# Production-ready orchestration
+# ================================
+
+services:
+  # --------------------------------
+  # Caddy - Gateway / Reverse Proxy
+  # --------------------------------
+  caddy:
+    image: caddy:alpine
+    container_name: echolet_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - BASIC_AUTH_USER=${BASIC_AUTH_USER:-admin}
+      - BASIC_AUTH_HASH=${BASIC_AUTH_HASH}
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_healthy
+    networks:
+      - echolet_internal
+
+  # --------------------------------
+  # Frontend - React/Vite (Nginx)
+  # --------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+        - VITE_LIVE_DEMO=${VITE_LIVE_DEMO:-true}
+    container_name: echolet_frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - echolet_internal
+
+  # --------------------------------
+  # Backend - FastAPI
+  # --------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: echolet_backend
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - LIVEKIT_URL=${LIVEKIT_URL}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - CLERK_JWKS_URL=${CLERK_JWKS_URL}
+      - CLERK_WEBHOOK_SIGNING_SECRET=${CLERK_WEBHOOK_SIGNING_SECRET}
+      - DAILY_TALK_LIMIT_SECONDS=${DAILY_TALK_LIMIT_SECONDS:-3600}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - DEMO_ENABLED=${DEMO_ENABLED:-true}
+      - DEMO_MAX_SECONDS=${DEMO_MAX_SECONDS:-120}
+      - DEMO_SESSIONS_PER_IP_PER_HOUR=${DEMO_SESSIONS_PER_IP_PER_HOUR:-3}
+      - DEMO_SESSIONS_PER_DAY=${DEMO_SESSIONS_PER_DAY:-200}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - echolet_internal
+
+  # --------------------------------
+  # Worker - SQS Consumer / Analysis
+  # --------------------------------
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: echolet_worker
+    restart: unless-stopped
+    environment:
+      - SQS_QUEUE_URL=${SQS_QUEUE_URL}
+      - DATABASE_URL=${DATABASE_URL}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-eu-north-1}
+    networks:
+      - echolet_internal
+
+  # --------------------------------
+  # Agent - LiveKit Voice Agent
+  # Uses host network for WebRTC
+  # --------------------------------
+  agent:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    container_name: echolet_agent
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - LIVEKIT_URL=${LIVEKIT_URL}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - INWORLD_API_KEY=${INWORLD_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - SQS_QUEUE_URL=${SQS_QUEUE_URL}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-eu-north-1}
+      - DAILY_TALK_LIMIT_SECONDS=${DAILY_TALK_LIMIT_SECONDS:-3600}
+
+# --------------------------------
+# Networks
+# --------------------------------
+networks:
+  echolet_internal:
+    driver: bridge
+
+# --------------------------------
+# Volumes
+# --------------------------------
+volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local

@@ -20,3 +20,14 @@ wheels/
 frontend/node_modules/
 frontend/dist/
 frontend/.next/
+
+
+.dev/
+# Test / build artefacts
+.coverage
+coverage.xml
+.pytest_cache/
+*.tsbuildinfo
+
+# LiveKit Cloud agent secrets
+*.secrets

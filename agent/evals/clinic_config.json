@@ -1,0 +1,216 @@
+{
+  "agent": {
+    "name": "Emma",
+    "business_name": "Brightside Dental",
+    "greeting_message": "Hi, thanks for calling Brightside Dental, this is Emma. How can I help?"
+  },
+  "voice": {
+    "provider": "inworld",
+    "voice_id": "Ashley",
+    "language": "en-US",
+    "speaking_style": "friendly_casual"
+  },
+  "services": [
+    {
+      "name": "Check-up and cleaning",
+      "price": "$120",
+      "duration_minutes": 45
+    },
+    {
+      "name": "Teeth whitening",
+      "price": "$300",
+      "duration_minutes": 60
+    },
+    {
+      "name": "Emergency visit",
+      "price": "$90 exam fee",
+      "duration_minutes": 30
+    },
+    {
+      "name": "New patient consultation",
+      "price": "Free",
+      "duration_minutes": 20
+    }
+  ],
+  "knowledge_base": {
+    "sources": [
+      {
+        "type": "text",
+        "name": "Clinic facts",
+        "content": "Brightside Dental is a fictional family dental clinic used for demos.\nAddress: 214 Harbor Street, Suite 3.\nHours: Monday to Friday 8am to 6pm, Saturday 9am to 1pm, closed Sunday.\nNew patients are welcome. Bring photo ID and insurance card to the first visit.\nInsurance: most major PPO plans are accepted; the front desk confirms coverage before the visit.\nCancellations need 24 hours notice.\nDental emergencies (severe pain, swelling, a knocked-out tooth) are seen the same day when possible.\nParking is free behind the building.",
+        "url": null
+      }
+    ]
+  },
+  "guardrails": {
+    "allowed_topics": [
+      "appointments",
+      "services and prices",
+      "hours and location",
+      "insurance"
+    ],
+    "disallowed_topics": [
+      "medical diagnosis",
+      "medication advice"
+    ],
+    "compliance": {
+      "hipaa_mode": false,
+      "gdpr_mode": false,
+      "call_recording_disclaimer": true
+    }
+  },
+  "conversation": {
+    "end_call_threshold": {
+      "silence_seconds": 20,
+      "max_retries": 2
+    },
+    "business_hours": {
+      "enabled": true,
+      "timezone": "America/New_York",
+      "schedule": [
+        {
+          "day": "monday",
+          "open": "08:00",
+          "close": "18:00"
+        },
+        {
+          "day": "tuesday",
+          "open": "08:00",
+          "close": "18:00"
+        },
+        {
+          "day": "wednesday",
+          "open": "08:00",
+          "close": "18:00"
+        },
+        {
+          "day": "thursday",
+          "open": "08:00",
+          "close": "18:00"
+        },
+        {
+          "day": "friday",
+          "open": "08:00",
+          "close": "18:00"
+        },
+        {
+          "day": "saturday",
+          "open": "09:00",
+          "close": "13:00"
+        },
+        {
+          "day": "sunday",
+          "open": null,
+          "close": null
+        }
+      ],
+      "after_hours_behavior": "offer_callback"
+    }
+  },
+  "output": {
+    "ticket_fields": [
+      {
+        "id": "customer_name",
+        "label": "Customer Name",
+        "type": "string",
+        "options": null,
+        "enabled": true,
+        "required": true
+      },
+      {
+        "id": "phone_number",
+        "label": "Phone Number",
+        "type": "string",
+        "options": null,
+        "enabled": true,
+        "required": true
+      },
+      {
+        "id": "call_summary",
+        "label": "Call Summary",
+        "type": "text",
+        "options": null,
+        "enabled": true,
+        "required": true
+      },
+      {
+        "id": "timestamp",
+        "label": "Timestamp",
+        "type": "datetime",
+        "options": null,
+        "enabled": true,
+        "required": true
+      },
+      {
+        "id": "priority",
+        "label": "Priority",
+        "type": "select",
+        "options": [
+          "low",
+          "medium",
+          "high",
+          "urgent"
+        ],
+        "enabled": true,
+        "required": false
+      },
+      {
+        "id": "sentiment",
+        "label": "Sentiment",
+        "type": "select",
+        "options": [
+          "positive",
+          "neutral",
+          "negative"
+        ],
+        "enabled": true,
+        "required": false
+      },
+      {
+        "id": "intent",
+        "label": "Intent",
+        "type": "select",
+        "options": [
+          "appointment",
+          "inquiry",
+          "complaint",
+          "support",
+          "other"
+        ],
+        "enabled": true,
+        "required": false
+      },
+      {
+        "id": "action_items",
+        "label": "Action Items",
+        "type": "array",
+        "options": null,
+        "enabled": true,
+        "required": false
+      },
+      {
+        "id": "follow_up_required",
+        "label": "Follow-up Required",
+        "type": "boolean",
+        "options": null,
+        "enabled": true,
+        "required": false
+      },
+      {
+        "id": "call_duration",
+        "label": "Call Duration",
+        "type": "number",
+        "options": null,
+        "enabled": true,
+        "required": false
+      }
+    ],
+    "custom_tags": [
+      "new_patient",
+      "emergency"
+    ]
+  },
+  "integrations": {},
+  "actions": [],
+  "custom_instructions": "To book, collect the caller's name, the service, and a preferred day and time, then read the details back once. You cannot see the real calendar: say the front desk will confirm the slot by text. A knocked-out or broken tooth, severe tooth pain or facial swelling is a dental emergency: offer a same-day emergency visit and ask them to come in. Only if there are signs of a serious injury beyond the teeth (trouble breathing, heavy bleeding that won't stop, head injury) also tell them to call emergency services."
+}

@@ -1,0 +1,23 @@
+name: Agent evals
+
+# Behavioural evals call a real LLM (a few cents per run), so they run nightly and
+# on demand rather than on every push. Needs the OPENROUTER_API_KEY repo secret.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Run evals
+        working-directory: agent
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: uv sync && uv run pytest -v

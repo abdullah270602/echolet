@@ -1,8 +1,9 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 import uuid
 
-from sqlalchemy import String, Integer, DateTime, ForeignKey, Index, func
+from sqlalchemy import String, Integer, DateTime, ForeignKey, Index, Boolean, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -24,7 +25,12 @@ class CallSession(Base):
     )
 
     # Foreign keys
-    user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     agent_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("agent_configs.id", ondelete="CASCADE"),
@@ -48,6 +54,63 @@ class CallSession(Base):
 
     # Duration tracking
     duration_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    # Transcript - JSON array of messages
+    # Format: [{"role": "user"|"agent", "content": "...", "timestamp": 1234567890}]
+    transcript: Mapped[Optional[list[dict[str, Any]]]] = mapped_column(
+        JSONB,
+        nullable=True,
+        default=None,
+    )
+
+    # AI-generated summary (set to "Pending" initially, populated later)
+    summary: Mapped[Optional[str]] = mapped_column(
+        String(1000),
+        nullable=True,
+        default=None,
+    )
+
+    # Priority classification: "urgent", "normal", "low"
+    priority: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="normal",
+    )
+
+    # Sentiment analysis: "positive", "neutral", "negative"
+    sentiment: Mapped[Optional[str]] = mapped_column(
+        String(20),
+        nullable=True,
+        default=None,
+    )
+
+    # Action items extracted from call (JSON array of strings)
+    action_items: Mapped[Optional[list[str]]] = mapped_column(
+        JSONB,
+        nullable=True,
+        default=None,
+    )
+
+    # Call category: Appointment, Inquiry, Complaint, Spam, Urgent Service, Other
+    category: Mapped[Optional[str]] = mapped_column(
+        String(30),
+        nullable=True,
+        default=None,
+    )
+
+    # Urgency level: High, Medium, Low
+    urgency: Mapped[Optional[str]] = mapped_column(
+        String(10),
+        nullable=True,
+        default=None,
+    )
+
+    # Whether human follow-up is required
+    action_required: Mapped[Optional[bool]] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=None,
+    )
 
     __table_args__ = (
         Index("ix_call_sessions_room_name", "room_name"),

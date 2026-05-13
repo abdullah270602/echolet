@@ -1,6 +1,5 @@
 """
-LiveKit Voice Agent using the modern AgentServer pattern.
-This is the recommended approach for LiveKit Agents SDK v1.0+.
+LiveKit Voice Agent - Main Entry Point
 
 Run with:
     uv run agent.py dev      # Development mode
@@ -9,13 +8,12 @@ Run with:
 """
 
 import asyncio
-import json
 import logging
 import time
 from dotenv import load_dotenv
 
 from livekit import agents, rtc
-from livekit.agents import AgentServer, AgentSession, Agent, room_io, inference
+from livekit.agents import AgentServer, AgentSession, room_io
 from livekit.plugins import noise_cancellation, silero, openai, deepgram, inworld
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
@@ -27,14 +25,18 @@ from config import (
     TTS_MODEL,
     TTS_VOICE,
 )
-from prompts import (
-    FAREWELL_MESSAGE,
-    FALLBACK_INSTRUCTIONS,
-    FALLBACK_GREETING,
-    DynamicPrompts,
-    build_prompts,
+from prompts import FAREWELL_MESSAGE, build_prompts_from_config
+from database import SessionConfig, get_session_config, get_user_remaining_seconds, save_call_log
+from usage import monitor_usage
+from transcript import create_dynamic_assistant, create_user_transcript_handler
+from sqs import send_to_analysis_queue
+from demo import (
+    DEMO_FAREWELL,
+    is_demo_room,
+    parse_demo_metadata,
+    skip_analysis_queue,
+    skip_save_call_log,
 )
-from database import get_session_config
 
 # Load environment variables
 load_dotenv(override=True)
@@ -47,72 +49,28 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def get_remaining_seconds_from_metadata(
-    participant: rtc.RemoteParticipant,
-) -> int | None:
-    """Extract remaining_seconds from participant metadata."""
-    if not participant.metadata:
-        return None
+def create_tts(voice_config: dict):
+    """
+    Create TTS instance based on provider selection from config.
 
-    try:
-        metadata = json.loads(participant.metadata)
-        return metadata.get("remaining_seconds")
-    except (json.JSONDecodeError, TypeError):
-        return None
+    Args:
+        voice_config: Voice configuration dict with provider, voice_id, etc.
 
+    Returns:
+        TTS instance for the selected provider
+    """
+    provider = voice_config.get("provider", "inworld")
+    voice_id = voice_config.get("voice_id", TTS_VOICE)
 
-async def handle_limit_reached(session: AgentSession, ctx: agents.JobContext) -> None:
-    """Handle graceful disconnection when usage limit is reached."""
-    logger.info("Usage limit reached, saying farewell...")
-    try:
-        # Interrupt any ongoing speech/processing
-        session.interrupt()
-        await asyncio.sleep(0.3)
+    logger.info(f"Creating TTS: provider={provider}, voice={voice_id}")
 
-        # Say farewell - don't wait for full playout, just wait for TTS to start
-        session.say(FAREWELL_MESSAGE, allow_interruptions=False)
-
-        # Wait briefly for audio to start playing (not full playout)
-        # This gives ~5s for the short farewell message
-        await asyncio.sleep(5.0)
-        logger.info("Farewell audio sent")
-    except Exception as e:
-        logger.error(f"Error during farewell: {e}")
-
-    # Disconnect - this will end the session
-    logger.info("Disconnecting from room...")
-    try:
-        await asyncio.wait_for(ctx.room.disconnect(), timeout=3.0)
-    except asyncio.TimeoutError:
-        logger.warning("Room disconnect timed out, forcing exit")
-    except Exception as e:
-        logger.error(f"Error disconnecting: {e}")
-
-
-async def monitor_usage(
-    session: AgentSession,
-    ctx: agents.JobContext,
-    max_seconds: int,
-    start_time: float,
-) -> None:
-    """Background task to monitor session duration and enforce limits."""
-    logger.info(f"Starting usage monitor with {max_seconds}s limit")
-
-    while True:
-        await asyncio.sleep(5)
-
-        elapsed = time.time() - start_time
-        remaining = max_seconds - elapsed
-
-        logger.info(f"Usage check: elapsed={elapsed:.0f}s, remaining={remaining:.0f}s")
-
-        if remaining <= 0:
-            logger.info(f"Time limit reached after {elapsed:.0f}s")
-            await handle_limit_reached(session, ctx)
-            break
-
-        if remaining <= 30:
-            logger.info(f"Warning: Only {remaining:.0f}s remaining")
+    if provider == "inworld":
+        return inworld.TTS(model=TTS_MODEL, voice=voice_id)
+    elif provider == "deepgram":
+        return deepgram.TTS(model=voice_id)
+    else:
+        logger.warning(f"Unknown TTS provider '{provider}', falling back to inworld")
+        return inworld.TTS(model=TTS_MODEL, voice=TTS_VOICE)
 
 
 # Initialize the AgentServer
@@ -123,118 +81,156 @@ server = AgentServer()
 async def agent_session(ctx: agents.JobContext) -> None:
     """
     Handle an RTC session with a participant.
-
-    This function is called when a new participant joins and the agent
-    is dispatched to the room. It sets up the voice pipeline with dynamic
-    configuration loaded from the database.
-
-    Args:
-        ctx: The job context containing room and participant info.
+    Sets up the voice pipeline with dynamic configuration from the database.
     """
     room_name = ctx.room.name
-    logger.info(f"Starting agent session in room: {room_name}")
-
-    # Connect to the room first
-    await ctx.connect()
-    logger.info("Connected to room")
-
-    # Query session configuration from database
-    session_config = await get_session_config(room_name)
-
-    # Build prompts and determine voice based on session config
-    if session_config:
-        logger.info(f"Loaded session config for agent: {session_config.name}")
-        prompts = build_prompts(
-            name=session_config.name,
-            business_name=session_config.business_name,
-            tone=session_config.tone,
-            custom_instructions=session_config.custom_instructions,
-            knowledge_base_text=session_config.knowledge_base_text,
-            greeting_message=session_config.greeting_message,
-        )
-        voice_id = session_config.voice_id
-        max_duration = session_config.max_duration_seconds
-    else:
-        logger.error(f"No session config found for room: {room_name}, using fallback")
-        prompts = DynamicPrompts(
-            system_instructions=FALLBACK_INSTRUCTIONS,
-            greeting_instructions=FALLBACK_GREETING,
-        )
-        voice_id = TTS_VOICE  # Default voice from config
-        max_duration = 600  # Default 10 minutes
-
-    # Create dynamic agent class with loaded instructions
-    class DynamicAssistant(Agent):
-        def __init__(self) -> None:
-            super().__init__(instructions=prompts.system_instructions)
-
-    # Wait for the participant to join and get their metadata
-    logger.info("Waiting for participant...")
-    participant = await ctx.wait_for_participant()
-    logger.info(
-        f"Participant joined: {participant.identity}, metadata = {participant.metadata}"
-    )
-
-    # Track session start time
     session_start_time = time.time()
+    transcript_messages: list[dict] = []
+    call_status = "completed"
+    cleanup_done = {"value": False}  # Set by the end_call tool once it has saved the log
+    demo = is_demo_room(room_name)
+    save_fn = skip_save_call_log if demo else save_call_log
+    queue_fn = skip_analysis_queue if demo else send_to_analysis_queue
 
-    # Get remaining_seconds from participant metadata (for usage limits)
-    remaining_seconds = get_remaining_seconds_from_metadata(participant)
-    if remaining_seconds is not None:
-        logger.info(f"Got remaining_seconds from participant: {remaining_seconds}s")
-    else:
-        logger.warning("No remaining_seconds found in participant metadata")
+    logger.info(f"Session started: {room_name} (demo={demo})")
 
-    # Use the smaller of remaining_seconds and max_duration
-    effective_limit = remaining_seconds
-    if effective_limit is None:
-        effective_limit = max_duration
-    elif max_duration:
-        effective_limit = min(effective_limit, max_duration)
+    try:
+        await ctx.connect()
+        participant = await ctx.wait_for_participant()
 
-    # Create the agent session with dynamic TTS voice
-    session = AgentSession(
-        stt=deepgram.STT(model=STT_MODEL),
-        llm=openai.LLM(
-            api_key=OPENROUTER_API_KEY,
-            base_url=LLM_BASE_URL,
-            model=LLM_MODEL,
-        ),
-        tts=inworld.TTS(model=TTS_MODEL, voice=voice_id),
-        vad=silero.VAD.load(),
-        turn_detection=MultilingualModel(),
-    )
+        # Resolve config and the hard time cap for this call.
+        if demo:
+            parsed = parse_demo_metadata(participant.metadata)
+            session_config, time_cap = None, None
+            if parsed:
+                demo_config, time_cap = parsed
+                session_config = SessionConfig(session_id=0, agent_id=0, user_id="", config=demo_config)
+            farewell = DEMO_FAREWELL
+        else:
+            session_config = await get_session_config(room_name)
+            time_cap = None
+            if session_config and session_config.user_id:
+                time_cap = await get_user_remaining_seconds(session_config.user_id)
+                logger.info(f"User {session_config.user_id} has {time_cap}s remaining today")
+            farewell = FAREWELL_MESSAGE
 
-    # Start the session with room configuration
-    await session.start(
-        room=ctx.room,
-        agent=DynamicAssistant(),
-        room_options=room_io.RoomOptions(
-            audio_input=room_io.AudioInputOptions(
-                noise_cancellation=lambda params: (
-                    noise_cancellation.BVCTelephony()
-                    if params.participant.kind
-                    == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
-                    else noise_cancellation.BVC()
+        # Every legitimate room is created by the backend with a session row (or a
+        # signed demo token). Anything else gets no agent, so there is never an
+        # unmetered conversation.
+        if session_config is None:
+            logger.error(f"No config for room {room_name}; leaving without answering")
+            cleanup_done["value"] = True  # nothing to persist
+            ctx.shutdown(reason="unknown room")
+            return
+        if time_cap is not None and time_cap <= 0:
+            logger.info(f"No talk time left for room {room_name}; leaving")
+            cleanup_done["value"] = True
+            ctx.shutdown(reason="usage limit reached")
+            return
+
+        prompts = build_prompts_from_config(session_config)
+
+        DynamicAssistant = create_dynamic_assistant(
+            instructions=prompts.system_instructions,
+            transcript_log=transcript_messages,
+            room_name=room_name,
+            session_start_time=session_start_time,
+            save_call_log_fn=save_fn,
+            send_to_queue_fn=queue_fn,
+            cleanup_done=cleanup_done,
+        )
+
+        # Create the agent session
+        session = AgentSession(
+            stt=deepgram.STT(model=STT_MODEL),
+            llm=openai.LLM(
+                api_key=OPENROUTER_API_KEY,
+                base_url=LLM_BASE_URL,
+                model=LLM_MODEL,
+            ),
+            tts=create_tts(session_config.voice),
+            vad=silero.VAD.load(),
+            turn_detection=MultilingualModel(),
+        )
+
+        # Register transcript handlers
+        session.on("user_input_transcribed")(
+            create_user_transcript_handler(transcript_messages)
+        )
+
+        # Start the session
+        await session.start(
+            room=ctx.room,
+            agent=DynamicAssistant(),
+            room_options=room_io.RoomOptions(
+                audio_input=room_io.AudioInputOptions(
+                    noise_cancellation=lambda params: (
+                        noise_cancellation.BVCTelephony()
+                        if params.participant.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
+                        else noise_cancellation.BVC()
+                    ),
                 ),
             ),
-        ),
-    )
-
-    logger.info("Session started, sending greeting...")
-
-    # Start usage monitoring if we have an effective limit
-    usage_monitor_task: asyncio.Task | None = None
-    if effective_limit is not None:
-        logger.info(f"Starting usage monitor task with {effective_limit}s limit")
-        usage_monitor_task = asyncio.create_task(
-            monitor_usage(session, ctx, effective_limit, session_start_time)
         )
-    else:
-        logger.warning("Usage monitor NOT started - no limit available")
 
-    # Generate the dynamic greeting
-    await session.generate_reply(instructions=prompts.greeting_instructions)
+        # Enforce the time cap (daily allowance, or the demo call length)
+        usage_task: asyncio.Task | None = None
+        if time_cap is not None:
+            usage_task = asyncio.create_task(
+                monitor_usage(session, ctx, time_cap, session_start_time, farewell)
+            )
+
+        # Send greeting
+        await session.generate_reply(instructions=prompts.greeting_instructions)
+
+        # Wait for session close
+        session_closed = asyncio.Event()
+
+        @session.on("close")
+        def on_close():
+            session_closed.set()
+
+        await session_closed.wait()
+
+        # Cleanup usage monitor
+        if usage_task and not usage_task.done():
+            usage_task.cancel()
+            try:
+                await usage_task
+            except asyncio.CancelledError:
+                pass
+
+        # Note: Cleanup (save logs, SQS, room deletion) is handled by end_call tool
+        # This on_close just cleans up the usage monitor
+
+    except Exception as e:
+        logger.exception(f"Session error: {e}")
+        call_status = "failed"
+        raise
+
+    finally:
+        # Always save call log if end_call tool didn't handle it
+        if not cleanup_done["value"]:
+            logger.info("Cleanup: saving call log")
+            duration = int(time.time() - session_start_time)
+            try:
+                await save_fn(
+                    room_name=room_name,
+                    transcript=transcript_messages,
+                    duration_seconds=duration,
+                    status=call_status,
+                )
+                logger.info(f"Call log saved: {duration}s, {len(transcript_messages)} messages")
+
+                # Send to analysis queue
+                try:
+                    await queue_fn(room_name)
+                    logger.debug(f"Sent to analysis queue: {room_name}")
+                except Exception as sqs_error:
+                    logger.error(f"SQS send error: {sqs_error}")
+
+            except Exception as save_error:
+                logger.error(f"Cleanup save failed: {save_error}")
 
 
 if __name__ == "__main__":
