@@ -49,7 +49,7 @@ function Room({ maxSeconds, onEnd }: { maxSeconds: number; onEnd: () => void }) 
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-4 border-b border-rule pb-4">
+      <div className="flex items-center justify-between gap-4">
         <p className="font-medium text-ink" role="status">
           {STATE_LABEL[state] ?? state}
         </p>
@@ -66,14 +66,14 @@ function Room({ maxSeconds, onEnd }: { maxSeconds: number; onEnd: () => void }) 
         aria-live="polite"
         aria-label="Live captions"
         tabIndex={0}
-        className="h-44 space-y-3 overflow-y-auto border-t border-rule pt-4 text-[15px] leading-relaxed"
+        className="thin-scroll transcript-fade h-48 space-y-3 overflow-y-auto pt-6 text-[15px] leading-relaxed"
       >
         {lines.length === 0 && <p className="text-muted">Say hello. Captions appear here as you talk.</p>}
         {lines.map((t, i) => {
           const you = t.participantInfo.identity === localParticipant.identity;
           return (
             <p key={t.streamInfo.id ?? i}>
-              <span className="font-semibold text-ink">{you ? 'You' : 'Receptionist'}: </span>
+              <span className={you ? 'font-semibold text-ink' : 'font-semibold text-slip'}>{you ? 'You' : 'Receptionist'}: </span>
               <span className="text-ink/80">{t.text}</span>
             </p>
           );
@@ -82,7 +82,7 @@ function Room({ maxSeconds, onEnd }: { maxSeconds: number; onEnd: () => void }) 
 
       <button
         onClick={onEnd}
-        className="mt-6 min-h-11 border-2 border-ink px-5 font-medium text-ink hover:bg-ink hover:text-paper"
+        className="mt-6 inline-flex min-h-11 items-center rounded-full border-2 border-[#f4a3b3] px-5 font-semibold text-[#f4a3b3] transition-colors hover:bg-[#f4a3b3] hover:text-[#1b2559]"
       >
         End call
       </button>

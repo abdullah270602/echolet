@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { Typing } from './Typing';
+import { showTicket } from './ticketEvents';
 
 // A scripted call with the demo clinic (see backend/app/agent_templates/default.py),
 // shown when the live demo is off or can't connect. It is labelled as scripted in the UI;
@@ -6,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 const SCRIPT: { who: 'caller' | 'agent'; text: string }[] = [
   { who: 'agent', text: 'Hi, thanks for calling Brightside Dental, this is Emma. How can I help?' },
   { who: 'caller', text: "Hi, how much is a cleaning? I haven't been in a while." },
-  { who: 'agent', text: "A check-up and cleaning is $120 and takes about 45 minutes. Want me to set one up?" },
+  { who: 'agent', text: 'A check-up and cleaning is $120 and takes about 45 minutes. Want me to set one up?' },
   { who: 'caller', text: 'Yeah, do you have anything Thursday afternoon?' },
   { who: 'agent', text: "I can't see the live calendar, but I'll note Thursday afternoon and the front desk will text you to confirm a time. Can I get your name and number?" },
   { who: 'caller', text: "It's Dana Reyes, 555 0142." },
@@ -15,15 +18,18 @@ const SCRIPT: { who: 'caller' | 'agent'; text: string }[] = [
   { who: 'agent', text: 'Great, talk soon. Bye!' },
 ];
 
-const reducedMotion = () =>
-  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
 // Rough speaking pace so lines arrive roughly when they'd finish being said.
 const delayFor = (text: string) => Math.min(4200, 700 + text.length * 38);
 
+const pill =
+  'inline-flex min-h-11 items-center rounded-full border-2 px-5 font-semibold transition-colors';
+const link =
+  'min-h-11 font-medium text-ink underline decoration-ink/40 underline-offset-4 transition-colors hover:decoration-ink';
+
 export function CallReplay({ onClose }: { onClose?: () => void }) {
-  const [shown, setShown] = useState(() => (reducedMotion() ? SCRIPT.length : 1));
-  const logRef = useRef<HTMLOListElement>(null);
+  const reduce = useReducedMotion();
+  const [shown, setShown] = useState(() => (reduce ? SCRIPT.length : 1));
+  const [expanded, setExpanded] = useState(false);
   const done = shown >= SCRIPT.length;
 
   useEffect(() => {
@@ -32,66 +38,79 @@ export function CallReplay({ onClose }: { onClose?: () => void }) {
     return () => clearTimeout(id);
   }, [shown, done]);
 
-  useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [shown]);
-
   const next = SCRIPT[shown]?.who;
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-4 border-b border-rule pb-4">
-        <p className="font-medium text-ink" role="status">
+      <div className="flex items-center justify-between gap-4">
+        <p className="font-semibold text-ink" role="status">
           {done ? 'Call ended' : next === 'agent' ? 'Receptionist is speaking' : 'Caller is speaking'}
         </p>
-        <p className="text-sm text-muted">Scripted example, not a recording</p>
+        <p className="text-sm text-muted">Scripted example</p>
       </div>
 
+      {/* Newest line sits at the bottom; older lines fade out at the top. No scrollbar. */}
       <ol
-        ref={logRef}
         aria-label="Example call transcript"
         aria-live="polite"
-        tabIndex={0}
-        className="mt-4 h-64 space-y-3 overflow-y-auto text-[15px] leading-relaxed"
+        className={
+          expanded
+            ? 'mt-4 space-y-3 text-[15px] leading-relaxed'
+            : 'transcript-fade mt-4 flex h-64 flex-col justify-end gap-3 overflow-hidden text-[15px] leading-relaxed'
+        }
       >
-        {SCRIPT.slice(0, shown).map((line, i) => (
-          <li key={i}>
-            <span className="font-semibold text-ink">
-              {line.who === 'agent' ? 'Receptionist' : 'Caller'}:{' '}
-            </span>
-            <span className="text-ink/80">{line.text}</span>
+        <AnimatePresence initial={false}>
+          {SCRIPT.slice(0, shown).map((line, i) => (
+            <motion.li
+              key={i}
+              className="shrink-0"
+              initial={reduce ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <span className={line.who === 'agent' ? 'font-semibold text-slip' : 'font-semibold text-ink'}>
+                {line.who === 'agent' ? 'Receptionist' : 'Caller'}:{' '}
+              </span>
+              <span className="text-ink/85">{line.text}</span>
+            </motion.li>
+          ))}
+        </AnimatePresence>
+        {!done && (
+          <li className="shrink-0 py-1">
+            <Typing />
           </li>
-        ))}
+        )}
       </ol>
 
-      {done && (
-        <p className="mt-4 border-t border-rule pt-4 text-muted">
-          After a real call, the transcript is saved and a ticket like the{' '}
-          <a href="#message" className="text-ink underline underline-offset-4 hover:text-accent">
-            example below
-          </a>{' '}
-          appears in the call history.
-        </p>
-      )}
-
-      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
+      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
         {done ? (
-          <button
-            onClick={() => setShown(1)}
-            className="min-h-11 border-2 border-ink px-5 font-medium text-ink hover:bg-ink hover:text-paper"
-          >
-            Play again
-          </button>
+          <>
+            <button onClick={showTicket} className={pill + ' border-slip text-slip hover:bg-slip hover:text-[#1b2559]'}>
+              See the ticket it wrote
+            </button>
+            <button
+              onClick={() => {
+                setExpanded(false);
+                setShown(1);
+              }}
+              className={link}
+            >
+              Play again
+            </button>
+          </>
         ) : (
           <button
-            onClick={() => setShown(SCRIPT.length)}
-            className="min-h-11 border-2 border-ink px-5 font-medium text-ink hover:bg-ink hover:text-paper"
+            onClick={() => {
+              setShown(SCRIPT.length);
+              setExpanded(true);
+            }}
+            className={pill + ' border-ink/70 text-ink hover:border-ink hover:bg-ink hover:text-paper'}
           >
             Show the whole call
           </button>
         )}
         {onClose && (
-          <button onClick={onClose} className="min-h-11 font-medium text-ink underline underline-offset-4 hover:text-accent">
+          <button onClick={onClose} className={link}>
             Back
           </button>
         )}
