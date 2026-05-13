@@ -17,7 +17,7 @@ export function LogoMark({ className = 'h-7 w-auto' }: { className?: string }) {
 export function Logo() {
   return (
     <span className="inline-flex items-center gap-2.5 text-ink">
-      <LogoMark />
+      <LogoMark className="h-7 w-auto text-accent" />
       <span className="font-display font-wide text-2xl font-extrabold tracking-[-0.03em]">echolet</span>
     </span>
   );

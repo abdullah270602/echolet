@@ -15,7 +15,7 @@ export function Navbar() {
           <a href="#how-it-works" className={link}>How it works</a>
           <a
             href="#waitlist"
-            className="ml-1 inline-flex min-h-11 items-center rounded-full bg-ink px-5 font-semibold text-paper transition-[background-color,transform] duration-200 hover:bg-accent-dark active:scale-[0.98]"
+            className="ml-1 inline-flex min-h-11 items-center rounded-full bg-accent px-5 font-semibold text-white transition-[background-color,transform] duration-200 hover:bg-accent-dark active:scale-[0.98]"
           >
             Join the waitlist
           </a>

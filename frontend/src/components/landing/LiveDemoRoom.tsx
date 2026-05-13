@@ -82,7 +82,7 @@ function Room({ maxSeconds, onEnd }: { maxSeconds: number; onEnd: () => void }) 
 
       <button
         onClick={onEnd}
-        className="mt-6 inline-flex min-h-11 items-center rounded-full border-2 border-[#f4a3b3] px-5 font-semibold text-[#f4a3b3] transition-colors hover:bg-[#f4a3b3] hover:text-[#1b2559]"
+        className="mt-6 inline-flex min-h-11 items-center rounded-full border-2 border-slip px-5 font-semibold text-slip transition-colors hover:bg-slip hover:text-[#131a4f]"
       >
         End call
       </button>

@@ -94,7 +94,7 @@ export function Waitlist() {
       <button
         type="submit"
         disabled={status.kind === 'saving'}
-        className="inline-flex min-h-14 items-center rounded-full bg-ink px-8 text-lg font-semibold text-paper transition-[background-color,transform] duration-200 hover:bg-accent-dark active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
+        className="inline-flex min-h-14 items-center rounded-full bg-accent px-8 text-lg font-semibold text-white transition-[background-color,transform] duration-200 hover:bg-accent-dark active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
       >
         {status.kind === 'saving' ? 'Adding you…' : 'Join the waitlist'}
       </button>

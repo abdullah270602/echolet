@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { motion, useReducedMotion, type Variants } from 'framer-motion';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useInView } from 'framer-motion';
 import { Waitlist } from './Waitlist';
 import { LogoMark } from './Logo';
 import { onShowTicket } from './ticketEvents';
@@ -28,7 +28,7 @@ const ticket = [
 function HandwrittenSlip() {
   return (
     <figure className="md:mt-10">
-      <div className="-rotate-2 bg-slip px-6 pb-7 pt-5 shadow-[0_18px_40px_-22px_rgb(27_37_89/0.45)] sm:px-8">
+      <div className="-rotate-2 bg-slip px-6 pb-7 pt-5 shadow-[0_18px_40px_-22px_rgb(19_26_79/0.45)] sm:px-8">
         <p className="font-narrow text-lg font-extrabold uppercase sm:text-[22px] tracking-[0.02em] text-stamp">
           While you were out
         </p>
@@ -63,52 +63,42 @@ function HandwrittenSlip() {
 }
 
 function EcholetSlip() {
-  const reduce = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.5 });
   // Remounting replays the write-in; triggered by "See the ticket it wrote" in the demo.
   const [run, setRun] = useState(0);
   useEffect(() => onShowTicket(() => setRun((n) => n + 1)), []);
-  const line: Variants = {
-    hidden: { opacity: 0, x: -6 },
-    show: { opacity: 1, x: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] as const } },
-  };
   return (
     <figure>
-      <motion.div
+      <div
+        ref={ref}
         key={run}
-        className="relative rotate-1 bg-white shadow-[0_24px_50px_-24px_rgb(27_37_89/0.5)]"
-        initial={reduce ? false : 'hidden'}
-        whileInView="show"
-        viewport={{ once: true, amount: 0.5 }}
-        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.16, delayChildren: 0.15 } } }}
+        className={`relative rotate-1 bg-white shadow-[0_24px_50px_-24px_rgb(19_26_79/0.5)] ${inView ? 'write-in' : 'write-wait'}`}
       >
         <div className="bg-slip px-6 pb-3 pt-4 sm:px-8">
-          <p className="font-narrow text-lg font-extrabold uppercase sm:text-[22px] tracking-[0.02em] text-stamp">
+          <p className="font-narrow text-lg font-extrabold uppercase tracking-[0.02em] text-stamp sm:text-[22px]">
             While you were out
           </p>
         </div>
         <dl className="px-6 pb-8 pt-4 sm:px-8">
-          {ticket.map(([k, v]) => (
-            <motion.div
+          {ticket.map(([k, v], i) => (
+            <div
               key={k}
-              variants={line}
-              className="grid grid-cols-[5rem_1fr] gap-3 border-b border-rule/70 py-2.5 last:border-0"
+              style={{ '--i': i } as CSSProperties}
+              className="write-line grid grid-cols-[5rem_1fr] gap-3 border-b border-rule/70 py-2.5 last:border-0"
             >
               <dt className="text-[13px] font-semibold text-ink/70">{k}</dt>
               <dd className="font-medium leading-snug text-ink">{v}</dd>
-            </motion.div>
+            </div>
           ))}
         </dl>
-        <motion.p
+        <p
           aria-label="Stamped: call back"
-          className="font-narrow pointer-events-none absolute -top-5 right-3 rotate-[-10deg] sm:-right-5 border-[3px] border-stamp px-3 py-1 text-xl font-extrabold uppercase tracking-[0.04em] text-stamp opacity-90 sm:-right-6"
-          variants={{
-            hidden: { opacity: 0, scale: 1.6 },
-            show: { opacity: 0.9, scale: 1, transition: { type: 'spring', stiffness: 420, damping: 18, delay: 0.2 } },
-          }}
+          className="write-stamp font-narrow pointer-events-none absolute -top-5 right-3 rotate-[-10deg] border-[3px] border-stamp px-3 py-1 text-xl font-extrabold uppercase tracking-[0.04em] text-stamp opacity-90 sm:-right-6"
         >
           Call back
-        </motion.p>
-      </motion.div>
+        </p>
+      </div>
       <figcaption className="mt-5 text-[15px] text-muted">
         Written by Echolet as the call ends. An invented example from the demo clinic.
       </figcaption>
@@ -171,7 +161,7 @@ export function Setup() {
         </div>
         <article
           aria-label="Setup for the demo clinic"
-          className="bg-white px-6 py-2 shadow-[0_24px_50px_-30px_rgb(27_37_89/0.45)] sm:px-8"
+          className="bg-white px-6 py-2 shadow-[0_24px_50px_-30px_rgb(19_26_79/0.45)] sm:px-8"
         >
           <dl>
             <Field label="Answers as">Emma at Brightside Dental</Field>
@@ -263,10 +253,18 @@ export function Closing() {
       <footer className="border-t-2 border-ink">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-[15px] text-ink/80 sm:px-6">
           <span className="inline-flex items-center gap-2.5 text-ink">
-            <LogoMark className="h-5 w-auto" />
+            <LogoMark className="h-5 w-auto text-accent" />
             <span className="font-display font-wide font-extrabold">echolet</span>
           </span>
-          <span>In development. © 2026 Echolet</span>
+          <span className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <a
+              href="mailto:abdullah@echolet.xyz"
+              className="font-semibold text-ink underline decoration-ink/40 underline-offset-4 transition-colors hover:decoration-ink"
+            >
+              abdullah@echolet.xyz
+            </a>
+            <span>© 2026 Echolet</span>
+          </span>
         </div>
       </footer>
     </section>

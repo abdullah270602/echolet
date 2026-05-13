@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 import { Typing } from './Typing';
 import { showTicket } from './ticketEvents';
 
@@ -59,22 +59,14 @@ export function CallReplay({ onClose }: { onClose?: () => void }) {
             : 'transcript-fade mt-4 flex h-64 flex-col justify-end gap-3 overflow-hidden text-[15px] leading-relaxed'
         }
       >
-        <AnimatePresence initial={false}>
-          {SCRIPT.slice(0, shown).map((line, i) => (
-            <motion.li
-              key={i}
-              className="shrink-0"
-              initial={reduce ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <span className={line.who === 'agent' ? 'font-semibold text-slip' : 'font-semibold text-ink'}>
-                {line.who === 'agent' ? 'Receptionist' : 'Caller'}:{' '}
-              </span>
-              <span className="text-ink/85">{line.text}</span>
-            </motion.li>
-          ))}
-        </AnimatePresence>
+        {SCRIPT.slice(0, shown).map((line, i) => (
+          <li key={i} className="line-in shrink-0">
+            <span className={line.who === 'agent' ? 'font-semibold text-slip' : 'font-semibold text-ink'}>
+              {line.who === 'agent' ? 'Receptionist' : 'Caller'}:{' '}
+            </span>
+            <span className="text-ink/85">{line.text}</span>
+          </li>
+        ))}
         {!done && (
           <li className="shrink-0 py-1">
             <Typing />
@@ -85,7 +77,7 @@ export function CallReplay({ onClose }: { onClose?: () => void }) {
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
         {done ? (
           <>
-            <button onClick={showTicket} className={pill + ' border-slip text-slip hover:bg-slip hover:text-[#1b2559]'}>
+            <button onClick={showTicket} className={pill + ' border-slip text-slip hover:bg-slip hover:text-[#131a4f]'}>
               See the ticket it wrote
             </button>
             <button

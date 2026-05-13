@@ -21,7 +21,7 @@ type Phase =
   | { name: 'error'; message: string };
 
 const callBtn =
-  'inline-flex items-center gap-2.5 rounded-full bg-[#3ddc97] font-bold text-[#0f1638] transition-[background-color,transform] duration-200 hover:bg-[#62e6ad] active:scale-[0.98]';
+  'inline-flex items-center gap-2.5 rounded-full bg-accent font-bold text-[#131a4f] transition-[background-color,transform] duration-200 hover:bg-accent-dark active:scale-[0.98]';
 const ghostBtn =
   'inline-flex min-h-11 items-center rounded-full border-2 border-ink/70 px-5 font-semibold text-ink transition-colors hover:border-ink hover:bg-ink hover:text-paper';
 const linkBtn =
@@ -44,7 +44,7 @@ function PeekingSlip() {
   return (
     <div
       aria-hidden="true"
-      className="absolute -right-2 -top-[4.5rem] w-52 rotate-[7deg] bg-slip px-4 pb-8 pt-3 shadow-[0_14px_30px_-18px_rgb(27_37_89/0.6)] sm:-right-6 sm:w-60"
+      className="absolute -right-2 -top-[4.5rem] w-52 rotate-[7deg] bg-slip px-4 pb-8 pt-3 shadow-[0_14px_30px_-18px_rgb(19_26_79/0.5)] sm:-right-6 sm:w-60"
     >
       <p className="font-narrow text-sm font-extrabold uppercase text-stamp">While you were out</p>
       <p className="font-scrawl mt-1 text-2xl leading-6 text-ink">Dana called, 11:42</p>
@@ -181,7 +181,7 @@ export function LiveDemo() {
       <PeekingSlip />
       <div
         id="live-demo"
-        className="line-panel relative flex min-h-[420px] flex-col rounded-[28px] p-6 shadow-[0_28px_60px_-28px_rgb(27_37_89/0.65)] sm:p-8"
+        className="line-panel relative flex min-h-[420px] flex-col rounded-[28px] p-6 shadow-[0_28px_60px_-24px_rgb(30_51_196/0.55)] sm:p-8"
       >
         <div className="mb-6 flex items-center justify-between gap-4 border-b border-rule pb-4">
           <p className="font-display font-wide font-bold tracking-[-0.01em]">
