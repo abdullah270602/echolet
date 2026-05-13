@@ -50,8 +50,14 @@ Talk time is recorded only by the agent on the server.
 `POST /api/demo/session` needs no account. It returns a two-minute join token for a
 `demo-<uuid>` room, with the demo clinic's config and a call-length cap in the token
 metadata. The metadata is signed with the LiveKit secret, so the agent uses it without a
-database lookup. Demo calls are not stored. Limits per visitor, per day and per call are set
-with the `DEMO_*` variables in `.env.example`; the limiter is in memory, per instance.
+database lookup. Demo calls are not stored.
+
+On the landing page this endpoint is a Vercel Function (`frontend/api/demo/session.js`)
+with layered abuse protection: a Vercel Firewall rate limit; per-visitor hourly and daily
+limits and a global daily budget kept in Postgres (IPs stored as salted hashes); a cap on
+simultaneous demo calls read live from LiveKit; and the per-call time cap enforced by the
+agent. If the database or LiveKit can't be reached it refuses the call. Limits are the
+`DEMO_*` variables in `.env.example`.
 
 ## Getting started
 
