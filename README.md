@@ -1,11 +1,12 @@
 # Echolet
 
-An AI voice receptionist for small service businesses. A business owner describes their
-business once (identity, voice, services and prices, knowledge base, guardrails, which
-details to capture), and Echolet answers callers in real time, saves every call with a
-transcript, and turns it into a ticket with a summary, sentiment and action items.
+Echolet is an AI voice receptionist for small service businesses. An owner configures an
+agent with their services, prices, hours and rules. The agent talks to callers in real time,
+saves each call with a transcript, and writes a ticket with a summary, sentiment and action
+items.
 
-Visitors can talk to a demo receptionist from the landing page without an account.
+**Status:** in development. Calls currently run in the browser over WebRTC; phone numbers are
+not supported yet. See [What's not done](#whats-not-done).
 
 ## Architecture
 
@@ -13,143 +14,116 @@ Visitors can talk to a demo receptionist from the landing page without an accoun
 flowchart LR
     B[Browser<br/>React + LiveKit client] -- Clerk JWT --> API[Backend<br/>FastAPI]
     B -- WebRTC audio --> LK[(LiveKit Cloud)]
-    API -- mints room token --> B
+    API -- room token --> B
     LK -- dispatches job --> AG[Voice agent<br/>LiveKit Agents]
-    AG -- STT / LLM / TTS --> P[Deepgram · Gemini via OpenRouter · Inworld]
+    AG -- STT / LLM / TTS --> P[Deepgram, Gemini via OpenRouter, Inworld]
     AG -- config, transcript, usage --> DB[(Postgres)]
     API --- DB
     AG -- room name --> Q[[SQS]]
     Q --> W[Analysis worker]
     W -- ticket --> DB
-    CL[Clerk] -- signed webhook --> API
 ```
 
-| Service | Path | Responsibility |
-|---|---|---|
-| Backend | `backend/` | Clerk auth, agent CRUD, starts call sessions and mints LiveKit tokens, public demo endpoint, Clerk webhooks, usage read-out. Async SQLAlchemy + Alembic. |
-| Voice agent | `agent/` | Joins each room, loads that session's agent config, runs the STT → LLM → TTS pipeline, enforces the talk-time cap, saves the transcript, queues analysis. |
-| Worker | `worker/` | Long-polls SQS, runs the LLM analysis against the agent's ticket fields, writes the result. Idempotent per call. |
-| Frontend | `frontend/` | Landing page with live demo, dashboard (agents, sandbox calls, call history and tickets). |
+| Path | What it is |
+|---|---|
+| `backend/` | FastAPI. Clerk auth, agent CRUD, call sessions and LiveKit tokens, the public demo endpoint, Clerk webhooks. Async SQLAlchemy and Alembic. |
+| `agent/` | LiveKit voice agent. Loads the session's agent config, runs speech-to-text, the LLM and text-to-speech, enforces the daily talk-time cap, saves the transcript, queues analysis. |
+| `worker/` | Polls SQS, analyses the transcript against the agent's ticket fields, stores the ticket. |
+| `frontend/` | React app: landing page with a live demo and waitlist, and the dashboard. `frontend/api/` holds two Vercel Functions (demo token, waitlist). |
+| `tests/` | Python test suite for backend, worker and agent modules. |
 
-### How a call works
+### A call, end to end
 
-1. The dashboard calls `POST /api/session/start` with an agent id. The backend checks the
-   agent belongs to the caller and that they have talk time left today, creates a
-   `call_sessions` row whose `room_name` is a fresh UUID, and returns a 10-minute LiveKit
-   token scoped to that room (microphone only).
-2. The agent is dispatched into the room, looks the session up by room name, and builds its
-   prompt from the agent's JSONB config. Rooms with no matching session get no agent, so
-   there is no way to start an unmetered conversation.
-3. A background task ends the call (with a spoken goodbye) when the user's daily allowance
-   runs out. On hang-up the agent writes the transcript, duration and usage, then sends the
-   room name to SQS.
-4. The worker picks it up, analyses the transcript, and stores the ticket.
+1. The dashboard calls `POST /api/session/start`. The backend checks that the agent belongs
+   to the user and that they have talk time left today, creates a `call_sessions` row, and
+   returns a short-lived, microphone-only LiveKit token for that room.
+2. The agent joins the room, finds the session by room name and builds its prompt from the
+   agent's config. A room with no session gets no agent.
+3. When the daily allowance runs out, the agent says goodbye and ends the call. On hang-up it
+   saves the transcript, duration and usage, then sends the room name to SQS.
+4. The worker writes the ticket.
 
-**Talk time is accounted for only by the agent, on the server.** The browser never reports
-usage.
+Talk time is recorded only by the agent on the server.
 
-### Public demo
+### Demo calls
 
-`POST /api/demo/session` needs no account. It returns a 2-minute join token for a
-`demo-<uuid>` room. The demo agent config (a fictional dental clinic, `backend/app/agent_templates/default.py`)
-and the call length cap travel in the token's metadata, which is signed with the LiveKit
-secret, so the agent can trust them without a database lookup. Demo calls are never stored or
-analysed. Cost is bounded three ways: a per-IP hourly limit, a global daily budget, and the
-per-call cap (clamped again by the agent). All are environment variables (`DEMO_*`, see
-`.env.example`). The rate limiter is in-process: limits are per backend replica.
+`POST /api/demo/session` needs no account. It returns a two-minute join token for a
+`demo-<uuid>` room, with the demo clinic's config and a call-length cap in the token
+metadata. The metadata is signed with the LiveKit secret, so the agent uses it without a
+database lookup. Demo calls are not stored. Limits per visitor, per day and per call are set
+with the `DEMO_*` variables in `.env.example`; the limiter is in memory, per instance.
 
-## Running locally
+## Getting started
 
-Prerequisites: Python 3.13 with [uv](https://docs.astral.sh/uv/), Node 20, a Postgres
-database, and accounts for LiveKit Cloud, Clerk, Deepgram, OpenRouter, Inworld and AWS SQS.
+Requirements: Python 3.13 with [uv](https://docs.astral.sh/uv/), Node 20, Postgres, and
+accounts for LiveKit Cloud, Clerk, Deepgram, OpenRouter, Inworld and AWS SQS.
 
 ```bash
-cp .env.example .env                 # fill in credentials
+cp .env.example .env                       # fill in credentials
 cp frontend/.env.example frontend/.env
 
 cd backend && uv sync && uv run alembic upgrade head && cd ..
-./dev.sh                             # backend :8000, agent, worker  (dev.ps1 on Windows)
-cd frontend && npm install && npm run dev   # http://localhost:5173
+./dev.sh                                   # backend on :8000, agent, worker (dev.ps1 on Windows)
+cd frontend && npm install && npm run dev  # http://localhost:5173
 ```
 
-For the Clerk `user.created` webhook (which seeds a starter agent for each new user),
-expose `/api/clerk/webhooks` with a tunnel and set `CLERK_WEBHOOK_SIGNING_SECRET`.
-
-Production runs all services with `docker compose up -d --build` behind Caddy
-(`Caddyfile`). The backend has a `/health` endpoint that checks database connectivity and is
-used as the compose health check.
-
-## Deploying the landing page and live demo without the backend
-
-The landing page's live demo needs only two pieces, neither of which is the backend:
-
-1. **Voice agent on LiveKit Cloud.** Demo calls need no database or SQS; the agent gets
-   the persona and time cap from the signed token.
-   ```bash
-   cd agent
-   lk cloud auth
-   # demo.secrets: DEEPGRAM_API_KEY=..., OPENROUTER_API_KEY=..., INWORLD_API_KEY=... (one per line, never commit it)
-   lk agent create --secrets-file demo.secrets   # builds agent/Dockerfile on LiveKit Cloud
-   lk agent deploy                                # later versions
-   ```
-2. **Frontend on Vercel**, project root `frontend/`. `frontend/api/demo/session.js` is a
-   Vercel Function that mints the demo token (same contract and token claims as the
-   backend's `/api/demo/session`), so the landing page calls it on the same origin.
-   Environment variables: `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` (same
-   LiveKit project as the agent), `VITE_CLERK_PUBLISHABLE_KEY`, optional `DEMO_*` limits.
-   Leave `VITE_API_BASE_URL` unset.
-
-The function's rate limiter lives in instance memory, so also add a Vercel Firewall
-rate-limit rule on `/api/demo/session` and set spend limits with the AI providers. If the
-agent isn't deployed, set `DEMO_ENABLED=false` on Vercel (or build with
-`VITE_LIVE_DEMO=false`) and the page shows the scripted example call instead. The dashboard
-still needs the backend.
+New users get a starter agent from the Clerk `user.created` webhook. To receive it locally,
+expose `/api/clerk/webhooks` through a tunnel and set `CLERK_WEBHOOK_SIGNING_SECRET`.
 
 ## Tests
 
 ```bash
-cd tests && uv sync
-uv run pytest                        # all suites
-uv run pytest --cov                  # with coverage (backend + worker)
-cd ../frontend && npm run lint && npm test && npm run build   # npm test: the Vercel demo function
+cd tests && uv sync && uv run pytest --cov   # unit, integration, e2e, security, resilience
+cd frontend && npm run lint && npm test && npm run build
 ```
 
-The suite (`tests/`) is organised as `unit`, `integration`, `e2e`, `security` and
-`resilience`. External services (LiveKit, OpenRouter, SQS, Postgres) are mocked; the e2e
-test drives the real queue → worker → analyzer path with only I/O mocked. CI
-(`.github/workflows/test.yml`) runs the Python suite with a coverage gate and lints and
-builds the frontend.
+External services are mocked. The e2e test runs the real queue, worker and analyzer path with
+only I/O mocked. CI (`.github/workflows/test.yml`) runs both with a coverage gate.
 
-## Agent evals
+### Agent evals
 
-`agent/evals/` holds behavioural evals for the voice agent, built on LiveKit Agents'
-test framework. Each one runs the production agent (real prompt builder, real `end_call`
-tool, real Gemini via OpenRouter) in text mode against the demo clinic config, then
-checks the reply with hard rules (quotes $120, no markdown in speech, no price it wasn't
-given, `end_call` called or not) and an LLM judge for wording that can vary.
+`agent/evals/` runs the production agent in LiveKit's text test mode against the demo clinic,
+using the real prompt builder, tools and model. Each case combines fixed checks (quoted price,
+no markdown in speech, whether `end_call` fired) with an LLM judge for wording.
 
 ```bash
-cd agent && uv sync && uv run pytest     # needs OPENROUTER_API_KEY; ~40s, a few cents
+cd agent && uv sync && uv run pytest   # needs OPENROUTER_API_KEY, about 40 s
 ```
 
-They cover answers from the knowledge base, not inventing prices or calendar access,
-medical-advice and prompt-injection guardrails, booking flow, and when the agent may hang
-up. They run nightly and on demand in CI (`.github/workflows/evals.yml`), not on every push.
+Cases cover answers from the knowledge base, invented prices, calendar claims, medical
+advice, prompt injection, booking and hanging up. They run nightly and on demand
+(`.github/workflows/evals.yml`). The first runs found two issues, both fixed: the model
+ended calls mid-booking (`end_call` now requires a goodbye from the caller, see
+`agent/call_ending.py`), and the starter agent sent dental emergencies to the ER.
 
-They found two real bugs on their first run:
+## Deployment
 
-- Gemini called `end_call` mid-booking when a caller asked to confirm a time. `end_call`
-  now refuses unless the caller's latest words are a goodbye (`agent/call_ending.py`).
-- The starter agent sometimes sent a caller with a knocked-out tooth to the ER instead
-  of offering the clinic's same-day emergency visit. Fixed in the template.
+**Full stack:** `docker compose up -d --build` runs everything behind Caddy. The backend's
+`/health` endpoint checks the database and is the compose health check.
 
-## Known limitations
+**Landing page only:** the landing page, live demo and waitlist can run without the backend.
 
-- **No telephony yet.** Calls run over WebRTC from the browser. The agent already handles SIP
-  participants (telephony noise cancellation), but phone-number provisioning and inbound
-  SIP trunking are not built.
-- **Website knowledge sources are not crawled.** A website source is passed to the model as a
-  URL reference only; text sources are what the agent actually answers from.
-- **Integrations and actions** in the agent config are stored but not executed.
-- **The voice agent has little automated coverage.** Its demo handling is unit-tested; the
-  LiveKit session lifecycle is verified by hand.
+1. Deploy the agent to LiveKit Cloud. Demo calls need no database or SQS.
+   ```bash
+   cd agent
+   lk cloud auth
+   lk agent create --secrets-file demo.secrets   # DEEPGRAM_API_KEY, OPENROUTER_API_KEY, INWORLD_API_KEY
+   ```
+2. Deploy `frontend/` to Vercel. Set `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`
+   (same LiveKit project as the agent), `DATABASE_URL` (for the waitlist) and
+   `VITE_CLERK_PUBLISHABLE_KEY`. Leave `VITE_API_BASE_URL` unset.
+3. Add a Vercel Firewall rate limit on `/api/demo/session` and spend limits with the AI
+   providers.
+
+Without a deployed agent, set `DEMO_ENABLED=false` (or build with `VITE_LIVE_DEMO=false`)
+and the demo panel shows a scripted example call. The dashboard always needs the backend.
+
+## What's not done
+
+- Phone numbers and inbound SIP. The agent handles SIP participants, but provisioning and
+  trunking are not built.
+- Website knowledge sources are passed to the model as a URL only. Text sources work.
+- Integrations and actions are stored in the agent config but not executed.
+- The agent's LiveKit session lifecycle is tested by hand; its logic is covered by unit tests
+  and evals.
+- No billing or plans.
