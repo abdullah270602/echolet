@@ -24,6 +24,7 @@ from config import (
     STT_MODEL,
     TTS_MODEL,
     TTS_VOICE,
+    DAILY_TALK_LIMIT_SECONDS,
 )
 from prompts import FAREWELL_MESSAGE, build_prompts_from_config
 from database import SessionConfig, get_session_config, get_user_remaining_seconds, save_call_log
@@ -109,9 +110,15 @@ async def agent_session(ctx: agents.JobContext) -> None:
         else:
             session_config = await get_session_config(room_name)
             time_cap = None
-            if session_config and session_config.user_id:
-                time_cap = await get_user_remaining_seconds(session_config.user_id)
-                logger.info(f"User {session_config.user_id} has {time_cap}s remaining today")
+            if session_config:
+                if session_config.user_id:
+                    time_cap = await get_user_remaining_seconds(session_config.user_id)
+                # Fail closed: every real call is capped. If today's usage can't be
+                # read, fall back to a full day's allowance instead of no limit.
+                if time_cap is None:
+                    logger.warning(f"Usage unavailable for room {room_name}; capping at the daily limit")
+                    time_cap = DAILY_TALK_LIMIT_SECONDS
+                logger.info(f"Room {room_name}: {time_cap}s of talk time allowed")
             farewell = FAREWELL_MESSAGE
 
         # Every legitimate room is created by the backend with a session row (or a

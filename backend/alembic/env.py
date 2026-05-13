@@ -111,9 +111,10 @@ async def run_async_migrations() -> None:
     await connectable.dispose()
 
 
-# Tables owned outside the ORM (written by the landing page's Vercel function).
-# Without this, `alembic revision --autogenerate` would propose dropping them.
-UNMANAGED_TABLES = {"waitlist"}
+# Tables owned outside the ORM, written by the landing page's Vercel functions
+# (demo_calls is created by frontend/api/demo/session.js itself). Without this,
+# `alembic revision --autogenerate` would propose dropping them.
+UNMANAGED_TABLES = {"waitlist", "demo_calls"}
 
 
 def include_object(obj, name, type_, reflected, compare_to):

@@ -40,3 +40,9 @@ test_*.py
 
 # Logs
 *.log
+
+# Never ship secrets, transcripts or dev-only files in the image
+*.secrets
+tested_scritps.json
+evals/
+.ruff_cache/
