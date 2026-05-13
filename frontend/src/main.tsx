@@ -21,23 +21,13 @@ createRoot(document.getElementById("root")!).render(
           position="bottom-right"
           toastOptions={{
             style: {
-              background: 'rgba(22, 22, 31, 0.95)',
-              color: '#fff',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(16px)',
+              background: '#ffffff',
+              color: 'var(--color-ink)',
+              border: '2px solid var(--color-ink)',
+              borderRadius: 0,
             },
-            success: {
-              iconTheme: {
-                primary: '#14b8a6',
-                secondary: '#fff',
-              },
-            },
-            error: {
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#fff',
-              },
-            },
+            success: { iconTheme: { primary: 'var(--color-accent)', secondary: '#ffffff' } },
+            error: { iconTheme: { primary: '#b91c1c', secondary: '#ffffff' } },
           }}
         />
       </ClerkProvider>

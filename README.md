@@ -79,13 +79,39 @@ Production runs all services with `docker compose up -d --build` behind Caddy
 (`Caddyfile`). The backend has a `/health` endpoint that checks database connectivity and is
 used as the compose health check.
 
+## Deploying the landing page and live demo without the backend
+
+The landing page's live demo needs only two pieces, neither of which is the backend:
+
+1. **Voice agent on LiveKit Cloud.** Demo calls need no database or SQS; the agent gets
+   the persona and time cap from the signed token.
+   ```bash
+   cd agent
+   lk cloud auth
+   # demo.secrets: DEEPGRAM_API_KEY=..., OPENROUTER_API_KEY=..., INWORLD_API_KEY=... (one per line, never commit it)
+   lk agent create --secrets-file demo.secrets   # builds agent/Dockerfile on LiveKit Cloud
+   lk agent deploy                                # later versions
+   ```
+2. **Frontend on Vercel**, project root `frontend/`. `frontend/api/demo/session.js` is a
+   Vercel Function that mints the demo token (same contract and token claims as the
+   backend's `/api/demo/session`), so the landing page calls it on the same origin.
+   Environment variables: `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` (same
+   LiveKit project as the agent), `VITE_CLERK_PUBLISHABLE_KEY`, optional `DEMO_*` limits.
+   Leave `VITE_API_BASE_URL` unset.
+
+The function's rate limiter lives in instance memory, so also add a Vercel Firewall
+rate-limit rule on `/api/demo/session` and set spend limits with the AI providers. If the
+agent isn't deployed, set `DEMO_ENABLED=false` on Vercel (or build with
+`VITE_LIVE_DEMO=false`) and the page shows the scripted example call instead. The dashboard
+still needs the backend.
+
 ## Tests
 
 ```bash
 cd tests && uv sync
 uv run pytest                        # all suites
 uv run pytest --cov                  # with coverage (backend + worker)
-cd ../frontend && npm run lint && npm run build
+cd ../frontend && npm run lint && npm test && npm run build   # npm test: the Vercel demo function
 ```
 
 The suite (`tests/`) is organised as `unit`, `integration`, `e2e`, `security` and

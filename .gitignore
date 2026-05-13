@@ -28,3 +28,6 @@ frontend/.next/
 coverage.xml
 .pytest_cache/
 *.tsbuildinfo
+
+# LiveKit Cloud agent secrets
+*.secrets
