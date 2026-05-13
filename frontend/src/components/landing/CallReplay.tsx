@@ -46,7 +46,6 @@ export function CallReplay({ onClose }: { onClose?: () => void }) {
         <p className="font-semibold text-ink" role="status">
           {done ? 'Call ended' : next === 'agent' ? 'Receptionist is speaking' : 'Caller is speaking'}
         </p>
-        <p className="text-sm text-muted">Scripted example</p>
       </div>
 
       {/* Newest line sits at the bottom; older lines fade out at the top. No scrollbar. */}

@@ -209,11 +209,6 @@ export function LiveDemo() {
           </motion.div>
         </AnimatePresence>
 
-        <p className="mt-6 border-t border-rule pt-4 text-sm text-muted">
-          {LIVE_DEMO
-            ? 'Answers for a made-up dental clinic. Runs in your browser, no account needed.'
-            : 'An example call with a made-up dental clinic.'}
-        </p>
       </div>
     </div>
   );
