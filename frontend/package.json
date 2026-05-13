@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --test \"api/**/*.test.js\""
+    "test": "node --test \"api-tests/*.test.js\""
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.0.0",

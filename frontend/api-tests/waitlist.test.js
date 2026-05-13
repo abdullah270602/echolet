@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createHandler, validate } from './waitlist.js';
+import { createHandler, validate } from '../api/waitlist.js';
 
 process.env.DATABASE_URL = 'postgres://example';
 

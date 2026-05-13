@@ -7,7 +7,7 @@ process.env.LIVEKIT_API_KEY = 'devkey';
 process.env.LIVEKIT_API_SECRET = 's'.repeat(32);
 process.env.DEMO_SESSIONS_PER_IP_PER_HOUR = '1';
 
-const { POST, checkLimit } = await import('./session.js');
+const { POST, checkLimit } = await import('../api/demo/session.js');
 
 const claimsOf = (token) => JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
 const post = (ip) => POST(new Request('https://x/api/demo/session', { method: 'POST', headers: { 'x-real-ip': ip } }));

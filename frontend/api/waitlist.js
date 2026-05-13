@@ -41,9 +41,10 @@ export function createHandler(getSql = () => neon(process.env.DATABASE_URL)) {
     if (!process.env.DATABASE_URL) return json(503, { error: 'The waitlist is closed right now.' });
     try {
       const sql = getSql();
+      // created_at is set explicitly: the table predates its migration and may lack a default.
       // Re-joining with the same email is a no-op and still returns ok, so the
       // response never reveals who is already on the list.
-      await sql`INSERT INTO waitlist (name, email) VALUES (${result.name}, ${result.email})
+      await sql`INSERT INTO waitlist (name, email, created_at) VALUES (${result.name}, ${result.email}, NOW())
                 ON CONFLICT (email) DO NOTHING`;
       return json(200, { ok: true });
     } catch (e) {
