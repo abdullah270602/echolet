@@ -35,6 +35,10 @@
   --color-rule: #c3cdc5;
   --color-accent: #0f6b4f;
   --color-accent-dark: #0a4f3a;
+  --color-slip: #f7cad6;
+  --color-slip-deep: #eeb3c3;
+  --color-stamp: #c8323f;
+  --color-live: #0f7a56;
   --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
   --font-body: 'Hanken Grotesk', system-ui, sans-serif;
 
@@ -515,10 +519,47 @@
 
 /* ==========================================
    LANDING PAGE
+   The "While You Were Out" world: ballpoint navy, message-slip pink,
+   stamp red. Tokens are remapped inside .landing only, so the dashboard
+   keeps its own theme.
    ========================================== */
+.landing {
+  --color-paper: #f3f5fa;
+  --color-ink: #1b2559;
+  --color-muted: #4a5378;
+  --color-rule: #c8cedf;
+  --color-accent: #1b2559;
+  --color-accent-dark: #0f1638;
+  --color-slip: #f7cad6;
+  --color-slip-deep: #eeb3c3;
+  --color-stamp: #c8323f;
+  --color-live: #0f7a56;
+  --font-display: 'Archivo', system-ui, sans-serif;
+  --font-body: 'Archivo', system-ui, sans-serif;
+  caret-color: var(--color-stamp);
+}
+.landing ::selection {
+  background: var(--color-slip);
+  color: var(--color-ink);
+}
 .landing :focus-visible {
-  outline: 3px solid var(--color-accent);
+  outline: 3px solid var(--color-stamp);
   outline-offset: 3px;
+}
+.font-wide { font-stretch: 125%; }
+.font-narrow { font-stretch: 75%; }
+.font-scrawl { font-family: 'Reenie Beanie', cursive; }
+
+/* The phone-line panel: dark ink surface, so text tokens flip inside it. */
+.landing .line-panel {
+  --color-paper: #1b2559;
+  --color-ink: #f3f5fa;
+  --color-muted: #b4bbd8;
+  --color-rule: #3a4578;
+  --color-accent: #0f7a56;
+  --color-accent-dark: #0b5e42;
+  background: #1b2559;
+  color: #f3f5fa;
 }
 .landing .demo-bars {
   --lk-fg: var(--color-ink);

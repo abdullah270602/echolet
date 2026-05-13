@@ -67,7 +67,7 @@ export function CallReplay({ onClose }: { onClose?: () => void }) {
       {done && (
         <p className="mt-4 border-t border-rule pt-4 text-muted">
           After a real call, the transcript is saved and a ticket like the{' '}
-          <a href="#sample-ticket" className="text-ink underline underline-offset-4 hover:text-accent">
+          <a href="#message" className="text-ink underline underline-offset-4 hover:text-accent">
             example below
           </a>{' '}
           appears in the call history.

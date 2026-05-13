@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useState } from 'react';
+import { Phone } from 'lucide-react';
 import { createDemoSession, DemoError, type DemoSession } from '../../services/demoApi';
 import { CallReplay } from './CallReplay';
 
@@ -16,9 +17,11 @@ type Phase =
   | { name: 'ended' }
   | { name: 'error'; message: string };
 
-const btn = 'min-h-11 bg-accent px-6 font-semibold text-white hover:bg-accent-dark';
-const linkBtn = 'min-h-11 font-medium text-ink underline underline-offset-4 hover:text-accent';
-const h = 'font-display text-2xl font-semibold text-ink';
+const btn =
+  'inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-6 font-semibold text-white transition-[background-color,transform] duration-200 hover:bg-accent-dark active:scale-[0.98]';
+const linkBtn =
+  'min-h-11 font-medium text-ink underline decoration-ink/40 underline-offset-4 transition-colors hover:decoration-ink';
+const h = 'font-display text-2xl font-bold tracking-[-0.01em] text-ink';
 
 export function LiveDemo() {
   const [phase, setPhase] = useState<Phase>(LIVE_DEMO ? { name: 'idle' } : { name: 'replay' });
@@ -57,20 +60,34 @@ export function LiveDemo() {
   );
 
   return (
-    <div className="border-2 border-ink bg-white p-5 sm:p-8" id="live-demo">
+    <div
+      id="live-demo"
+      className="line-panel rounded-[28px] p-6 shadow-[0_24px_60px_-28px_rgb(27_37_89/0.55)] sm:p-8"
+    >
+      <div className="mb-6 flex items-center justify-between gap-4 border-b border-rule pb-4">
+        <p className="font-display font-wide font-bold tracking-[-0.01em]">
+          Brightside Dental
+          <span className="block font-body sm:ml-2 sm:inline text-sm font-normal [font-stretch:100%] text-muted">made-up clinic</span>
+        </p>
+        <p className="flex shrink-0 items-center gap-2 text-sm text-muted">
+          <span
+            aria-hidden="true"
+            className={`h-2 w-2 rounded-full ${phase.name === 'live' ? 'animate-pulse bg-[#3ddc97]' : LIVE_DEMO ? 'bg-[#3ddc97]' : 'bg-muted/60'}`}
+          />
+          {phase.name === 'live' ? 'On a call' : LIVE_DEMO ? 'Line open' : 'Example call'}
+        </p>
+      </div>
+
       {phase.name === 'idle' && (
         <div>
-          <h2 className={h}>Call the demo receptionist</h2>
-          <p className="mt-3 max-w-prose text-muted">
-            You will talk to an agent that answers for a fictional dental clinic. Ask about
-            cleanings, prices or opening hours, or try to book a visit.
+          <h2 className={h}>Call the front desk</h2>
+          <p className="mt-3 max-w-[46ch] leading-relaxed text-muted">
+            Ask what a cleaning costs, whether they're open Saturday, or book a visit. It uses
+            your microphone, lasts up to two minutes, and nothing is saved.
           </p>
-          <p className="mt-3 max-w-prose text-muted">
-            This uses your microphone. Your browser will ask for permission first. Calls are
-            time-limited and nothing is saved.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
-            <button onClick={start} className={btn}>
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <button onClick={start} className={btn + ' min-h-14 px-7 text-lg'}>
+              <Phone aria-hidden="true" className="h-5 w-5" strokeWidth={2} />
               Start a call
             </button>
             <button onClick={replay} className={linkBtn}>
