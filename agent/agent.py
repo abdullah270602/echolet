@@ -135,7 +135,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
             ctx.shutdown(reason="usage limit reached")
             return
 
-        prompts = build_prompts_from_config(session_config)
+        prompts = build_prompts_from_config(session_config, saved=not demo)
 
         DynamicAssistant = create_dynamic_assistant(
             instructions=prompts.system_instructions,
