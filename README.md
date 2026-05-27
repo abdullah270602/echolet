@@ -7,19 +7,7 @@ items.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    B[Browser<br/>React + LiveKit client] -- Clerk JWT --> API[Backend<br/>FastAPI]
-    B -- WebRTC audio --> LK[(LiveKit Cloud)]
-    API -- room token --> B
-    LK -- dispatches job --> AG[Voice agent<br/>LiveKit Agents]
-    AG -- STT / LLM / TTS --> P[Deepgram, Gemini via OpenRouter, Inworld]
-    AG -- config, transcript, usage --> DB[(Postgres)]
-    API --- DB
-    AG -- room name --> Q[[SQS]]
-    Q --> W[Analysis worker]
-    W -- ticket --> DB
-```
+![Echolet architecture: browser, LiveKit rooms and the voice agent, speech and language models, Postgres, the analysis queue and worker, the backend API and Vercel functions](docs/architecture.svg)
 
 | Path | What it is |
 |---|---|
