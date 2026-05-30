@@ -31,6 +31,7 @@ def create_dynamic_assistant(
     save_call_log_fn: Callable[..., Awaitable[bool]],
     send_to_queue_fn: Callable[[str], Awaitable[None]],
     cleanup_done: dict[str, bool],
+    before_hangup: Callable[[], Awaitable[None]] | None = None,
 ) -> type[Agent]:
     """
     Factory function to create a DynamicAssistant class with transcript logging.
@@ -57,6 +58,7 @@ def create_dynamic_assistant(
             self._save_call_log_fn = save_call_log_fn
             self._send_to_queue_fn = send_to_queue_fn
             self._cleanup_done = cleanup_done
+            self._before_hangup = before_hangup
             # Log available tools for debugging
             logger.info(f"DynamicAssistant initialized with tools: {self.tools}")
 
@@ -167,6 +169,13 @@ def create_dynamic_assistant(
 
             # Send to SQS (background)
             asyncio.create_task(self._send_to_queue_fn(self._room_name))
+
+            # Last chance to talk to the caller's browser (demo calls push their ticket).
+            if self._before_hangup:
+                try:
+                    await asyncio.wait_for(self._before_hangup(), timeout=12)
+                except Exception as e:
+                    logger.warning(f"before_hangup failed: {e}")
 
             # Delete room
             try:

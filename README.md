@@ -5,24 +5,9 @@ agent with their services, prices, hours and rules. The agent talks to callers i
 saves each call with a transcript, and writes a ticket with a summary, sentiment and action
 items.
 
-**Status:** in development. Calls currently run in the browser over WebRTC; phone numbers are
-not supported yet. See [What's not done](#whats-not-done).
-
 ## Architecture
 
-```mermaid
-flowchart LR
-    B[Browser<br/>React + LiveKit client] -- Clerk JWT --> API[Backend<br/>FastAPI]
-    B -- WebRTC audio --> LK[(LiveKit Cloud)]
-    API -- room token --> B
-    LK -- dispatches job --> AG[Voice agent<br/>LiveKit Agents]
-    AG -- STT / LLM / TTS --> P[Deepgram, Gemini via OpenRouter, Inworld]
-    AG -- config, transcript, usage --> DB[(Postgres)]
-    API --- DB
-    AG -- room name --> Q[[SQS]]
-    Q --> W[Analysis worker]
-    W -- ticket --> DB
-```
+![Echolet architecture: browser, LiveKit rooms and the voice agent, speech and language models, Postgres, the analysis queue and worker, the backend API and Vercel functions](docs/architecture.svg)
 
 | Path | What it is |
 |---|---|
@@ -123,13 +108,3 @@ ended calls mid-booking (`end_call` now requires a goodbye from the caller, see
 
 Without a deployed agent, set `DEMO_ENABLED=false` (or build with `VITE_LIVE_DEMO=false`)
 and the demo panel shows a scripted example call. The dashboard always needs the backend.
-
-## What's not done
-
-- Phone numbers and inbound SIP. The agent handles SIP participants, but provisioning and
-  trunking are not built.
-- Website knowledge sources are passed to the model as a URL only. Text sources work.
-- Integrations and actions are stored in the agent config but not executed.
-- The agent's LiveKit session lifecycle is tested by hand; its logic is covered by unit tests
-  and evals.
-- No billing or plans.

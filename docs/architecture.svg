@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 968 528" width="968" height="528" role="img" aria-labelledby="echolet-arch-title echolet-arch-desc">
+  <title id="echolet-arch-title">Echolet architecture</title>
+  <desc id="echolet-arch-desc">Callers talk to the voice agent through LiveKit Cloud; the agent uses speech and language models, saves transcripts to Postgres and queues each call for a worker that writes the ticket. The backend API serves the dashboard and Vercel functions serve the landing page demo and waitlist.</desc>
+  <defs>
+    <style>
+      .name { font: 600 13px Geist, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #131a4f; }
+      .sub  { font: 400 10px "Geist Mono", ui-monospace, "SFMono-Regular", Consolas, monospace; fill: #4b5380; }
+      .tag  { font: 600 8px "Geist Mono", ui-monospace, Consolas, monospace; letter-spacing: .08em; }
+      .lbl  { font: 500 8px "Geist Mono", ui-monospace, Consolas, monospace; letter-spacing: .06em; fill: #4b5380; }
+      .zone { font: 600 8px "Geist Mono", ui-monospace, Consolas, monospace; letter-spacing: .14em; fill: #2440e0; }
+    </style>
+    <marker id="a-muted" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4b5380"/></marker>
+    <marker id="a-call" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2440e0"/></marker>
+  </defs>
+
+  <!-- paper -->
+  <rect width="968" height="528" fill="#f5f7fd"/>
+
+  <!-- zone: LiveKit Cloud -->
+  <rect x="248" y="168" width="456" height="120" rx="8" fill="rgba(36,64,224,0.04)" stroke="rgba(36,64,224,0.35)" stroke-width="1" stroke-dasharray="4,4"/>
+  <rect x="260" y="172" width="104" height="12" rx="2" fill="#f5f7fd"/>
+  <text class="zone" x="312" y="181" text-anchor="middle">LIVEKIT CLOUD</text>
+
+  <!-- ===== connectors (drawn before boxes) ===== -->
+  <!-- Browser -> Vercel functions -->
+  <path d="M100,200 V92 Q100,84 108,84 H260" fill="none" stroke="#4b5380" stroke-width="1.2" marker-end="url(#a-muted)"/>
+  <rect x="140" y="64" width="96" height="12" rx="2" fill="#f5f7fd"/>
+  <text class="lbl" x="188" y="73" text-anchor="middle">DEMO, WAITLIST</text>
+
+  <!-- Browser -> Backend API -->
+  <path d="M100,272 V380 Q100,388 108,388 H260" fill="none" stroke="#4b5380" stroke-width="1.2" marker-end="url(#a-muted)"/>
+  <rect x="140" y="368" width="96" height="12" rx="2" fill="#f5f7fd"/>
+  <text class="lbl" x="188" y="377" text-anchor="middle">HTTPS, CLERK JWT</text>
+
+  <!-- Browser -> LiveKit (call path) -->
+  <line x1="200" y1="236" x2="260" y2="236" stroke="#2440e0" stroke-width="1.6" marker-end="url(#a-call)"/>
+  <rect x="208" y="214" width="40" height="12" rx="2" fill="#f5f7fd"/>
+  <text class="lbl" x="228" y="223" text-anchor="middle" fill="#2440e0">AUDIO</text>
+
+  <!-- LiveKit -> Voice agent (call path) -->
+  <line x1="440" y1="236" x2="508" y2="236" stroke="#2440e0" stroke-width="1.6" marker-end="url(#a-call)"/>
+  <rect x="448" y="214" width="56" height="12" rx="2" fill="rgba(245,247,253,1)"/>
+  <text class="lbl" x="476" y="223" text-anchor="middle" fill="#2440e0">DISPATCH</text>
+
+  <!-- Voice agent -> Speech & LLM (call path) -->
+  <path d="M640,200 V92 Q640,84 648,84 H748" fill="none" stroke="#2440e0" stroke-width="1.6" marker-end="url(#a-call)"/>
+  <rect x="652" y="64" width="88" height="12" rx="2" fill="#f5f7fd"/>
+  <text class="lbl" x="696" y="73" text-anchor="middle" fill="#2440e0">STT, LLM, TTS</text>
+
+  <!-- Voice agent -> Analysis queue (after the call) -->
+  <line x1="688" y1="236" x2="748" y2="236" stroke="#4b5380" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#a-muted)"/>
+  <rect x="692" y="214" width="52" height="12" rx="2" fill="#f5f7fd"/>
+  <text class="lbl" x="718" y="223" text-anchor="middle">CALL ENDS</text>
+
+  <!-- Voice agent -> Postgres -->
+  <line x1="600" y1="272" x2="600" y2="348" stroke="#4b5380" stroke-width="1.2" marker-end="url(#a-muted)"/>
+  <rect x="608" y="308" width="68" height="12" rx="2" fill="#f5f7fd"/>
+  <text class="lbl" x="612" y="317">TRANSCRIPT</text>
+
+  <!-- Backend API -> Postgres -->
+  <line x1="440" y1="388" x2="508" y2="388" stroke="#4b5380" stroke-width="1.2" marker-end="url(#a-muted)"/>
+  <rect x="452" y="366" width="44" height="12" rx="2" fill="#f5f7fd"/>
+  <text class="lbl" x="474" y="375" text-anchor="middle">CONFIG</text>
+
+  <!-- Analysis queue -> Worker -->
+  <line x1="840" y1="272" x2="840" y2="348" stroke="#4b5380" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#a-muted)"/>
+  <rect x="848" y="308" width="28" height="12" rx="2" fill="#f5f7fd"/>
+  <text class="lbl" x="852" y="317">JOB</text>
+
+  <!-- Worker -> Postgres -->
+  <line x1="752" y1="388" x2="692" y2="388" stroke="#4b5380" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#a-muted)"/>
+  <rect x="700" y="366" width="44" height="12" rx="2" fill="#f5f7fd"/>
+  <text class="lbl" x="722" y="375" text-anchor="middle">TICKET</text>
+
+  <!-- ===== nodes ===== -->
+  <!-- Browser (input) -->
+  <rect x="40" y="200" width="160" height="72" rx="6" fill="#f5f7fd"/>
+  <rect x="40" y="200" width="160" height="72" rx="6" fill="rgba(75,83,128,0.10)" stroke="#4b5380" stroke-width="1"/>
+  <rect x="48" y="206" width="24" height="12" rx="2" fill="none" stroke="rgba(75,83,128,0.5)" stroke-width="0.8"/>
+  <text class="tag" x="60" y="215" text-anchor="middle" fill="#4b5380">UI</text>
+  <text class="name" x="120" y="242" text-anchor="middle">Browser</text>
+  <text class="sub" x="120" y="258" text-anchor="middle">landing page, dashboard</text>
+
+  <!-- Vercel functions (edge) -->
+  <rect x="264" y="48" width="176" height="72" rx="6" fill="#f5f7fd"/>
+  <rect x="264" y="48" width="176" height="72" rx="6" fill="#ffffff" stroke="#131a4f" stroke-width="1"/>
+  <rect x="272" y="54" width="32" height="12" rx="2" fill="none" stroke="rgba(19,26,79,0.4)" stroke-width="0.8"/>
+  <text class="tag" x="288" y="63" text-anchor="middle" fill="#131a4f">EDGE</text>
+  <text class="name" x="352" y="90" text-anchor="middle">Vercel functions</text>
+  <text class="sub" x="352" y="106" text-anchor="middle">demo token, waitlist</text>
+
+  <!-- LiveKit (media) -->
+  <rect x="264" y="200" width="176" height="72" rx="6" fill="#f5f7fd"/>
+  <rect x="264" y="200" width="176" height="72" rx="6" fill="#ffffff" stroke="#131a4f" stroke-width="1"/>
+  <rect x="272" y="206" width="36" height="12" rx="2" fill="none" stroke="rgba(19,26,79,0.4)" stroke-width="0.8"/>
+  <text class="tag" x="290" y="215" text-anchor="middle" fill="#131a4f">MEDIA</text>
+  <text class="name" x="352" y="242" text-anchor="middle">LiveKit rooms</text>
+  <text class="sub" x="352" y="258" text-anchor="middle">WebRTC, one per call</text>
+
+  <!-- Backend API -->
+  <rect x="264" y="352" width="176" height="72" rx="6" fill="#f5f7fd"/>
+  <rect x="264" y="352" width="176" height="72" rx="6" fill="#ffffff" stroke="#131a4f" stroke-width="1"/>
+  <rect x="272" y="358" width="28" height="12" rx="2" fill="none" stroke="rgba(19,26,79,0.4)" stroke-width="0.8"/>
+  <text class="tag" x="286" y="367" text-anchor="middle" fill="#131a4f">API</text>
+  <text class="name" x="352" y="394" text-anchor="middle">Backend API</text>
+  <text class="sub" x="352" y="410" text-anchor="middle">FastAPI, sessions, limits</text>
+
+  <!-- Voice agent (focal) -->
+  <rect x="512" y="200" width="176" height="72" rx="6" fill="#f5f7fd"/>
+  <rect x="512" y="200" width="176" height="72" rx="6" fill="#ffdf4d" stroke="#131a4f" stroke-width="1.6"/>
+  <rect x="520" y="206" width="40" height="12" rx="2" fill="none" stroke="rgba(19,26,79,0.55)" stroke-width="0.8"/>
+  <text class="tag" x="540" y="215" text-anchor="middle" fill="#131a4f">AGENT</text>
+  <text class="name" x="600" y="242" text-anchor="middle">Voice agent</text>
+  <text class="sub" x="600" y="258" text-anchor="middle" style="fill:#131a4f">LiveKit Agents, Python</text>
+
+  <!-- Speech & LLM (external) -->
+  <rect x="752" y="48" width="176" height="72" rx="6" fill="#f5f7fd"/>
+  <rect x="752" y="48" width="176" height="72" rx="6" fill="rgba(19,26,79,0.03)" stroke="rgba(19,26,79,0.30)" stroke-width="1"/>
+  <rect x="760" y="54" width="20" height="12" rx="2" fill="none" stroke="rgba(19,26,79,0.3)" stroke-width="0.8"/>
+  <text class="tag" x="770" y="63" text-anchor="middle" fill="#4b5380">AI</text>
+  <text class="name" x="840" y="90" text-anchor="middle">Speech and language</text>
+  <text class="sub" x="840" y="106" text-anchor="middle">Deepgram, Gemini, Inworld</text>
+
+  <!-- Analysis queue (store) -->
+  <rect x="752" y="200" width="176" height="72" rx="6" fill="#f5f7fd"/>
+  <rect x="752" y="200" width="176" height="72" rx="6" fill="rgba(19,26,79,0.05)" stroke="#4b5380" stroke-width="1"/>
+  <rect x="760" y="206" width="36" height="12" rx="2" fill="none" stroke="rgba(75,83,128,0.5)" stroke-width="0.8"/>
+  <text class="tag" x="778" y="215" text-anchor="middle" fill="#4b5380">QUEUE</text>
+  <text class="name" x="840" y="242" text-anchor="middle">Analysis queue</text>
+  <text class="sub" x="840" y="258" text-anchor="middle">AWS SQS</text>
+
+  <!-- Postgres (store) -->
+  <rect x="512" y="352" width="176" height="72" rx="6" fill="#f5f7fd"/>
+  <rect x="512" y="352" width="176" height="72" rx="6" fill="rgba(19,26,79,0.05)" stroke="#4b5380" stroke-width="1"/>
+  <rect x="520" y="358" width="20" height="12" rx="2" fill="none" stroke="rgba(75,83,128,0.5)" stroke-width="0.8"/>
+  <text class="tag" x="530" y="367" text-anchor="middle" fill="#4b5380">DB</text>
+  <text class="name" x="600" y="394" text-anchor="middle">Postgres</text>
+  <text class="sub" x="600" y="410" text-anchor="middle">agents, calls, tickets</text>
+
+  <!-- Analysis worker -->
+  <rect x="752" y="352" width="176" height="72" rx="6" fill="#f5f7fd"/>
+  <rect x="752" y="352" width="176" height="72" rx="6" fill="#ffffff" stroke="#131a4f" stroke-width="1"/>
+  <rect x="760" y="358" width="28" height="12" rx="2" fill="none" stroke="rgba(19,26,79,0.4)" stroke-width="0.8"/>
+  <text class="tag" x="774" y="367" text-anchor="middle" fill="#131a4f">JOB</text>
+  <text class="name" x="840" y="394" text-anchor="middle">Analysis worker</text>
+  <text class="sub" x="840" y="410" text-anchor="middle">writes the call ticket</text>
+
+  <!-- ===== legend ===== -->
+  <line x1="40" y1="460" x2="928" y2="460" stroke="rgba(19,26,79,0.12)" stroke-width="0.8"/>
+  <text class="lbl" x="40" y="488" style="letter-spacing:.14em">LEGEND</text>
+  <line x1="120" y1="485" x2="152" y2="485" stroke="#2440e0" stroke-width="1.6"/>
+  <text class="sub" x="160" y="488">live call path</text>
+  <line x1="280" y1="485" x2="312" y2="485" stroke="#4b5380" stroke-width="1.2"/>
+  <text class="sub" x="320" y="488">request / write</text>
+  <line x1="448" y1="485" x2="480" y2="485" stroke="#4b5380" stroke-width="1.2" stroke-dasharray="4,3"/>
+  <text class="sub" x="488" y="488">after the call</text>
+  <rect x="608" y="478" width="20" height="14" rx="3" fill="#ffdf4d" stroke="#131a4f" stroke-width="1"/>
+  <text class="sub" x="636" y="488">voice agent</text>
+  <rect x="736" y="478" width="20" height="14" rx="3" fill="rgba(19,26,79,0.05)" stroke="#4b5380" stroke-width="1"/>
+  <text class="sub" x="764" y="488">data store</text>
+</svg>

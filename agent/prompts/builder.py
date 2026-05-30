@@ -33,7 +33,7 @@ class DynamicPrompts:
     greeting_instructions: str
 
 
-def build_prompts_from_config(config: SessionConfig) -> DynamicPrompts:
+def build_prompts_from_config(config: SessionConfig, saved: bool = True) -> DynamicPrompts:
     """
     Build complete agent prompts from SessionConfig.
 
@@ -75,7 +75,7 @@ Keep responses brief and natural - this is a phone call, not an essay.
 
     # 5. Guardrails section (if any)
     if config.guardrails:
-        guardrails_section = _build_guardrails_section(config.guardrails)
+        guardrails_section = _build_guardrails_section(config.guardrails, saved)
         if guardrails_section:
             sections.append(guardrails_section)
 
@@ -100,8 +100,19 @@ Keep responses brief and natural - this is a phone call, not an essay.
 
     return DynamicPrompts(
         system_instructions=full_instructions,
-        greeting_instructions=f"Say exactly this greeting: '{config.greeting_message}'",
+        greeting_instructions=f"Say exactly this greeting: '{_greeting(config, saved)}'",
     )
+
+
+RECORDING_NOTICE = "Just so you know, this call is transcribed and saved so we can follow up."
+
+
+def _greeting(config: SessionConfig, saved: bool) -> str:
+    """The opening line, with the recording notice when the business turned it on."""
+    compliance = config.guardrails.get("compliance", {})
+    if saved and compliance.get("call_recording_disclaimer"):
+        return f"{config.greeting_message} {RECORDING_NOTICE}"
+    return config.greeting_message
 
 
 def _build_role_section(config: SessionConfig) -> str:
@@ -126,6 +137,8 @@ def _build_services_section(services: list[dict[str, Any]]) -> str:
 
     return f"""
 <services>
+These are the ONLY services offered. If a caller asks about anything else (crowns,
+braces, implants...), don't say it's offered; say you're not sure and offer a follow-up.
 Services you can book or discuss:
 {chr(10).join(services_lines)}
 
@@ -156,13 +169,15 @@ def _build_knowledge_text(knowledge_base: dict[str, Any]) -> str:
     return "\n\n".join(text_parts) if text_parts else ""
 
 
-def _build_guardrails_section(guardrails: dict[str, Any]) -> str:
-    """Build the guardrails section of the prompt."""
+def _build_guardrails_section(guardrails: dict[str, Any], saved: bool = True) -> str:
+    """Build the guardrails section, including the compliance switches.
+
+    `saved` is whether this call is stored (false for landing-page demo calls), so the
+    agent never tells a caller something untrue about recording.
+    """
     allowed_topics = guardrails.get("allowed_topics", [])
     disallowed_topics = guardrails.get("disallowed_topics", [])
-
-    if not allowed_topics and not disallowed_topics:
-        return ""
+    compliance = guardrails.get("compliance", {})
 
     lines = ["<guardrails>"]
 
@@ -176,6 +191,22 @@ def _build_guardrails_section(guardrails: dict[str, Any]) -> str:
         lines.append("- First, try to naturally redirect the conversation to something you can help with")
         lines.append("- If they persist, politely say you're not able to discuss that topic")
         lines.append("- Offer to help with something else or connect them with someone who can help")
+
+    lines.append("")
+    if saved:
+        lines.append(
+            "Recording: this call is transcribed and saved so the business can follow up. "
+            "If asked, say so plainly. Never claim the call isn't recorded."
+        )
+    else:
+        lines.append(
+            "Recording: this is a demo call and nothing from it is saved. If asked, say so plainly."
+        )
+    if compliance.get("hipaa_mode") or compliance.get("gdpr_mode"):
+        lines.append(
+            "Privacy: collect only what's needed to help (name, contact, reason for calling). "
+            "Never confirm whether someone is a patient or share anyone else's details."
+        )
 
     lines.append("</guardrails>")
     return "\n".join(lines)

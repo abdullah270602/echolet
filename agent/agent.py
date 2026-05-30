@@ -8,6 +8,7 @@ Run with:
 """
 
 import asyncio
+import json
 import logging
 import time
 from dotenv import load_dotenv
@@ -30,6 +31,7 @@ from prompts import FAREWELL_MESSAGE, build_prompts_from_config
 from database import SessionConfig, get_session_config, get_user_remaining_seconds, save_call_log
 from usage import monitor_usage
 from transcript import create_dynamic_assistant, create_user_transcript_handler
+from demo_ticket import generate_ticket
 from sqs import send_to_analysis_queue
 from demo import (
     DEMO_FAREWELL,
@@ -135,7 +137,29 @@ async def agent_session(ctx: agents.JobContext) -> None:
             ctx.shutdown(reason="usage limit reached")
             return
 
-        prompts = build_prompts_from_config(session_config)
+        prompts = build_prompts_from_config(session_config, saved=not demo)
+
+        if demo:
+            # The browser asks for the visitor's ticket when the call ends. Demo only,
+            # the payload is ignored and the reply is built from this call's transcript.
+            async def demo_ticket(_data: rtc.RpcInvocationData) -> str:
+                try:
+                    return json.dumps(await generate_ticket(list(transcript_messages), session_config.config))
+                except Exception as e:
+                    logger.warning(f"Demo ticket failed: {e}")
+                    return json.dumps({"error": "ticket_failed"})
+
+            ctx.room.local_participant.register_rpc_method("echolet.ticket", demo_ticket)
+
+        async def push_demo_ticket() -> None:
+            # When Emma ends the call herself, the browser never gets to ask, so send it.
+            ticket = await generate_ticket(list(transcript_messages), session_config.config)
+            await ctx.room.local_participant.perform_rpc(
+                destination_identity=participant.identity,
+                method="echolet.ticket.push",
+                payload=json.dumps(ticket),
+                response_timeout=5.0,
+            )
 
         DynamicAssistant = create_dynamic_assistant(
             instructions=prompts.system_instructions,
@@ -145,6 +169,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
             save_call_log_fn=save_fn,
             send_to_queue_fn=queue_fn,
             cleanup_done=cleanup_done,
+            before_hangup=push_demo_ticket if demo else None,
         )
 
         # Create the agent session

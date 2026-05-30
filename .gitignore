@@ -31,3 +31,6 @@ coverage.xml
 
 # LiveKit Cloud agent secrets
 *.secrets
+
+# Eval run records (local; summarised in evals/DATASET.md)
+agent/evals/results/

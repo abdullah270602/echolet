@@ -5,6 +5,8 @@ import { createDemoSession, DemoError, type DemoSession } from '../../services/d
 import { CallReplay } from './CallReplay';
 import { BARS } from './Logo';
 import { Typing } from './Typing';
+import { TicketSlip } from './TicketSlip';
+import { isBlank, ticketRows, type CallResult } from './ticket';
 
 // Set VITE_LIVE_DEMO=false to build a landing page that only offers the scripted
 // replay, e.g. when the backend/agent is not deployed.
@@ -17,7 +19,7 @@ type Phase =
   | { name: 'replay' }
   | { name: 'connecting'; step: 'mic' | 'server' }
   | { name: 'live'; session: DemoSession }
-  | { name: 'ended' }
+  | { name: 'ended'; result: CallResult }
   | { name: 'error'; message: string };
 
 const callBtn =
@@ -83,9 +85,12 @@ export function LiveDemo() {
     }
   }, []);
 
-  const end = useCallback(() => setPhase((p) => (p.name === 'live' ? { name: 'ended' } : p)), []);
+  const end = useCallback(
+    (result: CallResult) => setPhase((p) => (p.name === 'live' ? { name: 'ended', result } : p)),
+    []
+  );
   const fail = useCallback(
-    () => setPhase({ name: 'error', message: 'The connection dropped. Try the call again.' }),
+    (message: string) => setPhase((p) => (p.name === 'live' ? { name: 'error', message } : p)),
     []
   );
 
@@ -138,15 +143,31 @@ export function LiveDemo() {
         </Suspense>
       );
       break;
-    case 'ended':
+    case 'ended': {
+      const { ticket, spoke } = phase.result;
+      const note = !spoke
+        ? "We didn't hear anything, so there's no ticket this time. Check your microphone and try again."
+        : !ticket
+          ? "Emma couldn't write up this call, so there's no ticket. Try again and she'll have another go."
+          : isBlank(ticket)
+            ? "You didn't say enough for a ticket. Give a name, a service and a day and she'll write it up."
+            : null;
       body = (
         <div>
-          <h2 className={h}>Call ended</h2>
-          <p className="mt-3 max-w-[44ch] leading-relaxed text-muted">
-            For a real business, this call would be saved with its transcript, and a ticket would
-            land in the call history.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <h2 className={h}>{note ? 'Call ended' : 'Your ticket'}</h2>
+          {note ? (
+            <p className="mt-3 max-w-[44ch] leading-relaxed text-muted">{note}</p>
+          ) : (
+            ticket && (
+              <>
+                <p className="mt-2 max-w-[44ch] text-muted">Written from what you just said. Nothing was saved.</p>
+                <div className="mx-auto mt-7 max-w-md pr-3 sm:pr-6">
+                  <TicketSlip rows={ticketRows(ticket)} animate />
+                </div>
+              </>
+            )
+          )}
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
             <button onClick={start} className={callBtn + ' min-h-12 px-6'}>
               <Phone aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
               Call again
@@ -158,6 +179,7 @@ export function LiveDemo() {
         </div>
       );
       break;
+    }
     case 'error':
       body = (
         <div role="alert">

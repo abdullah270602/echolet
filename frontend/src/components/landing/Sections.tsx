@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useInView } from 'framer-motion';
 import { Waitlist } from './Waitlist';
 import { LogoMark } from './Logo';
+import { TicketSlip } from './TicketSlip';
 import { onShowTicket } from './ticketEvents';
 
 /* ------------------------------------------------------------------ */
@@ -70,34 +71,8 @@ function EcholetSlip() {
   useEffect(() => onShowTicket(() => setRun((n) => n + 1)), []);
   return (
     <figure>
-      <div
-        ref={ref}
-        key={run}
-        className={`relative rotate-1 bg-white shadow-[0_24px_50px_-24px_rgb(19_26_79/0.5)] ${inView ? 'write-in' : 'write-wait'}`}
-      >
-        <div className="bg-slip px-6 pb-3 pt-4 sm:px-8">
-          <p className="font-narrow text-lg font-extrabold uppercase tracking-[0.02em] text-stamp sm:text-[22px]">
-            While you were out
-          </p>
-        </div>
-        <dl className="px-6 pb-8 pt-4 sm:px-8">
-          {ticket.map(([k, v], i) => (
-            <div
-              key={k}
-              style={{ '--i': i } as CSSProperties}
-              className="write-line grid grid-cols-[5rem_1fr] gap-3 border-b border-rule/70 py-2.5 last:border-0"
-            >
-              <dt className="text-[13px] font-semibold text-ink/70">{k}</dt>
-              <dd className="font-medium leading-snug text-ink">{v}</dd>
-            </div>
-          ))}
-        </dl>
-        <p
-          aria-label="Stamped: call back"
-          className="write-stamp font-narrow pointer-events-none absolute -top-5 right-3 rotate-[-10deg] border-[3px] border-stamp px-3 py-1 text-xl font-extrabold uppercase tracking-[0.04em] text-stamp opacity-90 sm:-right-6"
-        >
-          Call back
-        </p>
+      <div ref={ref} key={run}>
+        <TicketSlip rows={ticket} animate={inView} waiting={!inView} />
       </div>
       <figcaption className="mt-5 text-[15px] text-muted">
         Written by Echolet as the call ends. An invented example from the demo clinic.
