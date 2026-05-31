@@ -32,6 +32,7 @@ def create_dynamic_assistant(
     send_to_queue_fn: Callable[[str], Awaitable[None]],
     cleanup_done: dict[str, bool],
     before_hangup: Callable[[], Awaitable[None]] | None = None,
+    tools: list | None = None,
 ) -> type[Agent]:
     """
     Factory function to create a DynamicAssistant class with transcript logging.
@@ -51,7 +52,7 @@ def create_dynamic_assistant(
 
     class DynamicAssistant(Agent):
         def __init__(self) -> None:
-            super().__init__(instructions=instructions)
+            super().__init__(instructions=instructions, tools=tools or [])
             self._transcript_log = transcript_log
             self._room_name = room_name
             self._session_start_time = session_start_time
