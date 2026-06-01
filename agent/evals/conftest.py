@@ -162,3 +162,29 @@ def pytest_sessionfinish(session):
         "by_category": {k: {"passed": p, "total": t} for k, (p, t) in sorted(by_cat.items())},
         "failures": failures,
     }, indent=2) + "\n", encoding="utf-8")
+
+
+# --- Demo mode: the landing-page agent with the demo calendar --------------------
+
+@pytest.fixture
+async def demo_call():
+    """(Call, DemoCalendar) for the public demo: calendar tools, nothing saved."""
+    from demo_calendar import CALENDAR_PROMPT, DemoCalendar, calendar_tools
+
+    session_config = SessionConfig(session_id=0, agent_id=0, user_id="", config=CLINIC_CONFIG)
+    prompts = build_prompts_from_config(session_config, saved=False)
+    cal = DemoCalendar(CLINIC_CONFIG)
+    transcript: list[dict] = []
+    Assistant = create_dynamic_assistant(
+        instructions=prompts.system_instructions + CALENDAR_PROMPT,
+        transcript_log=transcript,
+        room_name="eval-demo",
+        session_start_time=time.time(),
+        save_call_log_fn=skip_save_call_log,
+        send_to_queue_fn=skip_analysis_queue,
+        cleanup_done={"value": False},
+        tools=calendar_tools(cal),
+    )
+    async with _llm(LLM_MODEL) as agent_llm, _llm(JUDGE_MODEL) as judge_llm, AgentSession(llm=agent_llm) as session:
+        await session.start(Assistant())
+        yield Call(session, transcript, judge_llm), cal

@@ -16,6 +16,10 @@ EVAL_SAMPLE=40 uv run pytest evals/test_dataset.py      # a random sample
 Each run writes a summary (pass rate per category, failing case ids with the reason) to
 `evals/results/`, which is kept out of git. Notable runs are recorded below.
 
+Demo-mode evals (`evals/test_demo_booking.py`) run the landing-page agent with the demo
+calendar and check the diary itself: it offers real open times, books an open slot and
+confirms by text, refuses a taken slot, knows Sunday is closed, and asks for a name first.
+
 ## Batches
 
 New cases are added in batches so a regression can be traced to the batch that exposed it.

@@ -8,6 +8,9 @@ export interface Ticket {
   mood: string | null;
   todo: string[];
   summary: string | null;
+  /** Demo calls: the slot Emma booked and the confirmation text the caller gets. */
+  booked: string | null;
+  text: string | null;
 }
 
 export type SlipRows = readonly (readonly [string, string])[];
@@ -27,6 +30,8 @@ export function parseTicket(raw: string): Ticket | null {
       mood: str(d.mood),
       todo: Array.isArray(d.todo) ? (d.todo as unknown[]).map(str).filter((t): t is string => !!t).slice(0, 3) : [],
       summary: str(d.summary),
+      booked: str(d.booked),
+      text: str(d.text),
     };
   } catch {
     return null;
@@ -37,17 +42,19 @@ export function parseTicket(raw: string): Ticket | null {
 export const isBlank = (t: Ticket) => !t.caller && !t.phone && !t.about && !t.wants && !t.todo.length;
 
 const NOT_GIVEN = 'Not given';
+// On a real phone line the number comes from caller ID, so the agent never has to ask.
+const FROM_CALLER_ID = 'From caller ID';
 
 export function ticketRows(t: Ticket, takenAt = new Date()): SlipRows {
   const time = takenAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   return [
     ['Taken', `${time}, by Echolet`],
     ['Caller', t.caller ?? NOT_GIVEN],
-    ['Phone', t.phone ?? NOT_GIVEN],
+    ['Phone', t.phone ?? FROM_CALLER_ID],
     ['About', t.about ?? NOT_GIVEN],
-    ['Wants', t.wants ?? NOT_GIVEN],
+    t.booked ? ['Booked', t.booked] : ['Wants', t.wants ?? NOT_GIVEN],
     ['Mood', t.mood ? t.mood.charAt(0).toUpperCase() + t.mood.slice(1) : NOT_GIVEN],
-    ['To do', t.todo.length ? t.todo.join('; ') : NOT_GIVEN],
+    ['To do', t.todo.length ? t.todo.join('; ') : t.booked ? 'Nothing. Booked and confirmed by text' : NOT_GIVEN],
   ];
 }
 
