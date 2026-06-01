@@ -35,7 +35,10 @@ Talk time is recorded only by the agent on the server.
 `POST /api/demo/session` needs no account. It returns a two-minute join token for a
 `demo-<uuid>` room, with the demo clinic's config and a call-length cap in the token
 metadata. The metadata is signed with the LiveKit secret, so the agent uses it without a
-database lookup. Demo calls are not stored.
+database lookup. Demo calls are not stored. The demo agent also gets a demo calendar for the clinic
+(`agent/demo_calendar.py`): it checks real open slots, books them during the call and
+confirms by text, which the page shows since nothing is actually sent. When the call ends
+the visitor sees a ticket written from their own call, delivered over LiveKit RPC.
 
 On the landing page this endpoint is a Vercel Function (`frontend/api/demo/session.js`)
 with layered abuse protection: a Vercel Firewall rate limit; per-visitor hourly and daily
