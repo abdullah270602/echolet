@@ -36,6 +36,8 @@ def parse_demo_metadata(metadata: str) -> Optional[tuple[dict[str, Any], int]]:
     return config, min(max_seconds, DEMO_MAX_SECONDS_CEILING)
 
 
+DEMO_VOICE = {"provider": "deepgram", "voice_id": "aura-2-thalia-en"}
+
 DEMO_FAREWELL = (
     "That's the end of the demo call. Thanks for trying Echolet, have a great day!"
 )

@@ -48,3 +48,11 @@ def test_trims_and_coerces():
 
 def test_todo_string_becomes_list():
     assert dt.parse_ticket(json.dumps({**GOOD, "todo": "Call back"}))["todo"] == ["Call back"]
+
+
+def test_booked_calls_tell_the_writer_not_to_list_booking_as_a_todo():
+    msgs = dt.build_ticket_messages([{"role": "user", "content": "Book me in"}], {}, booked="Cleaning, Tuesday at 9 AM")
+    system = msgs[0]["content"]
+    assert "Cleaning, Tuesday at 9 AM" in system
+    assert "NOT a to-do" in system
+    assert "NOT a to-do" not in dt.build_ticket_messages([], {})[0]["content"]

@@ -79,3 +79,20 @@ async def test_asks_for_a_name_before_booking(demo_call):
     result = await call.say(f"Book me a cleaning on {name} at {slot}.")
     assert not cal.bookings, "booked without the caller's name"
     await call.judge(result, "Asks for the caller's name before booking.")
+
+
+async def test_the_earliest_one_means_the_first_time_offered(demo_call):
+    """Found in a live test: Emma offered 3:30 and 4 PM, then booked 12 PM."""
+    import re
+
+    call, cal = demo_call
+    name, day = _open_weekday(cal)
+    offer = await call.say(f"Could I book teeth whitening on {name} afternoon?")
+    offered_text = reply_text(offer)
+    times = re.findall(r"\b(\d{1,2}(?::\d{2})?\s*[AaPp]\.?[Mm]\.?)", offered_text)
+    assert times, f"no times offered: {offered_text!r}"
+    await call.say("The earliest one is fine. I'm Sam Okafor.")
+    assert cal.bookings, "nothing was booked"
+    first = re.sub(r"\s|\.", "", times[0]).lower().replace(":00", "")
+    booked = re.sub(r"\s|\.", "", cal.bookings[-1]["when"]).lower()
+    assert first in booked, f"offered {times}, booked {cal.bookings[-1]['when']}"
