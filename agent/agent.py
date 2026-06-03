@@ -36,6 +36,7 @@ from demo_calendar import CALENDAR_PROMPT, DemoCalendar, calendar_tools
 from sqs import send_to_analysis_queue
 from demo import (
     DEMO_FAREWELL,
+    DEMO_VOICE,
     is_demo_room,
     parse_demo_metadata,
     skip_analysis_queue,
@@ -145,8 +146,11 @@ async def agent_session(ctx: agents.JobContext) -> None:
         async def demo_ticket_json() -> str:
             # The visitor's ticket: written from this call's transcript, plus the booking
             # (and the confirmation text) taken straight from the calendar, not the model.
-            ticket = await generate_ticket(list(transcript_messages), session_config.config)
-            if calendar and (booking := calendar.latest()):
+            booking = calendar.latest() if calendar else None
+            ticket = await generate_ticket(
+                list(transcript_messages), session_config.config, booking["booked"] if booking else None
+            )
+            if booking:
                 ticket.update(booking)
             return json.dumps(ticket)
 
@@ -196,7 +200,9 @@ async def agent_session(ctx: agents.JobContext) -> None:
                 base_url=LLM_BASE_URL,
                 model=LLM_MODEL,
             ),
-            tts=create_tts(session_config.voice),
+            # Demo calls use Deepgram's voice: in live tests the Inworld stream stalled for
+            # ~10 s after tool calls; Deepgram is already the STT provider.
+            tts=create_tts(DEMO_VOICE if demo else session_config.voice),
             vad=silero.VAD.load(),
             turn_detection=MultilingualModel(),
         )

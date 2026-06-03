@@ -19,7 +19,7 @@ _TODO_MAX_ITEMS, _TODO_MAX_LEN = 3, 100
 EMPTY_TICKET: dict[str, Any] = {**{k: None for k in _TEXT_FIELDS}, "todo": []}
 
 
-def build_ticket_messages(transcript: list[dict], config: dict) -> list[dict]:
+def build_ticket_messages(transcript: list[dict], config: dict, booked: str | None = None) -> list[dict]:
     """Chat messages asking for a strict-JSON ticket for this call."""
     agent = config.get("agent", {}) if isinstance(config, dict) else {}
     business = agent.get("business_name") or agent.get("company") or "the business"
@@ -41,6 +41,12 @@ def build_ticket_messages(transcript: list[dict], config: dict) -> list[dict]:
         "Use only what the caller actually said. If the caller did not say something, "
         "use null. Never invent names, numbers, times or services."
     )
+    if booked:
+        system += (
+            f" The appointment was already booked during the call ({booked}) and the caller "
+            "was sent a confirmation text, so booking or confirming it is NOT a to-do. "
+            "Only list real follow-ups the front desk still needs to do, or an empty list."
+        )
     return [
         {"role": "system", "content": system},
         {"role": "user", "content": f"Call transcript:\n{lines}"},
@@ -76,7 +82,7 @@ def parse_ticket(text: str) -> dict[str, Any]:
     return ticket
 
 
-async def generate_ticket(transcript: list[dict], config: dict) -> dict[str, Any]:
+async def generate_ticket(transcript: list[dict], config: dict, booked: str | None = None) -> dict[str, Any]:
     """Ask the LLM for the ticket. Raises on API errors; the caller handles them."""
     from openai import AsyncOpenAI
 
@@ -85,7 +91,7 @@ async def generate_ticket(transcript: list[dict], config: dict) -> dict[str, Any
     client = AsyncOpenAI(api_key=OPENROUTER_API_KEY, base_url=LLM_BASE_URL, timeout=10)
     resp = await client.chat.completions.create(
         model=LLM_MODEL,
-        messages=build_ticket_messages(transcript, config),
+        messages=build_ticket_messages(transcript, config, booked),
         max_tokens=400,
         temperature=0,
     )

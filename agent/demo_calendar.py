@@ -21,13 +21,17 @@ DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sun
 CALENDAR_PROMPT = """
 <calendar>
 For this call you CAN see and book the clinic's calendar, using two tools:
-- check_availability(day, service): open start times for a day ("today", "tomorrow",
-  a weekday, or a date). Pass the service so only times it fits in are returned.
+- check_availability(day, service, part_of_day): a few open start times for a day
+  ("today", "tomorrow", a weekday, or a date). Pass the service, and morning or
+  afternoon if the caller said one.
 - book_appointment(day, time, service, caller_name): books the slot. It is final.
 This replaces any earlier instruction saying you can't see the calendar or that the front
-desk will confirm. Offer two or three open times, not the whole list. Book as soon as the
-caller picks a time and you have their name and the service. Then tell them, in one
-sentence, that they're booked and a confirmation text is on its way.
+desk will confirm. Before you check the calendar, say a quick "One sec, let me check."
+Offer two or three open times, not the whole list. Book exactly the time the caller
+chose: "the first one" or "the earliest" means the first of the times you just offered,
+in the order you said them. Never book a time you didn't offer or they didn't say. Book
+as soon as you have their name, the service and the chosen time, then tell them in one
+sentence that they're booked and a confirmation text is on its way.
 </calendar>
 """
 
@@ -122,7 +126,7 @@ class DemoCalendar:
         )
         return {"booked": f"{b['service']}, {b['when']}", "text": text}
 
-    def check(self, day_text: str, service: str = "") -> str:
+    def check(self, day_text: str, service: str = "", part_of_day: str = "") -> str:
         day = self.resolve_day(day_text)
         if not day:
             return f"Couldn't understand the day '{day_text}'. Ask the caller which day they mean."
@@ -132,9 +136,17 @@ class DemoCalendar:
         if not self._hours(day):
             return f"The clinic is closed on {label}."
         slots = self.starts_for(day, self.minutes_for(service)) if service else self.open_slots(day)
+        part = part_of_day.strip().lower()
+        if part.startswith("morn"):
+            slots = [t for t in slots if t < time(12)]
+        elif part.startswith(("after", "even")):
+            slots = [t for t in slots if t >= time(12)]
         if not slots:
-            return f"{label} is fully booked."
-        return f"Open times on {label} ({day.isoformat()}): " + ", ".join(_fmt(t) for t in slots)
+            return f"Nothing open on {label}{' in the ' + part if part else ''}."
+        # A short, spread-out choice reads well on the phone; any open time can still be booked.
+        shown = slots if len(slots) <= 3 else [slots[0], slots[len(slots) // 2], slots[-1]]
+        more = f" ({len(slots) - len(shown)} more open times)" if len(slots) > len(shown) else ""
+        return f"Some open times on {label} ({day.isoformat()}): " + ", ".join(_fmt(t) for t in shown) + more
 
     def book(self, day_text: str, time_text: str, service: str, caller_name: str) -> str:
         day = self.resolve_day(day_text)
@@ -179,13 +191,14 @@ def calendar_tools(cal: DemoCalendar) -> list:
     from livekit.agents import function_tool
 
     @function_tool()
-    async def check_availability(day: str, service: str = "") -> str:
+    async def check_availability(day: str, service: str = "", part_of_day: str = "") -> str:
         """Check open appointment times.
 
         day: 'today', 'tomorrow', a weekday name, or YYYY-MM-DD.
         service: the service wanted, if known, so only times it fits in are returned.
+        part_of_day: 'morning' or 'afternoon' if the caller said one.
         """
-        return cal.check(day, service)
+        return cal.check(day, service, part_of_day)
 
     @function_tool()
     async def book_appointment(day: str, time: str, service: str, caller_name: str) -> str:

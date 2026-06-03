@@ -97,8 +97,17 @@ def test_booking_produces_a_confirmation_text(cal):
 def test_check_by_service_only_offers_times_it_fits(cal):
     day = cal.resolve_day("tomorrow")
     text = cal.check("tomorrow", "Teeth whitening")
-    for t in cal.starts_for(day, 60):
-        assert cal_mod._fmt(t) in text
-    lonely = [t for t in cal.open_slots(day) if t not in cal.starts_for(day, 60)]
-    for t in lonely:
-        assert f" {cal_mod._fmt(t)}," not in f" {text.split(': ', 1)[1]},"
+    shown = text.split(": ", 1)[1].split(" (")[0].split(", ")
+    fits = {cal_mod._fmt(t) for t in cal.starts_for(day, 60)}
+    assert shown and set(shown) <= fits, f"offered a time whitening doesn't fit: {shown}"
+
+
+def test_check_offers_a_short_spread_and_filters_by_part_of_day(cal):
+    day = cal.resolve_day("tomorrow")
+    text = cal.check("tomorrow")
+    listed = text.split(": ", 1)[1].split(" (")[0].split(", ")
+    assert len(listed) <= 3
+    if len(cal.open_slots(day)) > 3:
+        assert "more open times" in text
+    afternoon = cal.check("tomorrow", part_of_day="afternoon")
+    assert all(t.endswith("PM") for t in afternoon.split(": ", 1)[1].split(" (")[0].split(", "))
