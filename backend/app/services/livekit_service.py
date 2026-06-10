@@ -10,8 +10,6 @@ def create_access_token(
     room_name: str | None = None,
     identity: str | None = None,
     name: str | None = None,
-    metadata: str | None = None,
-    ttl: timedelta = timedelta(minutes=10),
 ) -> dict:
     """
     Generate a LiveKit access token for voice-only communication.
@@ -40,13 +38,10 @@ def create_access_token(
     token = AccessToken(api_key=LIVEKIT_API_KEY, api_secret=LIVEKIT_API_SECRET)
     token.with_identity(participant_identity)
     token.with_grants(grants)
-    token.with_ttl(ttl)
+    token.with_ttl(timedelta(minutes=10))
 
     if name:
         token.with_name(name)
-    if metadata:
-        # Signed with our API secret, so the voice agent can trust it.
-        token.with_metadata(metadata)
 
     return {
         "token": token.to_jwt(),

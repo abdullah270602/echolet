@@ -10,7 +10,6 @@ from app.routes.livekit import router as livekit_router
 from app.routes.agents import router as agents_router
 from app.routes.session import router as session_router
 from app.routes.clerk import router as clerk_router
-from app.routes.demo import router as demo_router
 from app.config import ALLOWED_ORIGINS
 from app.db.database import engine, init_db, close_db
 
@@ -53,7 +52,6 @@ app.include_router(livekit_router, prefix="/api/livekit", tags=["livekit"])
 app.include_router(agents_router, prefix="/api", tags=["agents"])
 app.include_router(session_router, prefix="/api/session", tags=["session"])
 app.include_router(clerk_router, prefix="/api/clerk", tags=["clerk"])
-app.include_router(demo_router, prefix="/api/demo", tags=["demo"])
 
 
 @app.get("/health")

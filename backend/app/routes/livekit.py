@@ -9,7 +9,8 @@ from app.db.database import get_async_session
 router = APIRouter()
 
 # Tokens are minted only by POST /api/session/start (tied to an owned agent and a
-# call_sessions row) and POST /api/demo/session. Talk time is recorded by the
+# call_sessions row); demo tokens come from the Vercel function frontend/api/demo/session.js.
+# Talk time is recorded by the
 # voice agent when a call ends, never reported by the browser.
 
 
