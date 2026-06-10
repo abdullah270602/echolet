@@ -67,7 +67,9 @@ async def fetch_call_data(room_name: str) -> Optional[dict[str, Any]]:
                 """
                 SELECT
                     cs.transcript,
-                    ac.config->'output' as output_config
+                    ac.config->'output' as output_config,
+                    cs.duration_seconds,
+                    COALESCE(cs.started_at, cs.created_at) as call_started_at
                 FROM call_sessions cs
                 LEFT JOIN agent_configs ac ON cs.agent_id = ac.id
                 WHERE cs.room_name = $1
@@ -89,6 +91,11 @@ async def fetch_call_data(room_name: str) -> Optional[dict[str, Any]]:
             return {
                 "transcript": transcript,
                 "output_config": output_config,
+                # Call-record fields for the timestamp / call_duration ticket fields.
+                "call_data": {
+                    "timestamp": row.get("call_started_at").isoformat() if row.get("call_started_at") else None,
+                    "duration_seconds": row.get("duration_seconds"),
+                },
             }
 
         finally:
@@ -118,9 +125,13 @@ async def update_analysis(
     sentiment: str,
     action_required: bool,
     action_items: list[str],
+    ticket: dict | None = None,
 ) -> bool:
     """
     Update call session with analysis results.
+
+    `ticket` holds the agent's configured ticket fields and tags as the worker filled
+    them ({"fields": {...}, "tags": [...]}), stored as JSONB in call_sessions.ticket.
 
     Args:
         room_name: The UUID room name (session identifier)
@@ -153,7 +164,8 @@ async def update_analysis(
                     urgency = $3,
                     sentiment = $4,
                     action_required = $5,
-                    action_items = $6
+                    action_items = $6,
+                    ticket = $8::jsonb
                 WHERE room_name = $7
                 """,
                 summary,
@@ -163,6 +175,7 @@ async def update_analysis(
                 action_required,
                 json.dumps(action_items),
                 room_name,
+                json.dumps(ticket or {}, allow_nan=False),
             )
 
             updated = result.split()[-1] != "0"

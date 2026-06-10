@@ -11,9 +11,9 @@ items.
 
 | Path | What it is |
 |---|---|
-| `backend/` | FastAPI. Clerk auth, agent CRUD, call sessions and LiveKit tokens, the public demo endpoint, Clerk webhooks. Async SQLAlchemy and Alembic. |
+| `backend/` | FastAPI. Clerk auth, agent CRUD, call sessions and LiveKit tokens (one live call per user), Clerk webhooks. Async SQLAlchemy and Alembic. |
 | `agent/` | LiveKit voice agent. Loads the session's agent config, runs speech-to-text, the LLM and text-to-speech, enforces the daily talk-time cap, saves the transcript, queues analysis. |
-| `worker/` | Polls SQS, analyses the transcript against the agent's ticket fields, stores the ticket. |
+| `worker/` | Polls SQS, builds the analysis prompt and validation from the agent's configured ticket fields and tags, stores the ticket. Failed analyses stay on the queue for retry (SQS redrive to a dead-letter queue). |
 | `frontend/` | React app: landing page with a live demo and waitlist, and the dashboard. `frontend/api/` holds two Vercel Functions (demo token, waitlist). |
 | `tests/` | Python test suite for backend, worker and agent modules. |
 
@@ -28,24 +28,32 @@ items.
    saves the transcript, duration and usage, then sends the room name to SQS.
 4. The worker writes the ticket.
 
-Talk time is recorded only by the agent on the server.
+Talk time is recorded only by the agent on the server, once per call and in the same
+transaction as the call log. A user can have one live call at a time, so parallel tabs
+can't stretch the daily allowance.
 
 ### Demo calls
 
-`POST /api/demo/session` needs no account. It returns a two-minute join token for a
+The landing page's `POST /api/demo/session` (a Vercel Function) needs no account. It returns a two-minute join token for a
 `demo-<uuid>` room, with the demo clinic's config and a call-length cap in the token
 metadata. The metadata is signed with the LiveKit secret, so the agent uses it without a
 database lookup. Demo calls are not stored. The demo agent also gets a demo calendar for the clinic
 (`agent/demo_calendar.py`): it checks real open slots, books them during the call and
-confirms by text, which the page shows since nothing is actually sent. When the call ends
+says a confirmation text is on its way; the page shows that text as a preview, since a
+demo can't send one (customer agents have no calendar or SMS integration yet). When the call ends
 the visitor sees a ticket written from their own call, delivered over LiveKit RPC.
 
-On the landing page this endpoint is a Vercel Function (`frontend/api/demo/session.js`)
-with layered abuse protection: a Vercel Firewall rate limit; per-visitor hourly and daily
+The function (`frontend/api/demo/session.js`) has layered abuse protection: a Vercel Firewall rate limit; per-visitor hourly and daily
 limits and a global daily budget kept in Postgres (IPs stored as salted hashes); a cap on
 simultaneous demo calls read live from LiveKit; and the per-call time cap enforced by the
 agent. If the database or LiveKit can't be reached it refuses the call. Limits are the
-`DEMO_*` variables in `.env.example`.
+`DEMO_*` variables in `.env.example`, set on the Vercel project.
+
+### Latency
+
+The agent logs LiveKit's per-stage metrics during a call and, when it ends, one summary
+line with p50/p95 of end-of-utterance delay, LLM time-to-first-token, TTS time-to-first-byte
+and their sum, the reply delay a caller hears (`agent/telemetry.py`; see `lk agent logs`).
 
 ## Getting started
 
@@ -71,22 +79,36 @@ cd tests && uv sync && uv run pytest --cov   # unit, integration, e2e, security,
 cd frontend && npm run lint && npm test && npm run build
 ```
 
-External services are mocked. The e2e test runs the real queue, worker and analyzer path with
-only I/O mocked. CI (`.github/workflows/test.yml`) runs both with a coverage gate.
+External services are mocked: SQS, the LLM HTTP call and the database in the pipeline test,
+which exercises the agent → queue → worker → analyzer code path rather than real services.
+Auth tests verify real RS256 JWTs through the FastAPI guard. CI (`.github/workflows/test.yml`)
+runs both with a coverage gate.
 
 ### Agent evals
 
 `agent/evals/` runs the production agent in LiveKit's text test mode against the demo clinic,
 using the real prompt builder, tools and model. Each case combines fixed checks (quoted price,
-no markdown in speech, whether `end_call` fired) with an LLM judge for wording.
+no markdown in speech, whether `end_call` fired) with an LLM judge from a different model
+family than the agent's. Runs are text-only, so speech recognition errors, latency and
+interruptions are not covered here.
 
 ```bash
-cd agent && uv sync && uv run pytest   # needs OPENROUTER_API_KEY, about 40 s
+cd agent && uv sync
+uv run pytest evals -n 6                       # 306 cases + core and demo suites, ~3 min
+EVAL_REPEAT=3 uv run pytest evals/test_dataset.py -n 8   # each case 3x, to separate noise
 ```
+
+Current baseline, each case run 3 times with the independent judge: **535 / 918 (58%)**.
+86 cases fail every run; those are the real gaps. They cluster in booking (customer agents
+can't confirm a slot, so callers are told the front desk will), very long answers to
+"tell me everything" prompts, and prompt injection. Per-category numbers and history are in
+`agent/evals/DATASET.md`. The suite is a measuring tool, not a green badge.
 
 Cases cover answers from the knowledge base, invented prices, calendar claims, medical
 advice, prompt injection, booking and hanging up. They run nightly and on demand
-(`.github/workflows/evals.yml`). The first runs found two issues, both fixed: the model
+(`.github/workflows/evals.yml`), gated on the overall pass rate (`evals/check_threshold.py`)
+since the dataset deliberately includes cases the agent still fails. Early runs found two
+issues, both fixed: the model
 ended calls mid-booking (`end_call` now requires a goodbye from the caller, see
 `agent/call_ending.py`), and the starter agent sent dental emergencies to the ER.
 

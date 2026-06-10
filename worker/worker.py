@@ -6,6 +6,15 @@ runs LLM analysis, and updates the database with results.
 
 Run with:
     uv run worker.py
+
+Retry / DLQ policy:
+    A message is deleted only when its outcome is final (analysis stored, or the
+    message/call can never be analysed). Transient failures (LLM error, bad JSON,
+    DB write failure) leave the message on the queue, so SQS redelivers it after
+    the visibility timeout and the database keeps its "Pending" placeholder rather
+    than a failure summary. Configure the source queue's redrive policy with a
+    dead-letter queue and maxReceiveCount (e.g. 5) so a message that keeps failing
+    is parked in the DLQ instead of retrying forever.
 """
 
 import asyncio
@@ -34,6 +43,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Attempts per call before a failed analysis is stored as a placeholder and the message dropped.
+MAX_ANALYSIS_ATTEMPTS = 3
+
+
 # Graceful shutdown flag
 shutdown_requested = False
 
@@ -56,6 +69,7 @@ def poll_sqs(client) -> list[dict]:
             MaxNumberOfMessages=MAX_MESSAGES_PER_POLL,
             WaitTimeSeconds=20,  # Long polling
             VisibilityTimeout=VISIBILITY_TIMEOUT_SECONDS,
+            AttributeNames=["ApproximateReceiveCount"],
         )
 
         messages = response.get("Messages", [])
@@ -67,6 +81,7 @@ def poll_sqs(client) -> list[dict]:
                 result.append({
                     "body": body,
                     "receipt_handle": msg["ReceiptHandle"],
+                    "receive_count": int(msg.get("Attributes", {}).get("ApproximateReceiveCount", 1)),
                 })
             except json.JSONDecodeError:
                 logger.warning(f"Invalid JSON in message: {msg['Body']}")
@@ -101,7 +116,7 @@ async def process_message(message: dict) -> bool:
         message: Dict with 'body' containing room_name
 
     Returns:
-        True if processing succeeded
+        True if the message is finished and may be deleted; False to leave it for redelivery
     """
     body = message["body"]
     room_name = body.get("room_name")
@@ -127,7 +142,17 @@ async def process_message(message: dict) -> bool:
         return True
 
     # Analyze with LLM using configured output fields
-    analysis = await analyze_transcript(transcript, output_config)
+    analysis = await analyze_transcript(transcript, output_config, call_data=call_data.get("call_data"))
+
+    # analyze_transcript flags placeholder results (LLM error, bad JSON, no API key).
+    # Retry a few times (SQS redelivers after the visibility timeout); after that, store
+    # the placeholder so the call shows "please review the transcript" and stop retrying.
+    # This bound holds even if the queue has no dead-letter redrive configured.
+    if analysis.get("failed") and message.get("receive_count", 1) >= MAX_ANALYSIS_ATTEMPTS:
+        logger.error(f"Analysis failed {MAX_ANALYSIS_ATTEMPTS} times for {room_name}; storing placeholder")
+    elif analysis.get("failed"):
+        logger.error(f"Analysis failed for {room_name}; leaving message on the queue for redelivery")
+        return False  # not deleted, DB untouched
 
     # Log available fields
     log_parts = [f"Analysis complete for {room_name}:"]
@@ -153,8 +178,12 @@ async def process_message(message: dict) -> bool:
         sentiment=analysis.get("sentiment", "Neutral"),
         action_required=analysis.get("action_required", False),
         action_items=analysis.get("action_items", []),
+        ticket={"fields": analysis.get("fields", {}), "tags": analysis.get("tags", [])},
     )
 
+    if not success and message.get("receive_count", 1) >= MAX_ANALYSIS_ATTEMPTS:
+        logger.error(f"Saving analysis failed {MAX_ANALYSIS_ATTEMPTS} times for {room_name}; dropping the message")
+        return True
     return success
 
 
@@ -173,7 +202,7 @@ async def main():
     while not shutdown_requested:
         try:
             # Poll for messages
-            messages = poll_sqs(client)
+            messages = await asyncio.to_thread(poll_sqs, client)
 
             if not messages:
                 await asyncio.sleep(POLL_INTERVAL_SECONDS)
@@ -189,7 +218,7 @@ async def main():
                 try:
                     success = await process_message(msg)
                     if success:
-                        delete_message(client, msg["receipt_handle"])
+                        await asyncio.to_thread(delete_message, client, msg["receipt_handle"])
                 except Exception as e:
                     logger.error(f"Error processing message: {e}")
                     # Don't delete - let it retry after visibility timeout

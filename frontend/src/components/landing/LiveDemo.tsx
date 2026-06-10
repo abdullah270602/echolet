@@ -166,7 +166,7 @@ export function LiveDemo() {
                 </div>
                 {ticket.text && (
                   <figure className="mx-auto mt-6 max-w-md">
-                    <figcaption className="text-sm text-muted">The confirmation text a real caller gets</figcaption>
+                    <figcaption className="text-sm text-muted">Preview of the confirmation text (demo only, nothing is sent)</figcaption>
                     <p className="mt-2 w-fit max-w-[34ch] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-[15px] leading-snug text-[#131a4f] shadow-[0_8px_20px_-12px_rgb(0_0_0/0.5)]">
                       {ticket.text}
                     </p>

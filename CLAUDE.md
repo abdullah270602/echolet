@@ -61,14 +61,14 @@ uv run worker.py     # Run worker (polls SQS continuously)
 9. Worker updates call_session with summary, sentiment, and action_items
 
 ### Key Integration Points
-- **LiveKit**: Rooms connect frontend and agent. Room name = `call_sessions.room_name`; `demo-*` rooms are public landing-page demos whose config and time cap come from signed token metadata (`backend/app/services/demo_service.py`, `agent/demo.py`).
+- **LiveKit**: Rooms connect frontend and agent. Room name = `call_sessions.room_name`; `demo-*` rooms are public landing-page demos whose config and time cap come from signed token metadata (minted by `frontend/api/demo/session.js`; parsed in `agent/demo.py`).
 - **Usage**: talk time is written only by the agent (`agent/database.py: save_call_log`). Never add a client-reported usage endpoint.
 - **Database**: Shared PostgreSQL database accessed by backend, agent, and worker for config and session data.
 - **SQS**: Decouples call completion from analysis. Agent sends to queue, worker processes async.
 - **Authentication**: Backend uses Clerk JWT verification; agent trusts participant metadata from backend.
 
 ### Backend Structure
-- `app/routes/`: API endpoints (agents, session, livekit usage, demo, clerk webhooks)
+- `app/routes/`: API endpoints (agents, session, livekit usage, clerk webhooks)
 - `app/services/`: Business logic layer
 - `app/db/repos/`: Database repository pattern for queries
 - `app/db/models/`: SQLAlchemy ORM models

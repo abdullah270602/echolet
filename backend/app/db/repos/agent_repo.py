@@ -30,6 +30,19 @@ async def get_by_id(
     return result.scalar_one_or_none()
 
 
+async def get_active_by_id(
+    session: AsyncSession,
+    agent_id: int,
+) -> Optional[AgentConfig]:
+    """Get a non-deleted agent by ID (soft-deleted agents must not take calls)."""
+    stmt = select(AgentConfig).where(
+        AgentConfig.id == agent_id,
+        AgentConfig.deleted_at.is_(None),
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
 async def get_by_user_id(
     session: AsyncSession,
     user_id: uuid.UUID,

@@ -274,3 +274,18 @@ class TestDelete:
 
         mock_session.delete.assert_called_once_with(mock_agent)
         mock_session.commit.assert_called_once()
+
+
+class TestGetActiveById:
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_filters_out_soft_deleted(self):
+        from sqlalchemy.dialects import postgresql
+        from app.db.repos import agent_repo
+
+        session = AsyncMock()
+        session.execute.return_value = MagicMock(scalar_one_or_none=lambda: None)
+        assert await agent_repo.get_active_by_id(session, 5) is None
+        sql = str(session.execute.call_args.args[0].compile(dialect=postgresql.dialect()))
+        assert "deleted_at IS NULL" in sql
+        assert "agent_configs.id" in sql

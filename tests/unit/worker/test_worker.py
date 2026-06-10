@@ -221,13 +221,20 @@ class TestProcessMessage:
 
         with patch(
             "worker.fetch_call_data",
-            return_value={"transcript": sample_transcript, "output_config": cfg},
+            return_value={"transcript": sample_transcript, "output_config": cfg,
+                          "call_data": {"timestamp": "2026-05-01T10:00:00", "duration_seconds": 95}},
         ), patch("worker.analyze_transcript", return_value=sample_analysis) as analyze, patch(
             "worker.update_analysis", return_value=True
-        ):
+        ) as update:
             assert await process_message(message) is True
 
-        analyze.assert_called_once_with(sample_transcript, cfg)
+        analyze.assert_called_once_with(
+            sample_transcript, cfg, call_data={"timestamp": "2026-05-01T10:00:00", "duration_seconds": 95}
+        )
+        # the configured fields and tags are stored, not dropped
+        assert update.call_args.kwargs["ticket"] == {
+            "fields": sample_analysis.get("fields", {}), "tags": sample_analysis.get("tags", [])
+        }
 
     @pytest.mark.unit
     @pytest.mark.asyncio
@@ -375,3 +382,88 @@ class TestDuplicateHandling:
         assert result1 is True
         assert result2 is True
         assert mock_update.call_count == 2
+
+
+# =============================================================================
+# FAILED ANALYSES ARE RETRIED, NOT STORED
+# =============================================================================
+
+FAILED = {"summary": "Analysis failed - please review transcript manually."}
+
+
+class TestAnalysisFailure:
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_failed_analysis_is_not_stored_and_not_acked(self, sample_transcript):
+        message = {"body": {"room_name": "room-123"}, "receipt_handle": "r"}
+        placeholder = {"summary": "Analysis failed - please review transcript manually.", "failed": True}
+        with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}), patch(
+            "worker.analyze_transcript", return_value=placeholder
+        ), patch("worker.update_analysis", return_value=True) as update:
+            assert await process_message(message) is False
+        update.assert_not_called()
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("outcome,deleted", [(False, False), (True, True)])
+    async def test_loop_deletes_message_only_when_processing_succeeded(self, outcome, deleted):
+        import worker
+
+        msg = {"body": {"room_name": "r"}, "receipt_handle": "rh-1"}
+
+        def one_poll(_client):
+            return [msg]
+
+        async def process(_msg):
+            worker.shutdown_requested = True  # stop after this message
+            return outcome
+
+        try:
+            with patch("worker.SQS_QUEUE_URL", "https://sqs.test/q"), patch(
+                "worker.get_sqs_client", return_value=MagicMock()
+            ), patch("worker.poll_sqs", side_effect=one_poll), patch(
+                "worker.process_message", side_effect=process
+            ), patch("worker.delete_message") as delete:
+                worker.shutdown_requested = False
+                await worker.main()
+        finally:
+            worker.shutdown_requested = False
+
+        assert delete.called is deleted
+        if deleted:
+            assert delete.call_args.args[1] == "rh-1"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_real_analyzer_flags_placeholders_as_failed(sample_transcript, monkeypatch):
+    """The worker relies on this flag to retry instead of saving a placeholder."""
+    import analyzer
+
+    monkeypatch.setattr(analyzer, "OPENROUTER_API_KEY", None)
+    result = await analyzer.analyze_transcript(sample_transcript, {})
+    assert result["failed"] is True
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("receive_count,stored,done", [(1, False, False), (2, False, False), (3, True, True)])
+async def test_failed_analysis_retries_then_stores_placeholder(sample_transcript, receive_count, stored, done):
+    """A failure that never clears must not be retried forever (no DLQ required)."""
+    message = {"body": {"room_name": "room-1"}, "receipt_handle": "r", "receive_count": receive_count}
+    placeholder = {"summary": "Analysis failed - please review transcript manually.", "failed": True}
+    with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}), patch(
+        "worker.analyze_transcript", return_value=placeholder
+    ), patch("worker.update_analysis", return_value=True) as update:
+        assert await process_message(message) is done
+    assert update.called is stored
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_persistent_save_failure_is_dropped_after_max_attempts(sample_transcript, sample_analysis):
+    message = {"body": {"room_name": "room-1"}, "receipt_handle": "r", "receive_count": 3}
+    with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}), patch(
+        "worker.analyze_transcript", return_value=sample_analysis
+    ), patch("worker.update_analysis", return_value=False):
+        assert await process_message(message) is True

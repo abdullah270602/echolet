@@ -38,7 +38,8 @@ from transcript import create_dynamic_assistant  # noqa: E402
 # tests/unit/backend/test_eval_fixture.py fails if this drifts from the backend template.
 CLINIC_CONFIG = json.loads((Path(__file__).parent / "clinic_config.json").read_text())
 
-JUDGE_MODEL = os.getenv("EVAL_JUDGE_MODEL", LLM_MODEL)
+# The judge is a different model family from the agent, so it isn't grading its own style.
+JUDGE_MODEL = os.getenv("EVAL_JUDGE_MODEL", "openai/gpt-4.1-mini")
 
 if not os.getenv("OPENROUTER_API_KEY"):
     pytest.skip("OPENROUTER_API_KEY not set; evals call a real LLM", allow_module_level=True)
@@ -159,6 +160,7 @@ def pytest_sessionfinish(session):
         "passed": passed,
         "total": total,
         "pass_rate": round(passed / total, 3) if total else None,
+        "repeats": int(os.getenv("EVAL_REPEAT", "1")),
         "by_category": {k: {"passed": p, "total": t} for k, (p, t) in sorted(by_cat.items())},
         "failures": failures,
     }, indent=2) + "\n", encoding="utf-8")

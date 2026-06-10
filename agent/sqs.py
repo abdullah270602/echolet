@@ -7,7 +7,6 @@ Sends call session IDs to SQS for async processing by the worker service.
 import json
 import logging
 import time
-from typing import Optional
 
 import boto3
 from botocore.exceptions import ClientError

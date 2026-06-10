@@ -41,54 +41,6 @@ def mock_session() -> AsyncMock:
 
 
 # =============================================================================
-# DATABASE FAILURE TESTS
-# =============================================================================
-
-
-class TestDatabaseFailures:
-    """Tests for database unavailability scenarios."""
-
-    @pytest.mark.resilience
-    @pytest.mark.asyncio
-    async def test_db_connection_refused(self, mock_session, user_id):
-        """BREAK-P5-B3: Database connection refused."""
-        from sqlalchemy.exc import OperationalError
-
-        mock_session.execute.side_effect = OperationalError(
-            "statement", "params", "Connection refused"
-        )
-
-        # Service should handle gracefully (not crash)
-        with pytest.raises(OperationalError):
-            await mock_session.execute("SELECT 1")
-
-    @pytest.mark.resilience
-    @pytest.mark.asyncio
-    async def test_db_query_timeout(self, mock_session):
-        """BREAK: Database query timeout."""
-        import asyncio
-
-        mock_session.execute.side_effect = asyncio.TimeoutError()
-
-        with pytest.raises(asyncio.TimeoutError):
-            await mock_session.execute("SELECT * FROM large_table")
-
-    @pytest.mark.resilience
-    @pytest.mark.asyncio
-    async def test_db_transaction_rollback(self, mock_session):
-        """BREAK: Transaction rollback on error."""
-        mock_session.commit.side_effect = Exception("Commit failed")
-
-        with pytest.raises(Exception):
-            await mock_session.commit()
-
-        # Rollback should be called
-        mock_session.rollback = AsyncMock()
-        await mock_session.rollback()
-        mock_session.rollback.assert_called_once()
-
-
-# =============================================================================
 # LLM API FAILURE TESTS
 # =============================================================================
 
@@ -272,36 +224,3 @@ class TestAgentSQSFailures:
 
             # Should return False gracefully
             assert result is False
-
-
-# =============================================================================
-# CONCURRENT ACCESS TESTS
-# =============================================================================
-
-
-class TestConcurrentAccess:
-    """Tests for concurrent request handling."""
-
-
-    @pytest.mark.resilience
-    @pytest.mark.asyncio
-    async def test_concurrent_agent_creates(self, user_id):
-        """BREAK-P2-B3: Concurrent agent creates at limit."""
-        import asyncio
-
-        # Track how many creates succeed
-        creates_succeeded = []
-
-        async def try_create(index: int):
-            # Simulate create attempt
-            await asyncio.sleep(0.01)
-            creates_succeeded.append(index)
-            return True
-
-        # Run 5 concurrent creates
-        tasks = [try_create(i) for i in range(5)]
-        await asyncio.gather(*tasks)
-
-        # In real test, only 1 should succeed at limit
-        # Here we just verify no crashes
-        assert len(creates_succeeded) == 5

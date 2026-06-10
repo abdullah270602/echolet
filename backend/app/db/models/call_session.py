@@ -106,6 +106,11 @@ class CallSession(Base):
     )
 
     # Whether human follow-up is required
+    ticket: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        JSONB,
+        nullable=True,
+        comment="Configured ticket fields and tags as filled by the worker: {fields, tags}",
+    )
     action_required: Mapped[Optional[bool]] = mapped_column(
         Boolean,
         nullable=True,

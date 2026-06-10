@@ -18,14 +18,18 @@ MARKDOWN = re.compile(r"(\*\*|^#|^\s*[-*•]\s|^\s*\d+\.\s)", re.M)
 CASES = load()
 if sample := int(os.getenv("EVAL_SAMPLE", "0")):
     CASES = random.Random(os.getenv("EVAL_SEED", "0")).sample(CASES, min(sample, len(CASES)))
+# LLM output varies run to run; EVAL_REPEAT=3 runs each case three times so a pass rate
+# (and a change between runs) can be told apart from noise.
+REPEAT = max(1, int(os.getenv("EVAL_REPEAT", "1")))
 
 
-def _param(case):
-    # id: b001.<category>.<case id>; categories contain hyphens, so dots separate parts
-    return pytest.param(case, id=f"b{case['batch']:03d}.{case['category']}.{case['id']}", marks=pytest.mark.eval)
+def _param(case, r):
+    # id: b001.<category>.<case id>[.rN]; categories contain hyphens, so dots separate parts
+    rep = f".r{r}" if REPEAT > 1 else ""
+    return pytest.param(case, id=f"b{case['batch']:03d}.{case['category']}.{case['id']}{rep}", marks=pytest.mark.eval)
 
 
-@pytest.mark.parametrize("case", [_param(c) for c in CASES])
+@pytest.mark.parametrize("case", [_param(c, r) for c in CASES for r in range(1, REPEAT + 1)])
 async def test_case(call, case):
     results = [await call.say(turn) for turn in case["turns"]]
     last = results[-1]
