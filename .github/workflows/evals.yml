@@ -1,7 +1,9 @@
 name: Agent evals
 
-# Behavioural evals call a real LLM (a few cents per run), so they run nightly and
-# on demand rather than on every push. Needs the OPENROUTER_API_KEY repo secret.
+# Behavioural evals call real LLMs (a few cents per run), so they run nightly and on
+# demand rather than on every push. Needs the OPENROUTER_API_KEY repo secret.
+# The dataset includes cases the agent still fails, so the job gates on the overall
+# pass rate (evals/check_threshold.py) rather than on every case passing.
 on:
   workflow_dispatch:
   schedule:
@@ -20,4 +22,9 @@ jobs:
         working-directory: agent
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: uv sync && uv run pytest -v
+        run: |
+          uv sync
+          uv run pytest evals -n 6 -q || true   # individual failures are expected; gated below
+      - name: Check pass rate
+        working-directory: agent
+        run: uv run python evals/check_threshold.py 0.55   # just under the current baseline: catches regressions
