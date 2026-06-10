@@ -18,7 +18,14 @@ from typing import Any, Optional
 import httpx
 
 from config import OPENROUTER_API_KEY, LLM_BASE_URL, LLM_MODEL
-from prompt import build_analysis_prompt, get_enabled_field_keys
+from datetime import datetime
+
+from prompt import (
+    LEGACY_KEYS,
+    build_analysis_prompt,
+    get_enabled_field_keys,
+    get_ticket_fields,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +72,103 @@ VALID_URGENCIES = {"High", "Medium", "Low"}
 VALID_SENTIMENTS = {"Positive", "Neutral", "Frustrated", "Angry"}
 
 
+def _match_option(value: Any, options: list[str]) -> Optional[str]:
+    """Case-insensitive match against configured options; None if not in the set."""
+    if isinstance(value, str):
+        for opt in options:
+            if value.strip().lower() == str(opt).lower():
+                return opt
+    return None
+
+
+def coerce_value(field: dict[str, Any], value: Any) -> Any:
+    """Coerce an LLM value to the field's configured type; None if it doesn't fit."""
+    if value is None:
+        return None
+    t = field.get("type", "string")
+    if t == "select":
+        return _match_option(value, field.get("options") or [])
+    if t in ("string", "text"):
+        ok = isinstance(value, (str, int, float)) and not isinstance(value, bool)
+        return str(value)[:1000] if ok else None
+    if t == "number":
+        if isinstance(value, bool):
+            return None
+        try:
+            return value if isinstance(value, (int, float)) else float(value)
+        except (TypeError, ValueError):
+            return None
+    if t == "boolean":
+        if isinstance(value, bool):
+            return value
+        return {"true": True, "false": False}.get(str(value).strip().lower())
+    if t == "array":
+        return [str(i) for i in value][:10] if isinstance(value, list) else None
+    if t == "datetime":
+        try:
+            datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            return str(value)
+        except ValueError:
+            return None
+    return None
+
+
+def build_result(
+    llm_result: dict[str, Any],
+    output_config: Optional[dict[str, Any]],
+    call_data: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    """
+    Validate an LLM reply against the configured fields.
+
+    Returns the legacy column keys (summary, category, urgency, sentiment,
+    action_required, action_items; select options title-cased so the dashboard
+    renders them, falling back to defaults when the LLM value is invalid), plus:
+      "fields": {field_id: validated value} for every enabled field
+      "tags": subset of custom_tags
+    ponytail: call_sessions has no JSON column for "fields"/"tags", so they are
+    returned but not persisted until one is added.
+    """
+    call_data = call_data or {}
+    defaults = get_default_analysis(output_config)
+    result: dict[str, Any] = {}
+    fields: dict[str, Any] = {}
+
+    for f in get_ticket_fields(output_config):
+        fid = f["id"]
+        if fid == "timestamp":
+            fields[fid] = call_data.get("timestamp")
+        elif fid == "call_duration":
+            fields[fid] = call_data.get("duration_seconds")
+        else:
+            # Accept the legacy key too (older prompts/LLM habits).
+            raw = llm_result.get(fid, llm_result.get(LEGACY_KEYS.get(fid, fid)))
+            fields[fid] = coerce_value(f, raw)
+
+        legacy = LEGACY_KEYS.get(fid)
+        if legacy:
+            v = fields[fid]
+            if fid == "call_summary":
+                result[legacy] = v or "No summary available."
+            elif f.get("type") == "select":
+                result[legacy] = v.title() if v else defaults.get(legacy)
+            elif fid == "follow_up_required":
+                result[legacy] = bool(v)
+            else:
+                result[legacy] = v if v is not None else defaults.get(legacy)
+
+    allowed = (output_config or {}).get("custom_tags") or []
+    raw_tags = llm_result.get("tags")
+    tags = [t for t in raw_tags if t in allowed] if isinstance(raw_tags, list) else []
+    result["fields"] = fields
+    result["tags"] = list(dict.fromkeys(tags))
+    return result
+
+
 async def analyze_transcript(
     transcript: list[dict[str, Any]],
     output_config: Optional[dict[str, Any]] = None,
+    call_data: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
     """
     Analyze a call transcript using the LLM.
@@ -76,12 +177,12 @@ async def analyze_transcript(
         transcript: List of message dicts with role/content
         output_config: Optional output configuration from agent_configs.config.output
                       Controls which fields are extracted
+        call_data: Optional {"timestamp", "duration_seconds"} from the call record;
+                   fills the timestamp / call_duration fields (never taken from the LLM)
 
     Returns:
         Dict with analysis fields based on output config (defaults to all fields)
     """
-    enabled_keys = get_enabled_field_keys(output_config)
-
     if not transcript:
         result = get_default_analysis(output_config)
         result["summary"] = "Empty call - no conversation recorded."
@@ -91,6 +192,7 @@ async def analyze_transcript(
         logger.error("OPENROUTER_API_KEY not configured")
         result = get_default_analysis(output_config)
         result["summary"] = "Analysis unavailable - API key not configured."
+        result["failed"] = True
         return result
 
     # Build dynamic prompt based on enabled fields
@@ -128,33 +230,9 @@ async def analyze_transcript(
                 content = content.split("```")[1].split("```")[0]
 
             llm_result = json.loads(content.strip())
-
-            # Build result with only enabled fields, validated
-            result = {}
-
-            # Summary is always included
-            result["summary"] = str(llm_result.get("summary", "No summary available."))[:1000]
-
-            # Validate and include only enabled fields
-            if "intent" in enabled_keys:
-                category = llm_result.get("category", "Other")
-                result["category"] = category if category in VALID_CATEGORIES else "Other"
-
-            if "priority" in enabled_keys:
-                urgency = llm_result.get("urgency", "Medium")
-                result["urgency"] = urgency if urgency in VALID_URGENCIES else "Medium"
-
-            if "sentiment" in enabled_keys:
-                sentiment = llm_result.get("sentiment", "Neutral")
-                result["sentiment"] = sentiment if sentiment in VALID_SENTIMENTS else "Neutral"
-
-            if "follow_up_required" in enabled_keys:
-                result["action_required"] = bool(llm_result.get("action_required", False))
-
-            if "action_items" in enabled_keys:
-                result["action_items"] = [str(item) for item in llm_result.get("action_items", [])][:10]
-
-            return result
+            if not isinstance(llm_result, dict):
+                raise json.JSONDecodeError("expected a JSON object", content, 0)
+            return build_result(llm_result, output_config, call_data)
 
     except httpx.HTTPStatusError as e:
         logger.error(f"LLM API error: {e.response.status_code} - {e.response.text}")
@@ -166,4 +244,5 @@ async def analyze_transcript(
     # Fallback response
     result = get_default_analysis(output_config)
     result["summary"] = "Analysis failed - please review transcript manually."
+    result["failed"] = True  # a placeholder, not a result: the worker must not persist it
     return result

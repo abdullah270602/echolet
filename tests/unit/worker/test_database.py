@@ -5,7 +5,7 @@ Tests for SSL handling, URL parsing, and database operations.
 """
 
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -377,7 +377,9 @@ class TestFetchCallData:
     async def test_sp_output_config_dict_passthrough(self):
         cfg = {"ticket_fields": [{"id": "x", "type": "string"}], "custom_tags": ["vip"]}
         result = await self._fetch({"transcript": [{"role": "user", "content": "hi"}], "output_config": cfg})
-        assert result == {"transcript": [{"role": "user", "content": "hi"}], "output_config": cfg}
+        assert result["transcript"] == [{"role": "user", "content": "hi"}]
+        assert result["output_config"] == cfg
+        assert result["call_data"] == {"timestamp": None, "duration_seconds": None}
 
     @pytest.mark.unit
     @pytest.mark.asyncio
