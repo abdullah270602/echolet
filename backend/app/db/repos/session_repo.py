@@ -2,11 +2,12 @@ import uuid
 from datetime import datetime
 from typing import Optional, Any
 
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.call_session import CallSession
 from app.db.models.agent_config import AgentConfig
+from app.db.models.user import User
 
 
 async def get_by_id(
@@ -71,6 +72,34 @@ async def get_by_room_name_with_agent(
     if row:
         return (row[0], row[1])
     return None
+
+
+async def lock_user(session: AsyncSession, user_id: uuid.UUID) -> None:
+    """Row-lock the user until the next commit/rollback, serialising start_session per user."""
+    await session.execute(select(User.id).where(User.id == user_id).with_for_update())
+
+
+async def get_active_for_user(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    max_age_minutes: int,
+) -> Optional[CallSession]:
+    """
+    A call that has not ended and was created within max_age_minutes.
+
+    Older un-ended rows are treated as crashed calls, not as active ones.
+    """
+    stmt = (
+        select(CallSession)
+        .where(
+            CallSession.user_id == user_id,
+            CallSession.ended_at.is_(None),
+            CallSession.created_at > func.now() - text(f"interval '{int(max_age_minutes)} minutes'"),
+        )
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def create(
