@@ -83,20 +83,7 @@ class TestGetCurrentUser:
         assert result["session_id"] == valid_token_data["sid"]
         assert result["email"] == valid_token_data["email"]
 
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_sp_extracts_all_claims(self, valid_token_data):
-        """SP: All expected claims are extracted."""
-        from app.auth import get_current_user
 
-        mock_credentials = MagicMock()
-        mock_credentials.decoded = valid_token_data
-
-        result = await get_current_user(mock_credentials)
-
-        assert "user_id" in result
-        assert "session_id" in result
-        assert "email" in result
 
 
 class TestGetCurrentUserWithDB:
@@ -180,54 +167,77 @@ class TestAuthenticationBypass:
 
             assert exc_info.value.status_code == 401
 
-    @pytest.mark.unit
-    def test_break_missing_jwks_url_raises(self):
-        """BREAK: Missing CLERK_JWKS_URL should raise at import."""
-        # This tests that the module raises RuntimeError if JWKS URL is not set
-        # We can't easily test this without reloading the module, so we document it
-        # The actual check is in auth.py:9-10
-        pass  # Documented behavior test
-
 
 # =============================================================================
-# EDGE CASES
+# END-TO-END JWT HANDLING (real RS256 keys, real ClerkHTTPBearer verification)
 # =============================================================================
 
 
-class TestAuthEdgeCases:
-    """Edge case tests for authentication."""
+@pytest.fixture
+def jwt_client():
+    """FastAPI app guarded by the real get_current_user; JWKS fetch returns our public key."""
+    import jwt
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from fastapi import Depends, FastAPI
+    from fastapi.testclient import TestClient
 
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_edge_user_id_case_sensitivity(self, mock_session, mock_user):
-        """EDGE: Clerk IDs are case-sensitive."""
-        from app.auth import get_current_user_with_db
-        from app.db.repos import user_repo
+    from app.auth import clerk_auth_guard, get_current_user
 
-        # Lowercase variant should not match
-        token_data = {
-            "user_id": "user_2abc123def456",  # Correct case
-            "email": "test@example.com",
-        }
+    good = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    other = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
-        with patch.object(user_repo, "get_by_clerk_id", return_value=mock_user):
-            result = await get_current_user_with_db(mock_session, token_data)
-            assert result["clerk_id"] == token_data["user_id"]
+    app = FastAPI()
 
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_edge_special_characters_in_clerk_id(self, mock_session, mock_user):
-        """EDGE: Special characters in Clerk ID."""
-        from app.auth import get_current_user_with_db
-        from app.db.repos import user_repo
+    @app.get("/me")
+    async def me(user: dict = Depends(get_current_user)):
+        return user
 
-        token_data = {
-            "user_id": "user_abc-123_def",  # Hyphens and underscores
-            "email": "test@example.com",
-        }
+    def make(key=good, exp_delta=3600, **claims):
+        now = int(datetime.now(timezone.utc).timestamp())
+        payload = {"sub": "user_abc", "sid": "sess_1", "email": "a@b.c", "iat": now - 10,
+                   "exp": now + exp_delta, **claims}
+        return jwt.encode(payload, key, algorithm="RS256", headers={"kid": "k1"})
 
-        mock_user.clerk_id = token_data["user_id"]
+    signing_key = MagicMock()
+    signing_key.key = good.public_key()
+    with patch.object(clerk_auth_guard.jwks_client, "get_signing_key_from_jwt", return_value=signing_key):
+        yield TestClient(app), make, other
 
-        with patch.object(user_repo, "get_by_clerk_id", return_value=mock_user):
-            result = await get_current_user_with_db(mock_session, token_data)
-            assert result is not None
+
+class TestJWTEndToEnd:
+    @pytest.mark.security
+    def test_valid_token_accepted(self, jwt_client):
+        client, make, _ = jwt_client
+        r = client.get("/me", headers={"Authorization": f"Bearer {make()}"})
+        assert r.status_code == 200
+        assert r.json() == {"user_id": "user_abc", "session_id": "sess_1", "email": "a@b.c"}
+
+    @pytest.mark.security
+    def test_expired_token_rejected(self, jwt_client):
+        client, make, _ = jwt_client
+        r = client.get("/me", headers={"Authorization": f"Bearer {make(exp_delta=-60)}"})
+        assert r.status_code in (401, 403)
+
+    @pytest.mark.security
+    def test_wrong_signature_rejected(self, jwt_client):
+        client, make, other = jwt_client
+        r = client.get("/me", headers={"Authorization": f"Bearer {make(key=other)}"})
+        assert r.status_code in (401, 403)
+
+    @pytest.mark.security
+    def test_tampered_payload_rejected(self, jwt_client):
+        import base64, json
+        client, make, _ = jwt_client
+        h, p, sig = make().split(".")
+        claims = json.loads(base64.urlsafe_b64decode(p + "=="))
+        claims["sub"] = "user_attacker"
+        p2 = base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
+        r = client.get("/me", headers={"Authorization": f"Bearer {h}.{p2}.{sig}"})
+        assert r.status_code in (401, 403)
+
+    @pytest.mark.security
+    def test_missing_or_malformed_token_rejected(self, jwt_client):
+        client, _, _ = jwt_client
+        assert client.get("/me").status_code in (401, 403)
+        assert client.get("/me", headers={"Authorization": "Bearer not.a.jwt"}).status_code in (401, 403)
+        assert client.get("/me", headers={"Authorization": "Basic abc"}).status_code in (401, 403)

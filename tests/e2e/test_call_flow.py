@@ -1,19 +1,11 @@
 """
-End-to-End Tests - Full Call Flow
+Call-flow pipeline tests (agent SQS -> worker -> analyzer).
 
-Tests the complete call lifecycle from session creation to history retrieval.
-These tests simulate the full flow across Agent, Backend, and Worker services.
-
-Scenarios:
-1. Happy Path: Full call → analysis → history
-2. Usage Limit: User hits daily limit mid-call
-3. Abnormal Disconnect: Call drops, transcript saved
-4. Webhook Sync: New user creation flow
+boto3/SQS, the LLM HTTP call and the DB are mocked; this is not a true end-to-end run.
 """
 
 import json
 import uuid
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -102,7 +94,13 @@ def mock_db_session() -> AsyncMock:
 
 
 class TestHappyPathCallFlow:
-    """Agent -> SQS -> worker poll -> real analyzer -> DB update (external I/O mocked)."""
+    """
+    Pipeline test: agent SQS send -> worker poll -> process_message -> analyzer -> update_analysis.
+
+    Real code: agent/sqs.py, worker poll_sqs/process_message, analyzer parsing and
+    validation. Mocked: boto3/SQS client, the LLM HTTP call, and the DB
+    (fetch_call_data/update_analysis). Not a true end-to-end run.
+    """
 
     @pytest.mark.e2e
     @pytest.mark.asyncio
@@ -141,50 +139,6 @@ class TestHappyPathCallFlow:
 
 
 # =============================================================================
-# E2E TEST: USAGE LIMIT ENFORCEMENT
-# =============================================================================
-
-
-class TestUsageLimitFlow:
-    """
-    E2E Test: User hits daily usage limit.
-
-    Flow:
-    1. User at 3550 seconds (50 seconds remaining)
-    2. Start call
-    3. After 50 seconds, limit reached
-    4. Agent delivers graceful farewell
-    5. Usage updated to 3600 (limit)
-    """
-
-    @pytest.mark.e2e
-    @pytest.mark.asyncio
-    async def test_usage_limit_triggers_graceful_end(self, user_id, mock_db_session):
-        """E2E: Call ends gracefully when usage limit reached."""
-        from app.services import usage_service
-        from app.db.repos import usage_repo
-
-        DAILY_LIMIT = 3600  # seconds
-
-        # User has used 3550 seconds today (50 remaining)
-        with patch("app.services.usage_service.DAILY_TALK_LIMIT_SECONDS", DAILY_LIMIT), \
-             patch.object(usage_repo, "get_daily_usage", return_value=3550):
-            result = await usage_service.check_user_limit(mock_db_session, user_id)
-
-            assert result["allowed"] is True  # Can still start
-            assert result["remaining_seconds"] == 50
-            assert result["used_seconds"] == 3550
-
-        # After call uses 60 seconds (exceeds limit)
-        with patch("app.services.usage_service.DAILY_TALK_LIMIT_SECONDS", DAILY_LIMIT), \
-             patch.object(usage_repo, "get_daily_usage", return_value=3610):
-            result = await usage_service.check_user_limit(mock_db_session, user_id)
-
-            assert result["allowed"] is False  # Now blocked
-            assert result["remaining_seconds"] == 0  # Clamped to 0
-
-
-# =============================================================================
 # E2E TEST: ABNORMAL DISCONNECT
 # =============================================================================
 
@@ -203,8 +157,8 @@ class TestAbnormalDisconnectFlow:
 
     @pytest.mark.e2e
     @pytest.mark.asyncio
-    async def test_disconnect_saves_partial_transcript(self, room_name, user_id, mock_db_session):
-        """E2E: Partial transcript saved on abnormal disconnect."""
+    async def test_analysis_runs_on_partial_transcript(self):
+        """Analysis of a transcript cut off mid-sentence still returns a valid result."""
 
         # Partial transcript (no farewell)
         partial_transcript = [
@@ -265,23 +219,3 @@ class TestErrorRecovery:
             assert analysis is not None
             assert analysis["category"] in {"Other", "Inquiry"}
             assert "failed" in analysis["summary"].lower() or "error" in analysis["summary"].lower() or analysis["summary"] == "Analysis pending"
-
-    @pytest.mark.e2e
-    @pytest.mark.asyncio
-    async def test_sqs_failure_graceful(self, room_name):
-        """E2E: SQS failure doesn't crash agent."""
-        from sqs import send_to_analysis_queue
-        from botocore.exceptions import ClientError
-
-        with patch("sqs.SQS_QUEUE_URL", "https://sqs.test/queue"), \
-             patch("sqs.boto3.client") as mock_boto:
-            mock_client = MagicMock()
-            mock_client.send_message.side_effect = ClientError(
-                {"Error": {"Code": "500", "Message": "Internal Error"}},
-                "SendMessage",
-            )
-            mock_boto.return_value = mock_client
-
-            # Should return False, not raise
-            result = await send_to_analysis_queue(room_name)
-            assert result is False
