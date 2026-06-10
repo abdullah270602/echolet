@@ -175,7 +175,7 @@ async def update_analysis(
                 action_required,
                 json.dumps(action_items),
                 room_name,
-                json.dumps(ticket or {}),
+                json.dumps(ticket or {}, allow_nan=False),
             )
 
             updated = result.split()[-1] != "0"

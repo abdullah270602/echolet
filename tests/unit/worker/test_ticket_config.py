@@ -112,3 +112,15 @@ async def test_defaults_still_produce_ticket_with_legacy_columns():
     assert r["action_required"] is True and r["action_items"] == ["Call back"]
     assert r["fields"]["customer_name"] == "Sam" and r["fields"]["call_duration"] == 5
     assert "customer_name" in post.call_args.kwargs["json"]["messages"][0]["content"]
+
+
+def test_hostile_values_cannot_poison_storage():
+    import json
+    import analyzer
+
+    assert analyzer.coerce_value({"type": "number"}, float("nan")) is None
+    assert analyzer.coerce_value({"type": "number"}, "inf") is None
+    assert analyzer.coerce_value({"type": "number"}, "12.5") == 12.5
+    assert "\x00" not in analyzer.coerce_value({"type": "text"}, "a\x00b")
+    assert all("\x00" not in v for v in analyzer.coerce_value({"type": "array"}, ["x\x00", "y"]))
+    json.dumps({"n": analyzer.coerce_value({"type": "number"}, 3)}, allow_nan=False)

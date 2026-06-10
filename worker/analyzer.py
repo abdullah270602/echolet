@@ -12,6 +12,7 @@ configurable fields based on the agent's output configuration:
 """
 
 import json
+import math
 import logging
 from typing import Any, Optional
 
@@ -81,6 +82,11 @@ def _match_option(value: Any, options: list[str]) -> Optional[str]:
     return None
 
 
+def _clean_text(value: Any, limit: int = 1000) -> str:
+    # Postgres text and JSONB reject NUL bytes; strip them so one reply can't poison a message.
+    return str(value).replace("\x00", "")[:limit]
+
+
 def coerce_value(field: dict[str, Any], value: Any) -> Any:
     """Coerce an LLM value to the field's configured type; None if it doesn't fit."""
     if value is None:
@@ -90,20 +96,21 @@ def coerce_value(field: dict[str, Any], value: Any) -> Any:
         return _match_option(value, field.get("options") or [])
     if t in ("string", "text"):
         ok = isinstance(value, (str, int, float)) and not isinstance(value, bool)
-        return str(value)[:1000] if ok else None
+        return _clean_text(value) if ok else None
     if t == "number":
         if isinstance(value, bool):
             return None
         try:
-            return value if isinstance(value, (int, float)) else float(value)
+            number = value if isinstance(value, (int, float)) else float(value)
         except (TypeError, ValueError):
             return None
+        return number if math.isfinite(number) else None  # NaN/inf aren't valid JSON
     if t == "boolean":
         if isinstance(value, bool):
             return value
         return {"true": True, "false": False}.get(str(value).strip().lower())
     if t == "array":
-        return [str(i) for i in value][:10] if isinstance(value, list) else None
+        return [_clean_text(i, 300) for i in value][:10] if isinstance(value, list) else None
     if t == "datetime":
         try:
             datetime.fromisoformat(str(value).replace("Z", "+00:00"))

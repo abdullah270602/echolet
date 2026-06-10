@@ -43,6 +43,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Attempts per call before a failed analysis is stored as a placeholder and the message dropped.
+MAX_ANALYSIS_ATTEMPTS = 3
+
 
 # Graceful shutdown flag
 shutdown_requested = False
@@ -66,6 +69,7 @@ def poll_sqs(client) -> list[dict]:
             MaxNumberOfMessages=MAX_MESSAGES_PER_POLL,
             WaitTimeSeconds=20,  # Long polling
             VisibilityTimeout=VISIBILITY_TIMEOUT_SECONDS,
+            AttributeNames=["ApproximateReceiveCount"],
         )
 
         messages = response.get("Messages", [])
@@ -77,6 +81,7 @@ def poll_sqs(client) -> list[dict]:
                 result.append({
                     "body": body,
                     "receipt_handle": msg["ReceiptHandle"],
+                    "receive_count": int(msg.get("Attributes", {}).get("ApproximateReceiveCount", 1)),
                 })
             except json.JSONDecodeError:
                 logger.warning(f"Invalid JSON in message: {msg['Body']}")
@@ -140,7 +145,12 @@ async def process_message(message: dict) -> bool:
     analysis = await analyze_transcript(transcript, output_config, call_data=call_data.get("call_data"))
 
     # analyze_transcript flags placeholder results (LLM error, bad JSON, no API key).
-    if analysis.get("failed"):
+    # Retry a few times (SQS redelivers after the visibility timeout); after that, store
+    # the placeholder so the call shows "please review the transcript" and stop retrying.
+    # This bound holds even if the queue has no dead-letter redrive configured.
+    if analysis.get("failed") and message.get("receive_count", 1) >= MAX_ANALYSIS_ATTEMPTS:
+        logger.error(f"Analysis failed {MAX_ANALYSIS_ATTEMPTS} times for {room_name}; storing placeholder")
+    elif analysis.get("failed"):
         logger.error(f"Analysis failed for {room_name}; leaving message on the queue for redelivery")
         return False  # not deleted, DB untouched
 
@@ -171,6 +181,9 @@ async def process_message(message: dict) -> bool:
         ticket={"fields": analysis.get("fields", {}), "tags": analysis.get("tags", [])},
     )
 
+    if not success and message.get("receive_count", 1) >= MAX_ANALYSIS_ATTEMPTS:
+        logger.error(f"Saving analysis failed {MAX_ANALYSIS_ATTEMPTS} times for {room_name}; dropping the message")
+        return True
     return success
 
 

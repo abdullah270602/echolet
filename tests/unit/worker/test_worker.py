@@ -443,3 +443,27 @@ async def test_real_analyzer_flags_placeholders_as_failed(sample_transcript, mon
     monkeypatch.setattr(analyzer, "OPENROUTER_API_KEY", None)
     result = await analyzer.analyze_transcript(sample_transcript, {})
     assert result["failed"] is True
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("receive_count,stored,done", [(1, False, False), (2, False, False), (3, True, True)])
+async def test_failed_analysis_retries_then_stores_placeholder(sample_transcript, receive_count, stored, done):
+    """A failure that never clears must not be retried forever (no DLQ required)."""
+    message = {"body": {"room_name": "room-1"}, "receipt_handle": "r", "receive_count": receive_count}
+    placeholder = {"summary": "Analysis failed - please review transcript manually.", "failed": True}
+    with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}), patch(
+        "worker.analyze_transcript", return_value=placeholder
+    ), patch("worker.update_analysis", return_value=True) as update:
+        assert await process_message(message) is done
+    assert update.called is stored
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_persistent_save_failure_is_dropped_after_max_attempts(sample_transcript, sample_analysis):
+    message = {"body": {"room_name": "room-1"}, "receipt_handle": "r", "receive_count": 3}
+    with patch("worker.fetch_call_data", return_value={"transcript": sample_transcript, "output_config": {}}), patch(
+        "worker.analyze_transcript", return_value=sample_analysis
+    ), patch("worker.update_analysis", return_value=False):
+        assert await process_message(message) is True
