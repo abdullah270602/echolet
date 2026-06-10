@@ -161,7 +161,7 @@ async def get_session_config(room_name: str) -> Optional[SessionConfig]:
                     ac.config
                 FROM call_sessions cs
                 JOIN agent_configs ac ON cs.agent_id = ac.id
-                WHERE cs.room_name = $1
+                WHERE cs.room_name = $1 AND ac.deleted_at IS NULL
                 """,
                 room_name,
             )
@@ -242,6 +242,8 @@ async def save_call_log(
     """
     Save call transcript and metadata to the database, and update user's daily usage.
 
+    Idempotent: only the first call for a room writes anything and adds usage.
+
     Args:
         room_name: The UUID room name (used to identify the call session)
         transcript: List of message dicts with role, content, timestamp
@@ -260,52 +262,58 @@ async def save_call_log(
         try:
             # Convert transcript to JSON string for asyncpg
             transcript_json = json.dumps(transcript)
+            now = datetime.utcnow()
 
-            # Update call session and get the user_id
-            row = await conn.fetchrow(
-                """
-                UPDATE call_sessions
-                SET
-                    transcript = $1::jsonb,
-                    duration_seconds = $2,
-                    status = $3,
-                    summary = $4,
-                    priority = $5,
-                    ended_at = $6
-                WHERE room_name = $7
-                RETURNING user_id
-                """,
-                transcript_json,
-                duration_seconds,
-                status,
-                summary,
-                priority,
-                datetime.utcnow(),
-                room_name,
-            )
+            # One transaction: the session is closed and usage is added together or
+            # not at all. The `ended_at IS NULL` guard makes a repeat call (end_call
+            # tool + cleanup, retries) a no-op, so usage is never counted twice.
+            async with conn.transaction():
+                row = await conn.fetchrow(
+                    """
+                    UPDATE call_sessions
+                    SET
+                        transcript = $1::jsonb,
+                        duration_seconds = $2,
+                        status = $3,
+                        summary = $4,
+                        priority = $5,
+                        ended_at = $6
+                    WHERE room_name = $7 AND ended_at IS NULL
+                    RETURNING user_id
+                    """,
+                    transcript_json,
+                    duration_seconds,
+                    status,
+                    summary,
+                    priority,
+                    now,
+                    room_name,
+                )
 
-            if row is None:
-                logger.warning(f"No call session found: {room_name}")
-                return False
+                if row is None:
+                    exists = await conn.fetchval(
+                        "SELECT 1 FROM call_sessions WHERE room_name = $1", room_name
+                    )
+                    if exists:
+                        logger.info(f"Call session already ended, nothing to save: {room_name}")
+                        return True
+                    logger.warning(f"No call session found: {room_name}")
+                    return False
 
-            user_id = row["user_id"]
-
-            # Update user's daily usage
-            today = datetime.now(timezone.utc).date()
-            await conn.execute(
-                """
-                INSERT INTO user_daily_usage (user_id, usage_date, talk_seconds_used, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $4)
-                ON CONFLICT ON CONSTRAINT uq_user_daily_usage_user_date
-                DO UPDATE SET
-                    talk_seconds_used = user_daily_usage.talk_seconds_used + $3,
-                    updated_at = $4
-                """,
-                user_id,
-                today,
-                duration_seconds,
-                datetime.utcnow(),
-            )
+                await conn.execute(
+                    """
+                    INSERT INTO user_daily_usage (user_id, usage_date, talk_seconds_used, created_at, updated_at)
+                    VALUES ($1, $2, $3, $4, $4)
+                    ON CONFLICT ON CONSTRAINT uq_user_daily_usage_user_date
+                    DO UPDATE SET
+                        talk_seconds_used = user_daily_usage.talk_seconds_used + $3,
+                        updated_at = $4
+                    """,
+                    row["user_id"],
+                    datetime.now(timezone.utc).date(),
+                    duration_seconds,
+                    now,
+                )
 
             return True
 

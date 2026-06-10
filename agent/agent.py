@@ -14,7 +14,7 @@ import time
 from dotenv import load_dotenv
 
 from livekit import agents, rtc
-from livekit.agents import AgentServer, AgentSession, room_io
+from livekit.agents import AgentServer, AgentSession, MetricsCollectedEvent, metrics, room_io
 from livekit.plugins import noise_cancellation, silero, openai, deepgram, inworld
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
@@ -30,6 +30,7 @@ from config import (
 from prompts import FAREWELL_MESSAGE, build_prompts_from_config
 from database import SessionConfig, get_session_config, get_user_remaining_seconds, save_call_log
 from usage import monitor_usage
+from telemetry import CallLatency
 from transcript import create_dynamic_assistant, create_user_transcript_handler
 from demo_ticket import generate_ticket
 from demo_calendar import CALENDAR_PROMPT, DemoCalendar, calendar_tools
@@ -89,7 +90,8 @@ async def agent_session(ctx: agents.JobContext) -> None:
     Sets up the voice pipeline with dynamic configuration from the database.
     """
     room_name = ctx.room.name
-    session_start_time = time.time()
+    # Billing clock: starts when the caller has joined, not when the job is dispatched.
+    session_start_time: float | None = None
     transcript_messages: list[dict] = []
     call_status = "completed"
     cleanup_done = {"value": False}  # Set by the end_call tool once it has saved the log
@@ -102,6 +104,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
     try:
         await ctx.connect()
         participant = await ctx.wait_for_participant()
+        session_start_time = time.time()
 
         # Resolve config and the hard time cap for this call.
         if demo:
@@ -208,6 +211,22 @@ async def agent_session(ctx: agents.JobContext) -> None:
         )
 
         # Register transcript handlers
+        # Latency telemetry: per-stage metrics as they happen, a p50/p95 summary at the end.
+        latency = CallLatency()
+        usage_totals = metrics.UsageCollector()
+
+        @session.on("metrics_collected")
+        def _on_metrics(ev: MetricsCollectedEvent) -> None:
+            metrics.log_metrics(ev.metrics)
+            latency.record(ev.metrics)
+            usage_totals.collect(ev.metrics)
+
+        async def _log_call_summary() -> None:
+            logger.info(f"Call latency {room_name}: {latency.summary()}")
+            logger.info(f"Call usage {room_name}: {usage_totals.get_summary()}")
+
+        ctx.add_shutdown_callback(_log_call_summary)
+
         session.on("user_input_transcribed")(
             create_user_transcript_handler(transcript_messages)
         )
@@ -266,7 +285,7 @@ async def agent_session(ctx: agents.JobContext) -> None:
         # Always save call log if end_call tool didn't handle it
         if not cleanup_done["value"]:
             logger.info("Cleanup: saving call log")
-            duration = int(time.time() - session_start_time)
+            duration = int(time.time() - session_start_time) if session_start_time else 0
             try:
                 await save_fn(
                     room_name=room_name,
